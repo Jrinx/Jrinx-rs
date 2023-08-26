@@ -1,0 +1,20 @@
+[package]
+name = "jrinx"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = ["pt_level_3"]
+board_virt = []
+pt_level_2 = []
+pt_level_3 = []
+
+[dependencies]
+bitflags = "2.4.0"
+buddy_system_allocator = { version = "0.9.0", features = ["const_fn"] }
+fdt = "0.1.5"
+getargs = { version = "0.5.0", default-features = false }
+lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
+riscv = "0.10.1"
+sbi = "0.2.0"
+spin = "0.9.8"

@@ -1,0 +1,23 @@
+export MAKEFLAGS		:= -j$(shell nproc) -s $(MAKEFLAGS) -r
+
+export ARCH				?= riscv64
+export BOARD			?= virt
+export MODE				?= release
+export SMP				?= 5
+export MEMORY			?= 1G
+export ARGS				?=
+
+.PHONY: build
+build:
+	make -C kern build
+
+.PHONY: clean
+clean:
+	make -C kern clean
+
+.PHONY: run dbg
+run:
+	make -C kern run
+
+dbg:
+	make -C kern dbg
