@@ -2,11 +2,12 @@
 
 ARCH									?= riscv64
 BOARD									?= virt
-MODE									?= release
+export BUILD_MODE						?= release
+export BUILD_TIME						?= $(shell date "+%Y-%m-%d %H:%M:%S")
 SMP										?= 5
 MEMORY									?= 1G
 
-TARGET_PATH								:= $(CURDIR)/target/$(ARCH)/$(MODE)
+TARGET_PATH								:= $(CURDIR)/target/$(ARCH)/$(BUILD_MODE)
 TARGET									:= $(TARGET_PATH)/jrinx
 
 # Runner / Debugger Parameters
@@ -35,15 +36,13 @@ export CARGO_BUILD_TARGET				:= $(CURDIR)/tgt/$(ARCH).json
 
 CARGO_BUILD_FLAGS						:= --features $(FEATURES)
 
-ifeq ($(MODE),release)
+ifeq ($(BUILD_MODE),release)
 CARGO_BUILD_FLAGS						+= --release
 endif
 
 # Make Goals
 
 .PHONY: build
-build: export BUILD_MODE=$(MODE)
-build: export BUILD_TIME=$(shell date "+%Y-%m-%d %H:%M:%S %z")
 build:
 	cargo build $(CARGO_BUILD_FLAGS)
 

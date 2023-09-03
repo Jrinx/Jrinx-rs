@@ -2,7 +2,8 @@ export MAKEFLAGS		:= -j$(shell nproc) -s $(MAKEFLAGS) -r
 
 export ARCH				?= riscv64
 export BOARD			?= virt
-export MODE				?= release
+export BUILD_MODE		?= release
+export BUILD_TIME		?= $(shell date "+%Y-%m-%d %H:%M:%S")
 export SMP				?= 5
 export MEMORY			?= 1G
 export ARGS				?=
