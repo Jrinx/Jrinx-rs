@@ -1,12 +1,13 @@
 # Build Parameters
 
-ARCH									?= riscv64
-BOARD									?= virt
+export ARCH								?= riscv64
+export BOARD							?= virt
 export BUILD_MODE						?= release
 export BUILD_TIME						?= $(shell date "+%Y-%m-%d %H:%M:%S")
 export RAND_SEED						?= $(shell echo $$RANDOM)
-SMP										?= 5
-MEMORY									?= 1G
+export SMP								?= 5
+export MEMORY							?= 1G
+export VERBOSE							?= true
 
 TARGET_PATH								:= $(CURDIR)/target/$(ARCH)/$(BUILD_MODE)
 TARGET									:= $(TARGET_PATH)/jrinx
@@ -34,6 +35,10 @@ endif
 FEATURES								:= board_$(BOARD)
 
 export CARGO_BUILD_TARGET				:= $(CURDIR)/tgt/$(ARCH).json
+
+ifneq ($(VERBOSE),true)
+export CARGO_TERM_QUIET					:= true
+endif
 
 CARGO_BUILD_FLAGS						:= --features $(FEATURES)
 

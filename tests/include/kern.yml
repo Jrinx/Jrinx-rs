@@ -1,0 +1,14 @@
+expected:
+  type: unordered
+  vals:
+  - \[.+?hart#\d+\s*\]
+  - type: ordered
+    vals:
+    - build at ${BUILD_TIME} in ${BUILD_MODE} mode
+    - test case ${TEST_NAME} begin
+    - test case ${TEST_NAME} end
+
+unexpected:
+  type: unordered
+  vals:
+  - Panicked
