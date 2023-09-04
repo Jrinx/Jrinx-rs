@@ -40,6 +40,7 @@ pub(super) mod virt {
     use crate::{
         arch::{self, mm::virt::PagePerm},
         conf,
+        driver::random,
         mm::{
             phys::PhysFrame,
             virt::{VirtAddr, KERN_PAGE_TABLE},
@@ -50,7 +51,7 @@ pub(super) mod virt {
         let vaddr1 = VirtAddr::new(conf::PAGE_SIZE);
         let vaddr2 = VirtAddr::new(conf::PAGE_SIZE * 2);
 
-        for test_seed in (1..=10).map(|i| i * 0xdeadbeef) {
+        for test_seed in (1..=10).map(|_| random::rand()) {
             let frame = PhysFrame::alloc().unwrap();
             let paddr = frame.addr();
 

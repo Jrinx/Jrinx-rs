@@ -1,4 +1,5 @@
 pub mod bootargs;
+pub mod random;
 pub mod serial;
 
 use alloc::{borrow::ToOwned, collections::BTreeMap, vec::Vec};
@@ -76,4 +77,6 @@ pub(super) fn init(fdtaddr: *const u8) {
         info!("bootargs: {}", bootargs);
         bootargs::BOOTARGS.lock().replace(bootargs.to_owned());
     }
+
+    random::init();
 }

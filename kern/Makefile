@@ -4,6 +4,7 @@ ARCH									?= riscv64
 BOARD									?= virt
 export BUILD_MODE						?= release
 export BUILD_TIME						?= $(shell date "+%Y-%m-%d %H:%M:%S")
+export RAND_SEED						?= $(shell echo $$RANDOM)
 SMP										?= 5
 MEMORY									?= 1G
 
