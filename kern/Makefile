@@ -1,13 +1,8 @@
-# Build Parameters
+# Basic Variables
 
-export ARCH								?= riscv64
-export BOARD							?= virt
-export BUILD_MODE						?= release
-export BUILD_TIME						?= $(shell date "+%Y-%m-%d %H:%M:%S")
-export RAND_SEED						?= $(shell echo $$RANDOM)
-export SMP								?= 5
-export MEMORY							?= 1G
-export VERBOSE							?= true
+PROJECT									?= $(CURDIR)/..
+
+include $(PROJECT)/mk/setup-envs.mk
 
 TARGET_PATH								:= $(CURDIR)/target/$(ARCH)/$(BUILD_MODE)
 TARGET									:= $(TARGET_PATH)/jrinx
