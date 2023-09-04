@@ -51,7 +51,7 @@ pub(super) mod virt {
         let vaddr1 = VirtAddr::new(conf::PAGE_SIZE);
         let vaddr2 = VirtAddr::new(conf::PAGE_SIZE * 2);
 
-        for test_seed in (1..=10).map(|_| random::rand()) {
+        for _ in 0..10 {
             let frame = PhysFrame::alloc().unwrap();
             let paddr = frame.addr();
 
@@ -80,8 +80,9 @@ pub(super) mod virt {
             for i in 0..conf::PAGE_SIZE / mem::size_of::<usize>() {
                 let src = space[i % 2];
                 let dst = space[1 - i % 2];
-                write(src, i * test_seed);
-                assert_eq!(read(dst), i * test_seed);
+                let rand = random::rand();
+                write(src, rand);
+                assert_eq!(read(dst), rand);
                 write(src, !read(dst));
                 assert_eq!(read(src), read(dst));
             }
