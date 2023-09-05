@@ -225,9 +225,6 @@ impl PhysFrameAllocator {
 static PHYS_FRAME_ALLOCATOR: Mutex<PhysFrameAllocator> = Mutex::new(PhysFrameAllocator::new());
 
 fn probe(node: &FdtNode) -> Result<()> {
-    extern "C" {
-        fn _end();
-    }
     let mut allocator = PHYS_FRAME_ALLOCATOR.lock();
     for mem_region in node.reg().ok_or(InternalError::DevProbeError)? {
         let addr = PhysAddr::new(mem_region.starting_address as usize);
@@ -248,6 +245,21 @@ fn probe(node: &FdtNode) -> Result<()> {
             .collect::<Vec<_>>()
             .join(",")
     );
+
+    Ok(())
+}
+
+pub(super) fn early_init() {
+    driver::register! {
+        devtyp("memory") => probe
+    };
+}
+
+pub(super) fn init() {
+    extern "C" {
+        fn _end();
+    }
+    let mut allocator = PHYS_FRAME_ALLOCATOR.lock();
     let heap_start = VirtAddr::new(_end as usize).align_page_up();
     let heap_size = (heap_start.align_page_up()
         + (allocator
@@ -266,13 +278,6 @@ fn probe(node: &FdtNode) -> Result<()> {
     let heap_region = (heap_start, heap_size);
     heap::enlarge(heap_region);
     allocator.remove_region((arch::mm::virt_to_phys(heap_region.0), heap_region.1));
-    Ok(())
-}
-
-pub fn init() {
-    driver::register! {
-        devtyp("memory") => probe
-    };
 }
 
 pub(super) fn get_init_regions() -> Vec<(PhysAddr, usize)> {
