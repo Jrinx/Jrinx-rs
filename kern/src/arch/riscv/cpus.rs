@@ -1,7 +1,7 @@
 use fdt::node::FdtNode;
 
 use crate::{
-    driver,
+    driver::device_probe,
     error::{InternalError, Result},
     info,
 };
@@ -16,8 +16,6 @@ fn probe(node: &FdtNode) -> Result<()> {
     Ok(())
 }
 
-pub fn init() {
-    driver::register! {
-        path("/cpus") => probe
-    };
+device_probe! {
+    path("/cpus") => probe
 }

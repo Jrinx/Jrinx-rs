@@ -24,6 +24,11 @@ SECTIONS {
     PROVIDE(_srodata = .);
     .rodata : {
         *(.rodata .rodata* .srodata .srodata*)
+
+        . = ALIGN(8);
+        PROVIDE(_sdev = .);
+        *(.dev*)
+        PROVIDE(_edev = .);
     }
     PROVIDE(_erodata = .);
 
@@ -42,6 +47,17 @@ SECTIONS {
         *(.bss .bss* .sbss .sbss*)
     }
     PROVIDE(_ebss = .);
+
+    # Discarded sections
+
+    /DISCARD/ : {
+        *(.comment)
+        *(.eh_frame*)
+        *(.note*)
+        *(.gnu*)
+    }
+
+    # End of memory
 
     PROVIDE(_end = .);
 }

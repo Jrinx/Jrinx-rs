@@ -10,9 +10,6 @@ pub use riscv64::*;
 
 use crate::error::HaltReason;
 
-#[cfg_attr(feature = "board_virt", path = "board/virt.rs")]
-mod board;
-
 pub mod cpu;
 pub mod cpus;
 pub mod layout;
@@ -22,8 +19,6 @@ pub fn init() {
     unsafe {
         riscv::register::sstatus::set_sum();
     }
-    cpus::init();
-    board::init();
 }
 
 pub fn halt(reason: HaltReason) -> ! {

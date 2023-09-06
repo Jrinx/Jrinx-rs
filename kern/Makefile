@@ -27,15 +27,11 @@ endif
 
 # Build Environment Variables / Flags
 
-FEATURES								:= board_$(BOARD)
-
 export CARGO_BUILD_TARGET				:= $(CURDIR)/tgt/$(ARCH).json
 
 ifneq ($(VERBOSE),true)
 export CARGO_TERM_QUIET					:= true
 endif
-
-CARGO_BUILD_FLAGS						:= --features $(FEATURES)
 
 ifeq ($(BUILD_MODE),release)
 CARGO_BUILD_FLAGS						+= --release

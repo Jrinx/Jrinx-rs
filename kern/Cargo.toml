@@ -5,7 +5,6 @@ edition = "2021"
 
 [features]
 default = ["pt_level_3"]
-board_virt = []
 pt_level_2 = []
 pt_level_3 = []
 

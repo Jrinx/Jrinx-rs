@@ -3,7 +3,8 @@ use fdt::node::FdtNode;
 use spin::Mutex;
 
 use crate::{
-    arch, conf, driver,
+    arch, conf,
+    driver::device_probe,
     error::{InternalError, Result},
     heap, info,
     mm::virt::VirtAddr,
@@ -249,10 +250,8 @@ fn probe(node: &FdtNode) -> Result<()> {
     Ok(())
 }
 
-pub(super) fn early_init() {
-    driver::register! {
-        devtyp("memory") => probe
-    };
+device_probe! {
+    devtyp("memory") => probe
 }
 
 pub(super) fn init() {

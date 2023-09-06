@@ -5,6 +5,7 @@
 #![feature(map_try_insert)]
 #![feature(naked_functions)]
 #![feature(panic_info_message)]
+#![feature(used_with_arg)]
 #![no_std]
 #![no_main]
 
@@ -30,7 +31,6 @@ fn main(_: usize, fdtaddr: *const u8) -> ! {
     print_build_info();
     heap::init();
     arch::init();
-    mm::early_init();
     driver::init(fdtaddr);
     mm::init();
 
