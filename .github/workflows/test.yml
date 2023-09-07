@@ -1,0 +1,124 @@
+name: Regression Test
+
+on:
+  push:
+  pull_request:
+
+env:
+  QEMU_REPO: https://github.com/qemu/qemu.git
+
+jobs:
+  setup-python:
+    name: Set Up Python Environment
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set Up Python
+        uses: actions/setup-python@v4
+
+      - name: Get Pip Cache Directory
+        id: pip-cache-dir
+        run: echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Pip
+        uses: actions/cache@v3
+        with:
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          path: ${{ steps.pip-cache-dir.outputs.dir }}
+          restore-keys: ${{ runner.os }}-pip-
+
+      - name: Install Python Dependencies
+        run: pip install -r requirements.txt
+
+  setup-qemu:
+    name: Set Up QEMU Environment
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get QEMU Latest Tag
+        id: qemu-latest-tag
+        run: |
+          echo "tag=$(git -c 'versionsort.suffix=-' \
+                        ls-remote --refs --tags --sort=version:refname $QEMU_REPO | \
+                        tail -n 1 | \
+                        cut -d/ -f3)" >> $GITHUB_OUTPUT
+
+      - name: Cache QEMU
+        id: qemu-cache
+        uses: actions/cache@v3
+        with:
+          key: ${{ runner.os }}-qemu-${{ steps.qemu-latest-tag.outputs.tag }}
+          path: /opt/qemu/
+          restore-keys: ${{ runner.os }}-qemu-
+
+      - name: Set Up Ninja
+        if: steps.qemu-cache.outputs.cache-hit != 'true'
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+
+      - name: Install QEMU
+        if: steps.qemu-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone "$QEMU_REPO" --depth=1 --branch=${{ steps.qemu-latest-tag.outputs.tag }} ${{ runner.temp }}/qemu
+          cd ${{ runner.temp }}/qemu
+          mkdir -p /opt/qemu/
+          ./configure --prefix=/opt/qemu/ --target-list=riscv32-softmmu,riscv64-softmmu
+          make -j$(nproc) && sudo make install
+
+      - name: List QEMU Binaries
+        run: ls -l /opt/qemu/bin/
+
+  run-test:
+    name: Test On Emulator
+    needs: [setup-python, setup-qemu]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [riscv32, riscv64]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set Up Python
+        uses: actions/setup-python@v4
+
+      - name: Get Pip Cache Directory
+        id: pip-cache-dir
+        run: echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Pip
+        uses: actions/cache@v3
+        with:
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          path: ${{ steps.pip-cache-dir.outputs.dir }}
+          restore-keys: ${{ runner.os }}-pip-
+          fail-on-cache-miss: true
+
+      - name: Install Python Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Get QEMU Latest Tag
+        id: qemu-latest-tag
+        run: |
+          echo "tag=$(git -c 'versionsort.suffix=-' \
+                        ls-remote --refs --tags --sort=version:refname $QEMU_REPO | \
+                        tail -n 1 | \
+                        cut -d/ -f3)" >> $GITHUB_OUTPUT
+
+      - name: Cache QEMU
+        id: qemu-cache
+        uses: actions/cache@v3
+        with:
+          key: ${{ runner.os }}-qemu-${{ steps.qemu-latest-tag.outputs.tag }}
+          path: /opt/qemu/
+          restore-keys: ${{ runner.os }}-qemu-
+          fail-on-cache-miss: true
+
+      - name: Set Up QEMU PATH
+        run: |
+          ls -l /opt/qemu/bin/
+          echo "/opt/qemu/bin/" >> $GITHUB_PATH
+
+      - name: Run All Tests
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: ./scripts/test-run -pr
