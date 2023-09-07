@@ -12,7 +12,7 @@
 
 use error::HaltReason;
 
-use crate::util::logging;
+use crate::util::{logging, random};
 
 extern crate alloc;
 
@@ -39,6 +39,7 @@ static INIT_STACK: [u8; conf::KSTACK_SIZE] = [0; conf::KSTACK_SIZE];
 
 fn main(_: usize, fdtaddr: *const u8) -> ! {
     logging::init();
+    random::init();
 
     let arch = core::option_env!("ARCH").unwrap_or("unknown");
     let build_time = core::option_env!("BUILD_TIME").unwrap_or("unknown");

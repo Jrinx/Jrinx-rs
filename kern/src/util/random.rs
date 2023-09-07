@@ -1,6 +1,6 @@
 static mut SEED: usize = 0xdeadbeef;
 
-pub(super) fn init() {
+pub fn init() {
     if let Some(seed) = option_env!("RAND_SEED") {
         let x = unsafe { &mut SEED };
         let seed: usize = seed.parse().unwrap();

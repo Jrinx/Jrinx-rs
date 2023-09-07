@@ -40,11 +40,11 @@ pub(super) mod virt {
     use crate::{
         arch::{self, mm::virt::PagePerm},
         conf,
-        driver::random,
         mm::{
             phys::PhysFrame,
             virt::{VirtAddr, KERN_PAGE_TABLE},
         },
+        util::random,
     };
 
     pub fn test() {

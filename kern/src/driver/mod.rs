@@ -1,5 +1,4 @@
 pub mod bootargs;
-pub mod random;
 pub mod serial;
 
 use core::mem;
@@ -105,6 +104,4 @@ pub(super) fn init(fdtaddr: *const u8) {
     if let Some(bootargs) = dt.chosen().bootargs() {
         bootargs::set(bootargs);
     }
-
-    random::init();
 }
