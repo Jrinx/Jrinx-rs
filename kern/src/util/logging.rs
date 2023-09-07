@@ -1,5 +1,9 @@
 use core::fmt::Write;
 
+use crate::arch;
+
+use super::color::{self, with_color};
+
 struct Logger;
 
 impl Write for Logger {
@@ -22,14 +26,42 @@ macro_rules! println {
     };
 }
 
-#[macro_export]
-macro_rules! info {
-    ($fmt: literal $(, $($arg: tt)+)?) => {
-        $crate::util::logging::print_fmt(format_args!(
-            "[ tick@{} hart#{} ] ",
-            $crate::arch::cpu::time(),
-            $crate::arch::cpu::id())
-        );
-        $crate::util::logging::print_fmt(format_args!(concat!($fmt, "\n") $(, $($arg)+)?));
-    };
+impl log::Log for Logger {
+    fn enabled(&self, metadata: &log::Metadata) -> bool {
+        metadata.level() <= log::Level::Info
+    }
+
+    fn log(&self, record: &log::Record) {
+        if !self.enabled(record.metadata()) {
+            return;
+        }
+        let cpu_id = arch::cpu::id();
+        let cpu_time = arch::cpu::time();
+        let level = record.level();
+        let color = match level {
+            log::Level::Error => color::ColorCode::RED,
+            log::Level::Warn => color::ColorCode::YELLOW,
+            log::Level::Info => color::ColorCode::GREEN,
+            _ => return,
+        };
+        print_fmt(with_color! {
+            color::ColorCode::White,
+            "[ {time} cpu#{id} {level} ] {args}\n",
+            time = {
+                let micros = cpu_time.as_micros();
+                format_args!("{s:>6}.{us:06}", s = micros / 1000000, us = micros % 1000000)
+            },
+            id = cpu_id,
+            level = with_color!(color, "{}", level),
+            args = with_color!(color::ColorCode::White, "{}", record.args()),
+        });
+    }
+
+    fn flush(&self) {}
+}
+
+pub fn init() {
+    static LOGGER: Logger = Logger;
+    log::set_logger(&LOGGER).unwrap();
+    log::set_max_level(log::LevelFilter::Info);
 }

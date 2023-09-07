@@ -33,8 +33,14 @@ ifneq ($(VERBOSE),true)
 export CARGO_TERM_QUIET					:= true
 endif
 
+FEATURES								+= colorful
+
 ifeq ($(BUILD_MODE),release)
 CARGO_BUILD_FLAGS						+= --release
+endif
+
+ifneq ($(FEATURES),)
+CARGO_BUILD_FLAGS						+= --features $(FEATURES)
 endif
 
 # Make Goals

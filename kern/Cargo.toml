@@ -7,6 +7,7 @@ edition = "2021"
 default = ["pt_level_3"]
 pt_level_2 = []
 pt_level_3 = []
+colorful = []
 
 [dependencies]
 bitflags = "2.4.0"
@@ -14,6 +15,7 @@ buddy_system_allocator = { version = "0.9.0", features = ["const_fn"] }
 fdt = "0.1.5"
 getargs = { version = "0.5.0", default-features = false }
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
+log = { version = "0.4.20", default-features = false }
 riscv = "0.10.1"
 sbi = "0.2.0"
 spin = "0.9.8"

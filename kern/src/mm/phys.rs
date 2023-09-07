@@ -6,7 +6,7 @@ use crate::{
     arch, conf,
     driver::device_probe,
     error::{InternalError, Result},
-    heap, info,
+    heap,
     mm::virt::VirtAddr,
 };
 

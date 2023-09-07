@@ -66,6 +66,7 @@ dependencies = [
  "fdt",
  "getargs",
  "lazy_static",
+ "log",
  "riscv",
  "sbi",
  "spin 0.9.8",
@@ -89,6 +90,12 @@ dependencies = [
  "autocfg",
  "scopeguard",
 ]
+
+[[package]]
+name = "log"
+version = "0.4.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b5e6163cb8c49088c2c36f57875e58ccd8c87c7427f7fbd50ea6710b2f3f2e8f"
 
 [[package]]
 name = "nb"

@@ -14,7 +14,6 @@ use crate::{
     },
     conf,
     error::{InternalError, Result},
-    info,
     mm::phys,
 };
 

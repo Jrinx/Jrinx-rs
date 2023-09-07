@@ -1,7 +1,7 @@
 expected:
   type: unordered
   vals:
-  - \[.+?hart#\d+\s*\]
+  - \[\s*\d{1,6}\.\d{6}\s+cpu#\d+.+?\]
   - type: ordered
     vals:
     - build at ${BUILD_TIME} in ${BUILD_MODE} mode

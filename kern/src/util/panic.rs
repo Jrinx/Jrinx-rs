@@ -1,18 +1,18 @@
 use core::panic::PanicInfo;
 
-use crate::{arch, error::HaltReason, println};
+use crate::{arch, error::HaltReason};
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     if let Some(location) = info.location() {
-        println!(
-            "Panicked at {}:{} {}",
+        error!(
+            "panicked at {}:{} {}",
             location.file(),
             location.line(),
             info.message().unwrap()
         );
     } else {
-        println!("Panicked: {}", info.message().unwrap());
+        error!("panicked: {}", info.message().unwrap());
     }
     arch::halt(HaltReason::SysFailure);
 }

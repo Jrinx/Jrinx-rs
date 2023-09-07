@@ -7,7 +7,7 @@ use core::mem;
 use alloc::vec::Vec;
 use fdt::{node::FdtNode, Fdt};
 
-use crate::{error::Result, info};
+use crate::error::Result;
 
 #[repr(C)]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -70,7 +70,6 @@ macro_rules! device_probe {
 pub(crate) use device_probe;
 
 pub(super) fn init(fdtaddr: *const u8) {
-    info!("init drivers by flattened device tree at {:p}", fdtaddr);
     let dt = unsafe { Fdt::from_ptr(fdtaddr) }.unwrap();
 
     extern "C" {
