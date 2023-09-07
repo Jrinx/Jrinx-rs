@@ -1,13 +1,18 @@
 use alloc::{borrow::ToOwned, format, string::String, vec::Vec};
 use getargs::{Opt, Options};
-use spin::Mutex;
 
-use crate::{arch, error::HaltReason, info, test};
+use crate::{arch, error::HaltReason, test};
 
-pub(super) static BOOTARGS: Mutex<Option<String>> = Mutex::new(None);
+static mut BOOTARGS: Option<String> = None;
+
+pub(super) fn set(bootargs: &str) {
+    unsafe {
+        BOOTARGS = Some(bootargs.to_owned());
+    }
+}
 
 pub fn execute() {
-    if let Some(bootargs) = &*BOOTARGS.lock() {
+    if let Some(bootargs) = unsafe { &mut BOOTARGS } {
         let args = bootargs
             .split_whitespace()
             .map(|s| s.to_owned())

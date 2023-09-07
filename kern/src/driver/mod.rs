@@ -4,7 +4,7 @@ pub mod serial;
 
 use core::mem;
 
-use alloc::{borrow::ToOwned, vec::Vec};
+use alloc::vec::Vec;
 use fdt::{node::FdtNode, Fdt};
 
 use crate::{error::Result, info};
@@ -104,8 +104,7 @@ pub(super) fn init(fdtaddr: *const u8) {
     });
 
     if let Some(bootargs) = dt.chosen().bootargs() {
-        info!("bootargs: {}", bootargs);
-        bootargs::BOOTARGS.lock().replace(bootargs.to_owned());
+        bootargs::set(bootargs);
     }
 
     random::init();

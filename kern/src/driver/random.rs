@@ -1,12 +1,8 @@
-use spin::Mutex;
-
-use crate::info;
-
-static SEED: Mutex<usize> = Mutex::new(0xdeadbeef);
+static mut SEED: usize = 0xdeadbeef;
 
 pub(super) fn init() {
     if let Some(seed) = option_env!("RAND_SEED") {
-        let mut x = SEED.lock();
+        let x = unsafe { &mut SEED };
         let seed: usize = seed.parse().unwrap();
         info!("pseudo random seed: {}", seed);
         *x = seed;
@@ -14,7 +10,7 @@ pub(super) fn init() {
 }
 
 pub fn rand() -> usize {
-    let mut x = SEED.lock();
+    let x = unsafe { &mut SEED };
     *x ^= *x << 13;
     *x ^= *x >> 17;
     *x ^= *x << 5;
