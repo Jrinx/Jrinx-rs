@@ -69,6 +69,11 @@ impl VirtAddr {
         Self((self.0 + conf::PAGE_SIZE - 1) & !(conf::PAGE_SIZE - 1))
     }
 
+    #[cfg(feature = "pt_level_2")]
+    pub fn indexes(self) -> [usize; 2] {
+        [self.0 >> 22 & 0x3ff, self.0 >> 12 & 0x3ff]
+    }
+
     #[cfg(feature = "pt_level_3")]
     pub fn indexes(self) -> [usize; 3] {
         [

@@ -45,6 +45,11 @@ SECTIONS {
     PROVIDE(_sbss = .);
     .bss : {
         *(.bss .bss* .sbss .sbss*)
+
+        . = ALIGN(PAGE_SIZE);
+        PROVIDE(_sstack = .);
+        *(.stack)
+        PROVIDE(_estack = .);
     }
     PROVIDE(_ebss = .);
 

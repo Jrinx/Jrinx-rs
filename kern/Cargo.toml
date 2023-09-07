@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = ["pt_level_3"]
 pt_level_2 = []
 pt_level_3 = []
 colorful = []

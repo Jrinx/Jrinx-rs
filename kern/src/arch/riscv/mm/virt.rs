@@ -66,6 +66,10 @@ pub fn enable_pt_mapping(page_table: &PageTable) {
     unsafe {
         #[cfg(feature = "pt_level_3")]
         riscv::register::satp::set(riscv::register::satp::Mode::Sv39, 0, pt_ppn);
+
+        #[cfg(feature = "pt_level_2")]
+        riscv::register::satp::set(riscv::register::satp::Mode::Sv32, 0, pt_ppn);
+
         riscv::asm::sfence_vma_all();
     }
 }

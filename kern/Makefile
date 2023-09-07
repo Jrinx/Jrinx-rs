@@ -27,6 +27,14 @@ endif
 
 # Build Environment Variables / Flags
 
+FEATURES								?=
+
+ifeq ($(ARCH),riscv32)
+FEATURES								+= pt_level_2
+else ifeq ($(ARCH),riscv64)
+FEATURES								+= pt_level_3
+endif
+
 export CARGO_BUILD_TARGET				:= $(CURDIR)/tgt/$(ARCH).json
 
 ifneq ($(VERBOSE),true)
@@ -40,7 +48,7 @@ CARGO_BUILD_FLAGS						+= --release
 endif
 
 ifneq ($(FEATURES),)
-CARGO_BUILD_FLAGS						+= --features $(FEATURES)
+CARGO_BUILD_FLAGS						+= --features "$(FEATURES)"
 endif
 
 # Make Goals

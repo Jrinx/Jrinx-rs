@@ -15,9 +15,9 @@ pub fn id() -> usize {
 
 pub fn time() -> Duration {
     match cpus::timebase_freq() {
-        Some(freq) => {
-            Duration::from_nanos((riscv::register::time::read() * 1_000_000_000 / freq) as u64)
-        }
+        Some(freq) => Duration::from_nanos(
+            riscv::register::time::read() as u64 * 1_000_000_000u64 / freq as u64,
+        ),
         None => Duration::ZERO,
     }
 }

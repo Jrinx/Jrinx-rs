@@ -15,6 +15,23 @@ pub mod cpus;
 pub mod layout;
 pub mod mm;
 
+#[naked]
+#[no_mangle]
+#[link_section = ".boot"]
+unsafe extern "C" fn _start() -> ! {
+    extern "C" {
+        fn _estack();
+    }
+    core::arch::asm!(
+        "la sp, {INIT_STACK_TOP}",
+        "mv tp, a0",
+        "call {MAIN}",
+        INIT_STACK_TOP = sym _estack,
+        MAIN = sym crate::main,
+        options(noreturn),
+    );
+}
+
 pub fn init() {
     unsafe {
         riscv::register::sstatus::set_sum();

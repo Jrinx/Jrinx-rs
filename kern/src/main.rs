@@ -33,12 +33,20 @@ mod mm;
 mod test;
 mod util;
 
+#[used(linker)]
+#[link_section = ".stack"]
+static INIT_STACK: [u8; conf::KSTACK_SIZE] = [0; conf::KSTACK_SIZE];
+
 fn main(_: usize, fdtaddr: *const u8) -> ! {
     logging::init();
 
+    let arch = core::option_env!("ARCH").unwrap_or("unknown");
     let build_time = core::option_env!("BUILD_TIME").unwrap_or("unknown");
     let build_mode = core::option_env!("BUILD_MODE").unwrap_or("unknown");
-    info!("build at {} in {} mode", build_time, build_mode);
+    info!(
+        "target-arch is {}, build at {} in {} mode",
+        arch, build_time, build_mode
+    );
 
     heap::init();
     arch::init();
