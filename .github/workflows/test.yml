@@ -49,7 +49,6 @@ jobs:
         with:
           key: ${{ runner.os }}-qemu-${{ steps.qemu-latest-tag.outputs.tag }}
           path: /opt/qemu/
-          restore-keys: ${{ runner.os }}-qemu-
 
       - name: Set Up Ninja
         if: steps.qemu-cache.outputs.cache-hit != 'true'
@@ -63,9 +62,6 @@ jobs:
           mkdir -p /opt/qemu/
           ./configure --prefix=/opt/qemu/ --target-list=riscv32-softmmu,riscv64-softmmu
           make -j$(nproc) && sudo make install
-
-      - name: List QEMU Binaries
-        run: ls -l /opt/qemu/bin/
 
   run-test:
     name: Test On Emulator
