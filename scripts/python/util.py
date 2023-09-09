@@ -98,7 +98,7 @@ def setup_envs() -> None:
         'BUILD_MODE': 'release',
         'BUILD_TIME': datetime.datetime.now().strftime(r'%Y-%m-%d %H:%M:%S'),
         'RAND_SEED': str(random.randint(0, 32767)),
-        'SMP': '5',
+        'SMP': '2',
         'MEMORY': '1G',
     }
 
