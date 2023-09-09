@@ -158,12 +158,6 @@ def run_testset_rich(testset: tuple[pathlib.Path],
             mp.cpu_count() if parallel else 1
         ).map(run, testset)
 
-    if any(result):
-        failed_testset = tuple(str(
-            test.relative_to(TESTS_DIR)
-        ) for (test, ret) in zip(testset, result) if ret != 0)
-        fatal(f'Failed in {failed_testset}')
-
     console.print('')  # newline
 
     return result
@@ -202,21 +196,17 @@ def main():
         subprocess.check_call(('cargo', 'make'))
 
     runner = run_testset_rich if args.rich else run_testset
-    board_list = read_board_list(os.environ['ARCH'])
 
-    for board in board_list:
-        result = runner(
+    def run(board) -> bool:
+        return any(runner(
             testset,
             include_dirs,
             board,
             parallel=args.parallel,
             verbose=args.verbose,
-        )
+        )) is False
 
-        if any(result):
-            exit(1)
-
-    exit(0)
+    exit(0 if all(map(run, read_board_list(os.environ['ARCH']))) else 1)
 
 
 if __name__ == '__main__':
