@@ -1,9 +1,0 @@
-export ARCH				?= riscv64
-export BOARD			?= virt
-export BUILD_MODE		?= release
-export BUILD_TIME		?= $(shell date "+%Y-%m-%d %H:%M:%S")
-export RAND_SEED		?= $(shell echo $$RANDOM)
-export SMP				?= 5
-export MEMORY			?= 1G
-export ARGS				?=
-export VERBOSE			?= true

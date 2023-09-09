@@ -146,11 +146,11 @@ class Test:
         try:
             env = os.environ.copy()
             if self.bootargs:
-                if (args := env.get('ARGS')) is not None:
-                    env['ARGS'] = args + ' ' + self.bootargs
+                if (args := env.get('BOOTARGS')) is not None:
+                    env['BOOTARGS'] = args + ' ' + self.bootargs
                 else:
-                    env['ARGS'] = self.bootargs
-            proc = subprocess.Popen(('make', 'run'),
+                    env['BOOTARGS'] = self.bootargs
+            proc = subprocess.Popen(('cargo', 'qemu'),
                                     env=env,
                                     stdin=subprocess.PIPE,
                                     stdout=subprocess.PIPE,
@@ -186,9 +186,9 @@ class Test:
                         info(f'Picked strings {picked_strs}')
                     if retire:
                         if verbose:
-                            info(f'Expected pattern defined found')
+                            info('Expected pattern defined found')
                         return
-            raise RuntimeError(f'Expected pattern not found')
+            raise RuntimeError('Expected pattern not found')
         finally:
             signal.alarm(0)
             eliminate_child(proc, timeout=Test.TIMEOUT, verbose=verbose)

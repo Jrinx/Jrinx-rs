@@ -1,12 +1,16 @@
-#[cfg(target_arch = "riscv32")]
-mod riscv32;
-#[cfg(target_arch = "riscv32")]
-pub use riscv32::*;
+use cfg_if::cfg_if;
 
-#[cfg(target_arch = "riscv64")]
-mod riscv64;
-#[cfg(target_arch = "riscv64")]
-pub use riscv64::*;
+cfg_if! {
+    if #[cfg(target_arch = "riscv32")] {
+        #[path = "riscv32/mod.rs"]
+        mod riscv32;
+        pub use riscv32::*;
+    } else if #[cfg(target_arch = "riscv64")] {
+        #[path = "riscv64/mod.rs"]
+        mod riscv64;
+        pub use riscv64::*;
+    }
+}
 
 use crate::error::HaltReason;
 
@@ -27,7 +31,7 @@ unsafe extern "C" fn _start() -> ! {
         "mv tp, a0",
         "call {MAIN}",
         INIT_STACK_TOP = sym _estack,
-        MAIN = sym crate::main,
+        MAIN = sym crate::cold_init,
         options(noreturn),
     );
 }

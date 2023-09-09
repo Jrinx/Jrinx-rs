@@ -194,12 +194,7 @@ def main():
         ))
 
     if not args.no_build:
-        subprocess.check_call(
-            ('make', 'build'),
-            env=dict(
-                os.environ,
-                VERBOSE='true' if args.verbose else 'false',
-            ))
+        subprocess.check_call(('cargo', 'make'))
 
     if args.rich:
         result = run_testset_rich(

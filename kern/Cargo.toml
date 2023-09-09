@@ -11,10 +11,13 @@ colorful = []
 [dependencies]
 bitflags = "2.4.0"
 buddy_system_allocator = { version = "0.9.0", features = ["const_fn"] }
+cfg-if = "1.0.0"
 fdt = "0.1.5"
 getargs = { version = "0.5.0", default-features = false }
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
 log = { version = "0.4.20", default-features = false }
+spin = "0.9.8"
+
+[target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]
 riscv = "0.10.1"
 sbi = "0.2.0"
-spin = "0.9.8"
