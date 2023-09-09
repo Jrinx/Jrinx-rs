@@ -37,26 +37,35 @@ impl Display for PagePerm {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 #[repr(C)]
 pub struct PageTableEntry {
     bits: usize,
 }
 
 impl PageTableEntry {
-    pub fn new(phys_addr: PhysAddr, perm: PagePerm) -> Self {
-        Self {
-            bits: (phys_addr.align_page_down().as_usize() >> 2) | perm.bits(),
+    pub fn set(&mut self, phys_addr: PhysAddr, perm: PagePerm) {
+        let mut perm = perm;
+        if perm.contains(PagePerm::R) {
+            perm.insert(PagePerm::A); // access-bit
         }
+        if perm.contains(PagePerm::W) {
+            perm.insert(PagePerm::D); // dirty-bit
+        }
+        self.bits = (phys_addr.align_page_down().as_usize() >> 2) | perm.bits();
     }
 
-    pub fn as_tuple(self) -> (PhysAddr, PagePerm) {
+    pub fn clr(&mut self) {
+        self.bits = 0;
+    }
+
+    pub fn as_tuple(&self) -> (PhysAddr, PagePerm) {
         let phys_addr = PhysAddr::new((self.bits << 2) & !(conf::PAGE_SIZE - 1));
         let perm = PagePerm::from_bits_truncate(self.bits);
         (phys_addr, perm)
     }
 
-    pub fn is_valid(self) -> bool {
+    pub fn is_valid(&self) -> bool {
         self.bits & PagePerm::V.bits() != 0
     }
 }

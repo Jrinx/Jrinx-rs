@@ -49,12 +49,15 @@ pub fn run(arg: &MakeArg) -> Option<ExitStatus> {
 
     let cmd = &mut Command::new(env!("CARGO"));
 
-    if always_make {
-        Command::new(env!("CARGO"))
+    if always_make
+        && !Command::new(env!("CARGO"))
             .current_dir("kern")
             .arg("clean")
             .status()
-            .ok()?;
+            .ok()?
+            .success()
+    {
+        return None;
     }
 
     cmd.current_dir("kern")

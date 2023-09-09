@@ -123,7 +123,7 @@ impl PageTable {
             } else if !pte.is_valid() {
                 let frame = PhysFrame::alloc()?;
                 let addr = frame.addr();
-                *pte = PageTableEntry::new(addr, PagePerm::V);
+                pte.set(addr, PagePerm::V);
                 self.frames.insert(arch::mm::phys_to_virt(addr), frame);
             }
             (pa, _) = pte.as_tuple();
@@ -168,7 +168,7 @@ impl PageTable {
         self.frames.insert(addr, phys_frame);
 
         let pte = self.find_or_create(addr)?;
-        *pte = PageTableEntry::new(phys_addr, perm | PagePerm::V);
+        pte.set(phys_addr, perm | PagePerm::V);
         Ok(())
     }
 
@@ -178,7 +178,7 @@ impl PageTable {
             .remove(&addr)
             .ok_or(InternalError::InvalidVirtAddr)?;
         let pte = self.find(addr)?;
-        *pte = PageTableEntry::new(PhysAddr::new(0), PagePerm::empty());
+        pte.clr();
         Ok(())
     }
 
@@ -186,7 +186,7 @@ impl PageTable {
         let addr = addr.align_page_down();
         let phys_addr = PhysAddr::new(addr.as_usize());
         let pte = self.find_or_create(addr)?;
-        *pte = PageTableEntry::new(phys_addr, perm | PagePerm::V);
+        pte.set(phys_addr, perm | PagePerm::V);
         Ok(())
     }
 }

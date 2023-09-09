@@ -43,8 +43,8 @@ pub fn run(arg: &QemuArg) -> Option<ExitStatus> {
         make_arg,
     } = arg.clone();
 
-    if !no_build {
-        make::run(&make_arg)?;
+    if !no_build && !make::run(&make_arg)?.success() {
+        return None;
     }
 
     let MakeArg { debug, arch, .. } = make_arg;
