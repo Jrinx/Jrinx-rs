@@ -104,3 +104,16 @@ def setup_envs() -> None:
 
     for key, value in envs.items():
         os.environ[key] = os.environ.get(key, value)
+
+
+def read_board_list(arch: str) -> list[str]:
+    board_list_dir = dir_ancestor_find(
+        pathlib.Path(__file__),
+        'scripts',
+    ).parent / 'kern' / 'tgt'
+
+    while not (board_list_file := board_list_dir / f'{arch}-board.list').exists():
+        arch = arch[:-1]
+
+    with board_list_file.open() as f:
+        return f.read().splitlines()

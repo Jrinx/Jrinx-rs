@@ -20,6 +20,7 @@ TESTS_DIR = dir_ancestor_find(
 
 def run_test(file: pathlib.Path,
              include_dirs: list[pathlib.Path],
+             board: str,
              /, *,
              verbose: bool = False,
              pre_run: Callable[[], None],
@@ -35,10 +36,11 @@ def run_test(file: pathlib.Path,
     for inc_dir in include_dirs:
         cmd.extend(('-I', str(inc_dir)))
     try:
+        env = dict(os.environ, BOARD=board)
         if verbose:
-            subprocess.check_call(cmd)
+            subprocess.check_call(cmd, env=env)
         else:
-            subprocess.check_call(cmd, stderr=subprocess.DEVNULL)
+            subprocess.check_call(cmd, env=env, stderr=subprocess.DEVNULL)
     except subprocess.CalledProcessError as e:
         on_failure()
         return e.returncode
@@ -49,13 +51,13 @@ def run_test(file: pathlib.Path,
 
 def run_testset(testset: tuple[pathlib.Path],
                 include_dirs: list[pathlib.Path],
+                board: str,
                 /, *,
                 parallel: bool = False,
                 verbose: bool = False,
                 ) -> Sequence[int]:
     info(
-        f'Run testset on {os.environ["ARCH"]} \
-({os.environ["BOARD"]}) in {os.environ["BUILD_MODE"]} mode'
+        f'Run testset on {os.environ["ARCH"]} ({board}) in {os.environ["BUILD_MODE"]} mode'
     )
 
     def run(file: pathlib.Path) -> int:
@@ -63,6 +65,7 @@ def run_testset(testset: tuple[pathlib.Path],
         return run_test(
             file,
             include_dirs,
+            board,
             verbose=verbose,
             pre_run=lambda: info(f'Run    {slug}'),
             on_success=lambda: info(f'Passed {slug}'),
@@ -84,6 +87,7 @@ def run_testset(testset: tuple[pathlib.Path],
 
 def run_testset_rich(testset: tuple[pathlib.Path],
                      include_dirs: list[pathlib.Path],
+                     board: str,
                      /, *,
                      parallel: bool = False,
                      verbose: bool = False,
@@ -102,8 +106,7 @@ def run_testset_rich(testset: tuple[pathlib.Path],
     def gen_table():
         table = Table('Test', 'Status (waiting|running|passed|failed)')
         table.title = Text(
-            f'Run testset on {os.environ["ARCH"]} \
-({os.environ["BOARD"]}) in {os.environ["BUILD_MODE"]} mode',
+            f'Run testset on {os.environ["ARCH"]} ({board}) in {os.environ["BUILD_MODE"]} mode',
             style='bold',
         )
         for test, status in test_status.items():
@@ -119,7 +122,6 @@ def run_testset_rich(testset: tuple[pathlib.Path],
         return Align.center(table)
 
     console = Console()
-    console.clear()
 
     with Live(
         gen_table(),
@@ -145,6 +147,7 @@ def run_testset_rich(testset: tuple[pathlib.Path],
             return run_test(
                 file,
                 include_dirs,
+                board,
                 verbose=verbose,
                 pre_run=pre_run,
                 on_success=on_success,
@@ -160,6 +163,8 @@ def run_testset_rich(testset: tuple[pathlib.Path],
             test.relative_to(TESTS_DIR)
         ) for (test, ret) in zip(testset, result) if ret != 0)
         fatal(f'Failed in {failed_testset}')
+
+    console.print('')  # newline
 
     return result
 
@@ -196,22 +201,22 @@ def main():
     if not args.no_build:
         subprocess.check_call(('cargo', 'make'))
 
-    if args.rich:
-        result = run_testset_rich(
+    runner = run_testset_rich if args.rich else run_testset
+    board_list = read_board_list(os.environ['ARCH'])
+
+    for board in board_list:
+        result = runner(
             testset,
             include_dirs,
-            parallel=args.parallel,
-            verbose=args.verbose,
-        )
-    else:
-        result = run_testset(
-            testset,
-            include_dirs,
+            board,
             parallel=args.parallel,
             verbose=args.verbose,
         )
 
-    exit(any(result))
+        if any(result):
+            exit(1)
+
+    exit(0)
 
 
 if __name__ == '__main__':
