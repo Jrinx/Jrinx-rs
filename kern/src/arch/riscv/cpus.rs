@@ -14,7 +14,7 @@ fn probe(node: &FdtNode) -> Result<()> {
     unsafe {
         TIMEBASE_FREQ = timebase_freq;
     }
-    info!("cpus timebase-frequency: {} Hz", timebase_freq);
+    debug!("cpus timebase-frequency: {} Hz", timebase_freq);
     Ok(())
 }
 

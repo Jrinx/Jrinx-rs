@@ -4,7 +4,7 @@ pub fn init() {
     if let Some(seed) = option_env!("RAND_SEED") {
         let x = unsafe { &mut SEED };
         let seed: usize = seed.parse().unwrap();
-        info!("pseudo random seed: {}", seed);
+        trace!("pseudo random seed: {}", seed);
         *x = seed;
     }
 }

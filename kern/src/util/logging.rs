@@ -28,7 +28,7 @@ macro_rules! println {
 
 impl log::Log for Logger {
     fn enabled(&self, metadata: &log::Metadata) -> bool {
-        metadata.level() <= log::Level::Info
+        metadata.level() <= log::max_level()
     }
 
     fn log(&self, record: &log::Record) {
@@ -42,7 +42,8 @@ impl log::Log for Logger {
             log::Level::Error => color::ColorCode::RED,
             log::Level::Warn => color::ColorCode::YELLOW,
             log::Level::Info => color::ColorCode::GREEN,
-            _ => return,
+            log::Level::Debug => color::ColorCode::CYAN,
+            log::Level::Trace => color::ColorCode::MAGENTA,
         };
         print_fmt(with_color! {
             color::ColorCode::White,
@@ -52,7 +53,7 @@ impl log::Log for Logger {
                 format_args!("{s:>6}.{us:06}", s = micros / 1000000, us = micros % 1000000)
             },
             id = cpu_id,
-            level = with_color!(color, "{}", level),
+            level = with_color!(color, "{:>5}", level),
             args = with_color!(color::ColorCode::White, "{}", record.args()),
         });
     }
@@ -63,5 +64,9 @@ impl log::Log for Logger {
 pub fn init() {
     static LOGGER: Logger = Logger;
     log::set_logger(&LOGGER).unwrap();
-    log::set_max_level(log::LevelFilter::Info);
+    if let Some(level) = option_env!("LOGLEVEL") {
+        log::set_max_level(level.parse().unwrap());
+    } else {
+        log::set_max_level(log::LevelFilter::Info);
+    }
 }

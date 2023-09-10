@@ -1,9 +1,13 @@
 pub mod bootargs;
 pub mod serial;
 
-use core::mem;
+use core::{fmt::Display, mem};
 
-use alloc::vec::Vec;
+use alloc::{
+    borrow::ToOwned,
+    string::{String, ToString},
+    vec::Vec,
+};
 use fdt::{node::FdtNode, Fdt};
 
 use crate::error::Result;
@@ -14,6 +18,20 @@ pub enum DevIdent {
     Compatible(&'static str),
     DeviceType(&'static str),
     NodePath(&'static str),
+}
+
+impl Display for DevIdent {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                DevIdent::Compatible(compat) => compat,
+                DevIdent::DeviceType(devtyp) => devtyp,
+                DevIdent::NodePath(path) => path,
+            }
+        )
+    }
 }
 
 #[repr(C)]
@@ -89,19 +107,29 @@ pub(super) fn init(fdtaddr: *const u8) {
         })
         .for_each(|(path, probe)| {
             dt.find_all_nodes(path)
-                .for_each(|node| probe(&node).unwrap());
+                .for_each(|node| do_probe(probe, path.to_owned(), &node));
         });
 
     // probe compatible/device-type specific devices
     dt.all_nodes().for_each(|node| {
         devs.iter()
-            .filter_map(|dev| dev.suit(&node))
-            .for_each(|probe| {
-                probe(&node).unwrap();
-            })
+            .filter_map(|dev| dev.suit(&node).map(|probe| (&dev.ident, probe)))
+            .for_each(|(ident, probe)| do_probe(probe, ident.to_string(), &node));
     });
 
     if let Some(bootargs) = dt.chosen().bootargs() {
         bootargs::set(bootargs);
+    }
+}
+
+fn do_probe<P>(probe: P, ident: String, node: &FdtNode)
+where
+    P: Fn(&FdtNode) -> Result<()>,
+{
+    trace!("probe {} begin", ident);
+    if let Err(err) = probe(node) {
+        error!("probe {} failed: {:?}", ident, err);
+    } else {
+        trace!("probe {} end", ident);
     }
 }

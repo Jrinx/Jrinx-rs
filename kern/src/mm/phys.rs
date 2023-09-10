@@ -230,15 +230,15 @@ fn probe(node: &FdtNode) -> Result<()> {
     for mem_region in node.reg().ok_or(InternalError::DevProbeError)? {
         let addr = PhysAddr::new(mem_region.starting_address as usize);
         let size = mem_region.size.ok_or(InternalError::DevProbeError)?;
-        info!("probed physical memory region: {} - {}", addr, addr + size);
+        trace!("probed physical memory region: {} - {}", addr, addr + size);
         allocator.append_region((addr, size));
     }
     for (addr, size) in arch::layout::get_prot_addrs() {
-        info!("probed protected memory region: {} - {}", addr, addr + size);
+        trace!("probed protected memory region: {} - {}", addr, addr + size);
         allocator.remove_region((arch::mm::virt_to_phys(addr), size));
     }
     allocator.set_init_regions();
-    info!(
+    debug!(
         "usable physical memory regions: {}",
         allocator
             .get_init_regions()
@@ -246,7 +246,6 @@ fn probe(node: &FdtNode) -> Result<()> {
             .collect::<Vec<_>>()
             .join(",")
     );
-
     Ok(())
 }
 
@@ -269,7 +268,7 @@ pub(super) fn init() {
             / 128))
         .align_page_up()
         - heap_start;
-    info!(
+    debug!(
         "enlarge heap with memory region: {} - {}",
         heap_start,
         heap_start + heap_size,

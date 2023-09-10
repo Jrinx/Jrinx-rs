@@ -16,6 +16,9 @@ pub struct MakeArg {
     #[clap(flatten)]
     pub arch: ArchArg,
 
+    #[clap(long)]
+    pub log_level: Option<String>,
+
     #[clap(long, short = 'f')]
     pub feat: Vec<String>,
 
@@ -40,6 +43,7 @@ pub fn run(arg: &MakeArg) -> Option<ExitStatus> {
     let MakeArg {
         debug,
         arch,
+        log_level,
         feat,
         no_default_feat,
         always_make,
@@ -90,6 +94,9 @@ pub fn run(arg: &MakeArg) -> Option<ExitStatus> {
         ]);
     if !debug {
         cmd.arg("--release");
+    }
+    if let Some(level) = log_level {
+        cmd.env("LOGLEVEL", level);
     }
     cmd.status().ok()
 }

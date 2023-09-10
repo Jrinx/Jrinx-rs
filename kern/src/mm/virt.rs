@@ -265,6 +265,6 @@ pub(super) fn init() {
             pt.kernel_map(arch::mm::phys_to_virt(addr), perm).unwrap();
         }
     }
-    info!("enable page table ({}) mapping", pt.addr());
+    debug!("enable page table ({}) mapping", pt.addr());
     arch::mm::virt::enable_pt_mapping(&pt);
 }
