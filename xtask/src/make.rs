@@ -1,5 +1,5 @@
 use std::{
-    env,
+    env, fs,
     process::{Command, ExitStatus},
 };
 
@@ -53,9 +53,11 @@ pub fn run(arg: &MakeArg) -> Option<ExitStatus> {
 
     let cmd = &mut Command::new(env!("CARGO"));
 
+    let kern_path = &fs::canonicalize("kern").unwrap();
+
     if always_make
         && !Command::new(env!("CARGO"))
-            .current_dir("kern")
+            .current_dir(kern_path)
             .arg("clean")
             .status()
             .ok()?
@@ -64,7 +66,7 @@ pub fn run(arg: &MakeArg) -> Option<ExitStatus> {
         return None;
     }
 
-    cmd.current_dir("kern")
+    cmd.current_dir(kern_path)
         .arg("build")
         .args(["--target", format!("tgt/{}.json", arch).as_str()])
         .args([
