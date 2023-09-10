@@ -18,6 +18,7 @@ pub mod cpu;
 pub mod cpus;
 pub mod layout;
 pub mod mm;
+pub mod trap;
 
 #[naked]
 #[no_mangle]
@@ -40,6 +41,7 @@ pub fn init() {
     unsafe {
         riscv::register::sstatus::set_sum();
     }
+    trap::init();
 }
 
 pub fn halt(reason: HaltReason) -> ! {

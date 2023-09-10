@@ -4,6 +4,7 @@
 #![feature(linkage)]
 #![feature(map_try_insert)]
 #![feature(naked_functions)]
+#![feature(offset_of)]
 #![feature(panic_info_message)]
 #![feature(stmt_expr_attributes)]
 #![feature(used_with_arg)]
@@ -36,6 +37,7 @@ mod error;
 mod heap;
 mod mm;
 mod test;
+mod trap;
 mod util;
 
 #[used(linker)]
