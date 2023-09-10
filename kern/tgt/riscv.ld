@@ -29,6 +29,11 @@ SECTIONS {
         PROVIDE(_sdev = .);
         *(.dev*)
         PROVIDE(_edev = .);
+
+        . = ALIGN(8);
+        PROVIDE(_stest = .);
+        *(.test*)
+        PROVIDE(_etest = .);
     }
     PROVIDE(_erodata = .);
 

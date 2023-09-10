@@ -1,7 +1,8 @@
 pub(super) mod breakpoint {
-    use crate::{arch, trap::breakpoint::get_breakpoint_count};
+    use crate::{arch, test::test_define, trap::breakpoint::get_breakpoint_count};
 
-    pub(in crate::test) fn test() {
+    test_define!("trap::breakpoint" => test);
+    fn test() {
         for i in 0..10 {
             assert_eq!(get_breakpoint_count(), i);
             arch::trap::raise_breakpoint();

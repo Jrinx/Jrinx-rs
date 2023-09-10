@@ -6,9 +6,11 @@ pub(super) mod phys {
     use crate::{
         error::Result,
         mm::phys::{PhysAddr, PhysFrame},
+        test::test_define,
     };
 
-    pub fn test() {
+    test_define!("mm::phys" => test);
+    fn test() {
         let (frame1, addr1) = alloc().unwrap();
         let (frame2, addr2) = alloc().unwrap();
 
@@ -44,10 +46,12 @@ pub(super) mod virt {
             phys::PhysFrame,
             virt::{VirtAddr, KERN_PAGE_TABLE},
         },
+        test::test_define,
         util::random,
     };
 
-    pub fn test() {
+    test_define!("mm::virt" => test);
+    fn test() {
         let vaddr1 = VirtAddr::new(conf::PAGE_SIZE);
         let vaddr2 = VirtAddr::new(conf::PAGE_SIZE * 2);
 

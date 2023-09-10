@@ -2,16 +2,39 @@ mod heap;
 mod mm;
 mod trap;
 
-static TEST_CASES: &[(&'static str, fn())] = &[
-    ("heap", heap::test),
-    ("mm::phys", mm::phys::test),
-    ("mm::virt", mm::virt::test),
-    ("trap::breakpoint", trap::breakpoint::test),
-];
+use core::mem;
+
+pub(in crate::test) struct TestDef {
+    name: &'static str,
+    test: fn(),
+}
+
+macro_rules! test_define {
+    ($name:literal => $test:ident) => {
+        #[used(linker)]
+        #[link_section = concat!(".test.", $name)]
+        static TEST_DEF: &$crate::test::TestDef = &$crate::test::TestDef {
+            name: $name,
+            test: $test,
+        };
+    };
+}
+pub(crate) use test_define;
 
 pub fn find(test: &str) -> Option<fn()> {
-    TEST_CASES
-        .iter()
-        .find(|(name, _)| *name == test)
-        .map(|(_, test)| *test)
+    extern "C" {
+        fn _stest();
+        fn _etest();
+    }
+
+    (_stest as usize.._etest as usize)
+        .step_by(mem::size_of::<&TestDef>())
+        .map(|a| unsafe { *(a as *const &TestDef) })
+        .find_map(|test_def| {
+            if test_def.name == test {
+                Some(test_def.test)
+            } else {
+                None
+            }
+        })
 }
