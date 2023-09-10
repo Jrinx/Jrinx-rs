@@ -253,7 +253,7 @@ pub(super) fn init() {
     for (addr, size) in phys::get_init_regions() {
         let perm = PagePerm::G | PagePerm::R | PagePerm::W | PagePerm::V;
         info!(
-            "mapping physical memory region {} - {} with perm {}",
+            "mapping memory region  ({} - {}) with perm {}",
             addr,
             addr + size,
             perm
