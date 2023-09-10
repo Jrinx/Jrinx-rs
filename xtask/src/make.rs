@@ -16,7 +16,7 @@ pub struct MakeArg {
     #[clap(flatten)]
     pub arch: ArchArg,
 
-    #[clap(long)]
+    #[clap(long, env = "LOGLEVEL")]
     pub log_level: Option<String>,
 
     #[clap(long, short = 'f')]
