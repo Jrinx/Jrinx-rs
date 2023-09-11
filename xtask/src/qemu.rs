@@ -47,7 +47,7 @@ pub fn run(arg: &QemuArg) -> Option<ExitStatus> {
         return None;
     }
 
-    let MakeArg { debug, arch, .. } = make_arg;
+    let MakeArg { arch, .. } = make_arg;
     let ArchArg { arch, .. } = arch;
 
     let cmd = &mut Command::new(format!("qemu-system-{}", arch));
@@ -58,7 +58,7 @@ pub fn run(arg: &QemuArg) -> Option<ExitStatus> {
             format!(
                 "target/{}/{}/jrinx",
                 arch,
-                if debug { "debug" } else { "release" }
+                std::env::var_os("BUILD_MODE").unwrap().to_str().unwrap(),
             )
             .as_str(),
         ])

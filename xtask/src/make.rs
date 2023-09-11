@@ -41,12 +41,12 @@ pub fn run(arg: &MakeArg) -> Option<ExitStatus> {
     setup_envs(arg);
 
     let MakeArg {
-        debug,
         arch,
         log_level,
         feat,
         no_default_feat,
         always_make,
+        ..
     } = arg.clone();
 
     let ArchArg { arch, .. } = arch;
@@ -94,7 +94,7 @@ pub fn run(arg: &MakeArg) -> Option<ExitStatus> {
                 .join(",")
                 .as_str(),
         ]);
-    if !debug {
+    if !std::env::var_os("BUILD_MODE").is_some_and(|mode| mode == "debug") {
         cmd.arg("--release");
     }
     if let Some(level) = log_level {
