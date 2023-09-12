@@ -4,6 +4,7 @@ use core::mem::size_of;
 
 use riscv::register::{
     scause::{Exception, Interrupt},
+    sstatus::{FS, SPP},
     utvec::TrapMode,
 };
 
@@ -102,15 +103,6 @@ pub struct Context {
 }
 
 impl AbstractContext for Context {
-    fn run(&mut self) {
-        extern "C" {
-            fn run_user(ctx: &mut Context);
-        }
-        unsafe {
-            run_user(self);
-        }
-    }
-
     fn trap_reason(&self) -> TrapReason {
         let cause = self.scause;
         let is_interrupt = (cause & (1 << (size_of::<usize>() * 8 - 1))) != 0;
@@ -140,12 +132,28 @@ impl AbstractContext for Context {
         }
     }
 
+    fn setup_user(&mut self, entry_point: usize, stack_top: usize) {
+        self.regs.sp = stack_top;
+        self.sstatus = 1 << 18 | (FS::Initial as usize) << 13 | (SPP::User as usize) << 8 | 1 << 5; // sum | fs | spp | spie
+        self.sie = 1 << 9 | 1 << 5 | 1 << 1; // external int | timer int | software int
+        self.sepc = entry_point;
+    }
+
     fn acc_pc(&mut self) {
         let is_rvc = (unsafe { core::ptr::read_volatile(self.sepc as *const u8) & 0b11 }) != 0b11;
         if is_rvc {
             self.sepc += 2;
         } else {
             self.sepc += 4;
+        }
+    }
+
+    fn run(&mut self) {
+        extern "C" {
+            fn run_user(ctx: &mut Context);
+        }
+        unsafe {
+            run_user(self);
         }
     }
 }

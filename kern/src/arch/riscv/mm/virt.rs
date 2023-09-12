@@ -12,7 +12,7 @@ use crate::{
 };
 
 bitflags! {
-    #[derive(Debug, Clone, Copy)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub struct PagePerm: usize {
         const V = 1 << 0;
         const R = 1 << 1;

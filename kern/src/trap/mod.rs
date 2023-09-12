@@ -2,7 +2,7 @@ use crate::{arch::mm::virt::PagePerm, mm::virt::VirtAddr};
 
 pub mod breakpoint;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TrapReason {
     Interrupt(usize),
     Breakpoint { addr: VirtAddr },

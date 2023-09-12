@@ -16,6 +16,8 @@ cfg_if! {
 pub trait AbstractContext: Debug + Default + Clone + Copy {
     fn trap_reason(&self) -> TrapReason;
 
+    fn setup_user(&mut self, entry_point: usize, stack_top: usize);
+
     fn acc_pc(&mut self);
 
     fn run(&mut self);
