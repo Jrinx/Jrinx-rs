@@ -206,7 +206,11 @@ def main():
             verbose=args.verbose,
         )) is False
 
-    exit(0 if all(map(run, read_board_list(os.environ['ARCH']))) else 1)
+    exit_code = 0
+    for board in read_board_list(os.environ['ARCH']):
+        exit_code += int(not run(board))
+
+    exit(exit_code)
 
 
 if __name__ == '__main__':
