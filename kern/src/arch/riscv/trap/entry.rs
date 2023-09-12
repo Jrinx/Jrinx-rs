@@ -329,9 +329,11 @@ core::arch::global_asm! {
         ST_REG s1, 1 * XLENB
         ST_REG s0, 0 * XLENB
 
-        ST_REG sp, 0
+        mv t0, sp
 
         mv sp, a0
+        ST_REG t0, 0
+
         csrw sscratch, sp
 
     trap_exit:
