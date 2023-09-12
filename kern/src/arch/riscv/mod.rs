@@ -54,3 +54,9 @@ pub fn halt(reason: HaltReason) -> ! {
     );
     unreachable!();
 }
+
+pub fn breakpoint() {
+    unsafe {
+        riscv::asm::ebreak();
+    }
+}

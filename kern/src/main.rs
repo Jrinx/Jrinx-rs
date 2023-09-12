@@ -12,7 +12,6 @@
 #![no_std]
 #![no_main]
 
-use cfg_if::cfg_if;
 use error::HaltReason;
 
 use crate::util::{logging, random};
@@ -22,15 +21,7 @@ extern crate alloc;
 #[macro_use]
 extern crate log;
 
-cfg_if! {
-    if #[cfg(any(target_arch = "riscv64", target_arch = "riscv32"))] {
-        #[path = "arch/riscv/mod.rs"]
-        mod arch;
-    } else {
-        compile_error!("unsupported target_arch");
-    }
-}
-
+mod arch;
 mod conf;
 mod driver;
 mod error;
