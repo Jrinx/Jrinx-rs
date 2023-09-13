@@ -28,7 +28,7 @@ pub(super) mod page_fault {
         if #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))] {
             macro_rules! code_read_zero {
                 ($addr:expr) => {
-                    (||{
+                    {
                         unsafe {
                             *($addr.as_usize() as *mut u32) = *(check_addr_protection as usize as *const u32);
                         }
@@ -37,13 +37,13 @@ pub(super) mod page_fault {
                         unsafe extern "C" fn check_addr_protection() -> ! {
                             core::arch::asm!("lw zero, 0(zero)", options(noreturn));
                         }
-                    })()
+                    }
                 };
             }
 
             macro_rules! code_write_zero {
                 ($addr:expr) => {
-                    (||{
+                    {
                         unsafe {
                             *($addr.as_usize() as *mut u32) = *(check_addr_protection as usize as *const u32);
                         }
@@ -52,7 +52,7 @@ pub(super) mod page_fault {
                         unsafe extern "C" fn check_addr_protection() -> ! {
                             core::arch::asm!("sw zero, 0(zero)", options(noreturn));
                         }
-                    })()
+                    }
                 };
             }
         }
@@ -121,7 +121,7 @@ pub(super) mod syscall {
     #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
     macro_rules! code_syscall_with_num {
         ($addr:expr, $num:literal) => {
-            (|| {
+            {
                 unsafe {
                     *($addr.as_usize() as *mut u64) = *(syscall_with_num as *const u64);
                 }
@@ -130,7 +130,7 @@ pub(super) mod syscall {
                 unsafe extern "C" fn syscall_with_num() -> ! {
                     core::arch::asm!("ori a7, zero, {}", "ecall", const $num, options(noreturn));
                 }
-            })()
+            }
         };
     }
 
