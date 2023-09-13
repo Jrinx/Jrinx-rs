@@ -9,7 +9,8 @@ pub fn handle(ctx: &mut impl AbstractContext) {
         panic!("not a breakpoint trap");
     };
 
-    debug!("breakpoint at {}", addr);
+    debug!("breakpoint at {}\n{:#x?}", addr, ctx);
+
     let mut counter = BREAKPOINT_COUNTER.write();
     *counter += 1;
 
