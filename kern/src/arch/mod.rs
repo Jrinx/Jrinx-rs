@@ -20,5 +20,9 @@ pub trait AbstractContext: Debug + Default + Clone + Copy {
 
     fn acc_pc(&mut self);
 
+    fn get_syscall_num(&self) -> usize;
+
+    fn set_syscall_ret(&mut self, ret: usize);
+
     fn run(&mut self);
 }

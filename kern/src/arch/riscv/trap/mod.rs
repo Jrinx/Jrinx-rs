@@ -112,6 +112,7 @@ impl AbstractContext for Context {
         } else {
             let code = Exception::from(cause);
             match code {
+                Exception::UserEnvCall => TrapReason::SystemCall,
                 Exception::Breakpoint => TrapReason::Breakpoint {
                     addr: VirtAddr::new(self.sepc),
                 },
@@ -146,6 +147,14 @@ impl AbstractContext for Context {
         } else {
             self.sepc += 4;
         }
+    }
+
+    fn get_syscall_num(&self) -> usize {
+        self.regs.a7
+    }
+
+    fn set_syscall_ret(&mut self, ret: usize) {
+        self.regs.a0 = ret;
     }
 
     fn run(&mut self) {
