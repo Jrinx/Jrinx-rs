@@ -9,3 +9,9 @@ pub fn virt_to_phys(addr: VirtAddr) -> PhysAddr {
 pub fn phys_to_virt(addr: PhysAddr) -> VirtAddr {
     VirtAddr::new(addr.as_usize())
 }
+
+pub fn ibar() {
+    unsafe {
+        core::arch::asm!("fence.i");
+    }
+}
