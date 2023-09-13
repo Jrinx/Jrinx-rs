@@ -1,5 +1,7 @@
 # Jrinx-rs
 
+![test](https://github.com/Coekjan/Jrinx-rs/actions/workflows/test.yml/badge.svg?branch=master)
+
 Jrinx-rs 是 [Jrinx](https://github.com/Coekjan/Jrinx) 的 Rust 语言版本。
 
 ## 快速开始
