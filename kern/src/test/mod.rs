@@ -2,6 +2,8 @@ mod heap;
 mod mm;
 mod trap;
 
+use cfg_if::cfg_if;
+
 use core::mem;
 
 use crate::conf;
@@ -11,15 +13,29 @@ pub(in crate::test) struct TestDef {
     test: fn(),
 }
 
-macro_rules! test_define {
-    ($name:literal => $test:ident) => {
-        #[used(linker)]
-        #[link_section = concat!(".test.", $name)]
-        static TEST_DEF: &$crate::test::TestDef = &$crate::test::TestDef {
-            name: $name,
-            test: $test,
-        };
-    };
+cfg_if! {
+    if #[cfg(feature = "no_test")] {
+        macro_rules! test_define {
+            ($name:literal => $test:ident) => {
+                #[used]
+                static TEST_DEF: &$crate::test::TestDef = &$crate::test::TestDef {
+                    name: $name,
+                    test: $test,
+                };
+            };
+        }
+    } else {
+        macro_rules! test_define {
+            ($name:literal => $test:ident) => {
+                #[used(linker)]
+                #[link_section = concat!(".test.", $name)]
+                static TEST_DEF: &$crate::test::TestDef = &$crate::test::TestDef {
+                    name: $name,
+                    test: $test,
+                };
+            };
+        }
+    }
 }
 pub(crate) use test_define;
 

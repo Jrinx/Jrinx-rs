@@ -5,6 +5,7 @@ edition = "2021"
 build = "build.rs"
 
 [features]
+no_test = []
 pt_level_2 = []
 pt_level_3 = []
 colorful = []
