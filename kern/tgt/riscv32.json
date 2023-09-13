@@ -4,6 +4,7 @@
     "target-endian": "little",
     "target-pointer-width": "32",
     "target-c-int-width": "32",
+    "code-model": "medium",
     "os": "none",
     "arch": "riscv32",
     "cpu": "generic-rv32",
@@ -18,5 +19,5 @@
     },
     "executables": true,
     "panic-strategy": "abort",
-    "relocation-model": "pie"
+    "relocation-model": "static"
 }
