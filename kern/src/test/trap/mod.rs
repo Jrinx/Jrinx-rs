@@ -12,6 +12,8 @@ pub(super) mod breakpoint {
 }
 
 pub(super) mod page_fault {
+    use cfg_if::cfg_if;
+
     use crate::{
         arch::{self, mm::virt::PagePerm, AbstractContext},
         mm::{
@@ -21,6 +23,40 @@ pub(super) mod page_fault {
         test::test_define,
         trap::TrapReason,
     };
+
+    cfg_if! {
+        if #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))] {
+            macro_rules! code_read_zero {
+                ($addr:expr) => {
+                    (||{
+                        unsafe {
+                            *($addr.as_usize() as *mut u32) = *(check_addr_protection as usize as *const u32);
+                        }
+                        arch::mm::ibar();
+                        #[naked]
+                        unsafe extern "C" fn check_addr_protection() -> ! {
+                            core::arch::asm!("lw zero, 0(zero)", options(noreturn));
+                        }
+                    })()
+                };
+            }
+
+            macro_rules! code_write_zero {
+                ($addr:expr) => {
+                    (||{
+                        unsafe {
+                            *($addr.as_usize() as *mut u32) = *(check_addr_protection as usize as *const u32);
+                        }
+                        arch::mm::ibar();
+                        #[naked]
+                        unsafe extern "C" fn check_addr_protection() -> ! {
+                            core::arch::asm!("sw zero, 0(zero)", options(noreturn));
+                        }
+                    })()
+                };
+            }
+        }
+    }
 
     const USER_TEXT: usize = 0x10000;
 
@@ -38,17 +74,18 @@ pub(super) mod page_fault {
         );
 
         let frame = phys::PhysFrame::alloc().unwrap();
+        let addr = frame.addr();
         KERN_PAGE_TABLE
             .write()
             .map(
                 VirtAddr::new(USER_TEXT),
                 frame,
-                PagePerm::U | PagePerm::R | PagePerm::W | PagePerm::X,
+                PagePerm::U | PagePerm::R | PagePerm::X,
             )
             .unwrap();
         arch::mm::virt::sync(0, VirtAddr::new(USER_TEXT));
 
-        code_read_zero(VirtAddr::new(USER_TEXT));
+        code_read_zero!(arch::mm::phys_to_virt(addr));
         ctx.run();
         assert_eq!(
             ctx.trap_reason(),
@@ -58,7 +95,7 @@ pub(super) mod page_fault {
             }
         );
 
-        code_write_zero(VirtAddr::new(USER_TEXT));
+        code_write_zero!(arch::mm::phys_to_virt(addr));
         ctx.run();
         assert_eq!(
             ctx.trap_reason(),
@@ -67,30 +104,6 @@ pub(super) mod page_fault {
                 perm: PagePerm::W,
             }
         );
-    }
-
-    #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
-    fn code_write_zero(addr: VirtAddr) {
-        unsafe {
-            *(addr.as_usize() as *mut u32) = *(check_addr_protection as usize as *const u32);
-        }
-
-        #[naked]
-        unsafe extern "C" fn check_addr_protection() -> ! {
-            core::arch::asm!("sw zero, 0(zero)", options(noreturn));
-        }
-    }
-
-    #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
-    fn code_read_zero(addr: VirtAddr) {
-        unsafe {
-            *(addr.as_usize() as *mut u32) = *(check_addr_protection as usize as *const u32);
-        }
-
-        #[naked]
-        unsafe extern "C" fn check_addr_protection() -> ! {
-            core::arch::asm!("lw zero, 0(zero)", options(noreturn));
-        }
     }
 }
 
