@@ -4,6 +4,8 @@ mod trap;
 
 use core::mem;
 
+use crate::conf;
+
 pub(in crate::test) struct TestDef {
     name: &'static str,
     test: fn(),
@@ -22,12 +24,7 @@ macro_rules! test_define {
 pub(crate) use test_define;
 
 pub fn find(test: &str) -> Option<fn()> {
-    extern "C" {
-        fn _stest();
-        fn _etest();
-    }
-
-    (_stest as usize.._etest as usize)
+    (conf::layout::_stest()..conf::layout::_etest())
         .step_by(mem::size_of::<&TestDef>())
         .map(|a| unsafe { *(a as *const &TestDef) })
         .find_map(|test_def| {

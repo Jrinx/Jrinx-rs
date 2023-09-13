@@ -254,11 +254,8 @@ device_probe! {
 }
 
 pub(super) fn init() {
-    extern "C" {
-        fn _end();
-    }
     let mut allocator = PHYS_FRAME_ALLOCATOR.lock();
-    let heap_start = VirtAddr::new(_end as usize).align_page_up();
+    let heap_start = VirtAddr::new(conf::layout::_end()).align_page_up();
     let heap_size = (heap_start.align_page_up()
         + (allocator
             .regions

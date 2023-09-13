@@ -10,7 +10,7 @@ use alloc::{
 };
 use fdt::{node::FdtNode, Fdt};
 
-use crate::error::Result;
+use crate::{conf, error::Result};
 
 #[repr(C)]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -89,12 +89,7 @@ pub(crate) use device_probe;
 pub(super) fn init(fdtaddr: *const u8) {
     let dt = unsafe { Fdt::from_ptr(fdtaddr) }.unwrap();
 
-    extern "C" {
-        fn _sdev();
-        fn _edev();
-    }
-
-    let devs: Vec<&DevReg> = (_sdev as usize.._edev as usize)
+    let devs: Vec<&DevReg> = (conf::layout::_sdev()..conf::layout::_edev())
         .step_by(mem::size_of::<&DevReg>())
         .map(|a| unsafe { *(a as *const &DevReg) })
         .collect();

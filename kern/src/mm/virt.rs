@@ -198,40 +198,29 @@ lazy_static! {
 pub(super) fn init() {
     let mut pt = KERN_PAGE_TABLE.write();
     // Map kernel codes and data
-    extern "C" {
-        fn _stext();
-        fn _etext();
-        fn _srodata();
-        fn _erodata();
-        fn _sdata();
-        fn _edata();
-        fn _sbss();
-        fn _ebss();
-        fn _end();
-    }
     let mapping = [
         (
             ".text",
-            _stext as usize,
-            _etext as usize,
+            conf::layout::_stext(),
+            conf::layout::_etext(),
             PagePerm::G | PagePerm::X | PagePerm::R | PagePerm::V,
         ),
         (
             ".rodata",
-            _srodata as usize,
-            _erodata as usize,
+            conf::layout::_srodata(),
+            conf::layout::_erodata(),
             PagePerm::G | PagePerm::R | PagePerm::V,
         ),
         (
             ".data",
-            _sdata as usize,
-            _edata as usize,
+            conf::layout::_sdata(),
+            conf::layout::_edata(),
             PagePerm::G | PagePerm::R | PagePerm::W | PagePerm::V,
         ),
         (
             ".bss",
-            _sbss as usize,
-            _ebss as usize,
+            conf::layout::_sbss(),
+            conf::layout::_ebss(),
             PagePerm::G | PagePerm::R | PagePerm::W | PagePerm::V,
         ),
     ];

@@ -25,7 +25,7 @@ pub mod trap;
 #[link_section = ".boot"]
 unsafe extern "C" fn _start() -> ! {
     extern "C" {
-        fn _estack();
+        static _estack: usize;
     }
     core::arch::asm!(
         "la sp, {INIT_STACK_TOP}",
