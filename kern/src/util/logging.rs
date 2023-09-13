@@ -9,7 +9,7 @@ struct Logger;
 impl Write for Logger {
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
         for b in s.bytes() {
-            sbi::legacy::console_putchar(b);
+            arch::util::putc(b);
         }
         Ok(())
     }

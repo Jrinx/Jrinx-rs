@@ -19,6 +19,7 @@ pub mod cpus;
 pub mod layout;
 pub mod mm;
 pub mod trap;
+pub mod util;
 
 #[naked]
 #[no_mangle]
