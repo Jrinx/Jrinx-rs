@@ -9,7 +9,6 @@ use riscv::register::{
 };
 
 use crate::{
-    arch::AbstractContext,
     mm::virt::VirtAddr,
     trap::{breakpoint, TrapReason},
 };
@@ -102,8 +101,8 @@ pub struct Context {
     sepc: usize,
 }
 
-impl AbstractContext for Context {
-    fn trap_reason(&self) -> TrapReason {
+impl Context {
+    pub fn trap_reason(&self) -> TrapReason {
         let cause = self.scause;
         let is_interrupt = (cause & (1 << (size_of::<usize>() * 8 - 1))) != 0;
         if is_interrupt {
@@ -133,14 +132,14 @@ impl AbstractContext for Context {
         }
     }
 
-    fn setup_user(&mut self, entry_point: usize, stack_top: usize) {
+    pub fn setup_user(&mut self, entry_point: usize, stack_top: usize) {
         self.regs.sp = stack_top;
         self.sstatus = 1 << 18 | (FS::Initial as usize) << 13 | (SPP::User as usize) << 8 | 1 << 5; // sum | fs | spp | spie
         self.sie = 1 << 9 | 1 << 5 | 1 << 1; // external int | timer int | software int
         self.sepc = entry_point;
     }
 
-    fn acc_pc(&mut self) {
+    pub fn acc_pc(&mut self) {
         let is_rvc = (unsafe { core::ptr::read_volatile(self.sepc as *const u8) & 0b11 }) != 0b11;
         if is_rvc {
             self.sepc += 2;
@@ -149,15 +148,11 @@ impl AbstractContext for Context {
         }
     }
 
-    fn get_syscall_num(&self) -> usize {
+    pub fn get_syscall_num(&self) -> usize {
         self.regs.a7
     }
 
-    fn set_syscall_ret(&mut self, ret: usize) {
-        self.regs.a0 = ret;
-    }
-
-    fn run(&mut self) {
+    pub fn run(&mut self) {
         extern "C" {
             fn run_user(ctx: &mut Context);
         }

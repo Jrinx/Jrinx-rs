@@ -15,7 +15,7 @@ pub(super) mod page_fault {
     use cfg_if::cfg_if;
 
     use crate::{
-        arch::{self, mm::virt::PagePerm, AbstractContext},
+        arch::{self, mm::virt::PagePerm},
         mm::{
             phys,
             virt::{VirtAddr, KERN_PAGE_TABLE},
@@ -109,7 +109,7 @@ pub(super) mod page_fault {
 
 pub(super) mod syscall {
     use crate::{
-        arch::{self, mm::virt::PagePerm, AbstractContext},
+        arch::{self, mm::virt::PagePerm},
         mm::{
             phys,
             virt::{VirtAddr, KERN_PAGE_TABLE},

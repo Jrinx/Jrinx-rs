@@ -1,10 +1,10 @@
 use spin::RwLock;
 
-use crate::{arch::AbstractContext, trap::TrapReason};
+use crate::{arch::trap::Context, trap::TrapReason};
 
 static BREAKPOINT_COUNTER: RwLock<usize> = RwLock::new(0);
 
-pub fn handle(ctx: &mut impl AbstractContext) {
+pub fn handle(ctx: &mut Context) {
     let TrapReason::Breakpoint { addr } = ctx.trap_reason() else {
         panic!("not a breakpoint trap");
     };
