@@ -1,7 +1,4 @@
-use std::{
-    fs,
-    io::{Read, Write},
-};
+use std::{fs, io};
 
 fn main() {
     let arch = std::env::var_os("CARGO_CFG_TARGET_ARCH")
@@ -11,24 +8,18 @@ fn main() {
         .to_owned();
 
     if let Some(lds_path) = find_lds(&arch) {
-        create_ld_file(&arch, &lds_path);
+        create_ld_file(&arch, &lds_path).unwrap();
     }
 }
 
-fn create_ld_file(arch: &str, lds_path: &str) {
-    let out_path = format!("tgt/{}.ld", &arch);
-    let mut out_file = fs::File::create(&out_path).unwrap();
-    let mut lds_file = fs::File::open(&lds_path).unwrap();
-
-    let mut ori_content = String::new();
-    lds_file.read_to_string(&mut ori_content).unwrap();
-
-    let out_content = ori_content.replace(
-        "BASE_ADDRESS",
-        format!("{:#x}", base_addr_of(arch)).as_str(),
-    );
-
-    out_file.write_all(out_content.as_bytes()).unwrap();
+fn create_ld_file(arch: &str, lds_path: &str) -> io::Result<()> {
+    fs::write(
+        format!("tgt/{}.ld", &arch),
+        fs::read_to_string(lds_path)?.replace(
+            "BASE_ADDRESS",
+            format!("{:#x}", base_addr_of(arch)).as_str(),
+        ),
+    )
 }
 
 fn find_lds(arch: &str) -> Option<String> {
