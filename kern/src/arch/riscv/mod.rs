@@ -16,10 +16,10 @@ use crate::error::HaltReason;
 
 pub mod cpu;
 pub mod cpus;
+pub mod earlycon;
 pub mod layout;
 pub mod mm;
 pub mod trap;
-pub mod util;
 
 #[naked]
 #[no_mangle]
