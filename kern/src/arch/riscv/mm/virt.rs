@@ -83,8 +83,8 @@ pub fn enable_pt_mapping(page_table: &PageTable) {
     }
 }
 
-pub fn sync(asid: usize, addr: VirtAddr) {
+pub fn sync(addr: VirtAddr) {
     unsafe {
-        riscv::asm::sfence_vma(asid, addr.as_usize());
+        core::arch::asm!("sfence.vma {}, x0", in(reg) addr.as_usize());
     }
 }

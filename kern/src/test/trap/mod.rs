@@ -83,7 +83,7 @@ pub(super) mod page_fault {
                 PagePerm::U | PagePerm::R | PagePerm::X,
             )
             .unwrap();
-        arch::mm::virt::sync(0, VirtAddr::new(USER_TEXT));
+        arch::mm::virt::sync(VirtAddr::new(USER_TEXT));
 
         code_read_zero!(arch::mm::phys_to_virt(addr));
         ctx.run();
@@ -150,7 +150,7 @@ pub(super) mod syscall {
                 PagePerm::U | PagePerm::R | PagePerm::X,
             )
             .unwrap();
-        arch::mm::virt::sync(0, VirtAddr::new(USER_TEXT));
+        arch::mm::virt::sync(VirtAddr::new(USER_TEXT));
 
         code_syscall_with_num!(arch::mm::phys_to_virt(addr), 32);
         ctx.setup_user(USER_TEXT, 0);
