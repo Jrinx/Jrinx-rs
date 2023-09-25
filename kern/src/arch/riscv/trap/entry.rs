@@ -157,16 +157,16 @@ core::arch::global_asm! {
 #[cfg(target_arch = "riscv32")]
 core::arch::global_asm! {
     r"
-    .macro ST_REG reg, offset
+    .macro PUSH_REG reg, offset
         sw \reg, \offset(sp)
     .endm
-    .macro LD_REG reg, offset
+    .macro POP_REG reg, offset
         lw \reg, \offset(sp)
     .endm
-    .macro ST_FREG freg, offset
+    .macro PUSH_FREG freg, offset
         fsw \freg, \offset(sp)
     .endm
-    .macro LD_FREG freg, offset
+    .macro POP_FREG freg, offset
         flw \freg, \offset(sp)
     .endm
     "
@@ -175,16 +175,16 @@ core::arch::global_asm! {
 #[cfg(target_arch = "riscv64")]
 core::arch::global_asm! {
     r"
-    .macro ST_REG reg, offset
+    .macro PUSH_REG reg, offset
         sd \reg, \offset(sp)
     .endm
-    .macro LD_REG reg, offset
+    .macro POP_REG reg, offset
         ld \reg, \offset(sp)
     .endm
-    .macro ST_FREG freg, offset
+    .macro PUSH_FREG freg, offset
         fsd \freg, \offset(sp)
     .endm
-    .macro LD_FREG freg, offset
+    .macro POP_FREG freg, offset
         fld \freg, \offset(sp)
     .endm
     "
@@ -203,83 +203,83 @@ core::arch::global_asm! {
         addi sp, sp, -CTX_SIZE
 
     trap_from_user_st:
-        ST_REG ra, CTX_OFFS_REG_RA
-        ST_REG gp, CTX_OFFS_REG_GP
-        ST_REG tp, CTX_OFFS_REG_TP
-        ST_REG t0, CTX_OFFS_REG_T0
-        ST_REG t1, CTX_OFFS_REG_T1
-        ST_REG t2, CTX_OFFS_REG_T2
-        ST_REG s0, CTX_OFFS_REG_S0
-        ST_REG s1, CTX_OFFS_REG_S1
-        ST_REG a0, CTX_OFFS_REG_A0
-        ST_REG a1, CTX_OFFS_REG_A1
-        ST_REG a2, CTX_OFFS_REG_A2
-        ST_REG a3, CTX_OFFS_REG_A3
-        ST_REG a4, CTX_OFFS_REG_A4
-        ST_REG a5, CTX_OFFS_REG_A5
-        ST_REG a6, CTX_OFFS_REG_A6
-        ST_REG a7, CTX_OFFS_REG_A7
-        ST_REG s2, CTX_OFFS_REG_S2
-        ST_REG s3, CTX_OFFS_REG_S3
-        ST_REG s4, CTX_OFFS_REG_S4
-        ST_REG s5, CTX_OFFS_REG_S5
-        ST_REG s6, CTX_OFFS_REG_S6
-        ST_REG s7, CTX_OFFS_REG_S7
-        ST_REG s8, CTX_OFFS_REG_S8
-        ST_REG s9, CTX_OFFS_REG_S9
-        ST_REG s10, CTX_OFFS_REG_S10
-        ST_REG s11, CTX_OFFS_REG_S11
-        ST_REG t3, CTX_OFFS_REG_T3
-        ST_REG t4, CTX_OFFS_REG_T4
-        ST_REG t5, CTX_OFFS_REG_T5
-        ST_REG t6, CTX_OFFS_REG_T6
+        PUSH_REG ra, CTX_OFFS_REG_RA
+        PUSH_REG gp, CTX_OFFS_REG_GP
+        PUSH_REG tp, CTX_OFFS_REG_TP
+        PUSH_REG t0, CTX_OFFS_REG_T0
+        PUSH_REG t1, CTX_OFFS_REG_T1
+        PUSH_REG t2, CTX_OFFS_REG_T2
+        PUSH_REG s0, CTX_OFFS_REG_S0
+        PUSH_REG s1, CTX_OFFS_REG_S1
+        PUSH_REG a0, CTX_OFFS_REG_A0
+        PUSH_REG a1, CTX_OFFS_REG_A1
+        PUSH_REG a2, CTX_OFFS_REG_A2
+        PUSH_REG a3, CTX_OFFS_REG_A3
+        PUSH_REG a4, CTX_OFFS_REG_A4
+        PUSH_REG a5, CTX_OFFS_REG_A5
+        PUSH_REG a6, CTX_OFFS_REG_A6
+        PUSH_REG a7, CTX_OFFS_REG_A7
+        PUSH_REG s2, CTX_OFFS_REG_S2
+        PUSH_REG s3, CTX_OFFS_REG_S3
+        PUSH_REG s4, CTX_OFFS_REG_S4
+        PUSH_REG s5, CTX_OFFS_REG_S5
+        PUSH_REG s6, CTX_OFFS_REG_S6
+        PUSH_REG s7, CTX_OFFS_REG_S7
+        PUSH_REG s8, CTX_OFFS_REG_S8
+        PUSH_REG s9, CTX_OFFS_REG_S9
+        PUSH_REG s10, CTX_OFFS_REG_S10
+        PUSH_REG s11, CTX_OFFS_REG_S11
+        PUSH_REG t3, CTX_OFFS_REG_T3
+        PUSH_REG t4, CTX_OFFS_REG_T4
+        PUSH_REG t5, CTX_OFFS_REG_T5
+        PUSH_REG t6, CTX_OFFS_REG_T6
 
-        ST_FREG ft0, CTX_OFFS_FREG_FT0
-        ST_FREG ft1, CTX_OFFS_FREG_FT1
-        ST_FREG ft2, CTX_OFFS_FREG_FT2
-        ST_FREG ft3, CTX_OFFS_FREG_FT3
-        ST_FREG ft4, CTX_OFFS_FREG_FT4
-        ST_FREG ft5, CTX_OFFS_FREG_FT5
-        ST_FREG ft6, CTX_OFFS_FREG_FT6
-        ST_FREG ft7, CTX_OFFS_FREG_FT7
-        ST_FREG fs0, CTX_OFFS_FREG_FS0
-        ST_FREG fs1, CTX_OFFS_FREG_FS1
-        ST_FREG fa0, CTX_OFFS_FREG_FA0
-        ST_FREG fa1, CTX_OFFS_FREG_FA1
-        ST_FREG fa2, CTX_OFFS_FREG_FA2
-        ST_FREG fa3, CTX_OFFS_FREG_FA3
-        ST_FREG fa4, CTX_OFFS_FREG_FA4
-        ST_FREG fa5, CTX_OFFS_FREG_FA5
-        ST_FREG fa6, CTX_OFFS_FREG_FA6
-        ST_FREG fa7, CTX_OFFS_FREG_FA7
-        ST_FREG fs2, CTX_OFFS_FREG_FS2
-        ST_FREG fs3, CTX_OFFS_FREG_FS3
-        ST_FREG fs4, CTX_OFFS_FREG_FS4
-        ST_FREG fs5, CTX_OFFS_FREG_FS5
-        ST_FREG fs6, CTX_OFFS_FREG_FS6
-        ST_FREG fs7, CTX_OFFS_FREG_FS7
-        ST_FREG fs8, CTX_OFFS_FREG_FS8
-        ST_FREG fs9, CTX_OFFS_FREG_FS9
-        ST_FREG fs10, CTX_OFFS_FREG_FS10
-        ST_FREG fs11, CTX_OFFS_FREG_FS11
-        ST_FREG ft8, CTX_OFFS_FREG_FT8
-        ST_FREG ft9, CTX_OFFS_FREG_FT9
-        ST_FREG ft10, CTX_OFFS_FREG_FT10
-        ST_FREG ft11, CTX_OFFS_FREG_FT11
+        PUSH_FREG ft0, CTX_OFFS_FREG_FT0
+        PUSH_FREG ft1, CTX_OFFS_FREG_FT1
+        PUSH_FREG ft2, CTX_OFFS_FREG_FT2
+        PUSH_FREG ft3, CTX_OFFS_FREG_FT3
+        PUSH_FREG ft4, CTX_OFFS_FREG_FT4
+        PUSH_FREG ft5, CTX_OFFS_FREG_FT5
+        PUSH_FREG ft6, CTX_OFFS_FREG_FT6
+        PUSH_FREG ft7, CTX_OFFS_FREG_FT7
+        PUSH_FREG fs0, CTX_OFFS_FREG_FS0
+        PUSH_FREG fs1, CTX_OFFS_FREG_FS1
+        PUSH_FREG fa0, CTX_OFFS_FREG_FA0
+        PUSH_FREG fa1, CTX_OFFS_FREG_FA1
+        PUSH_FREG fa2, CTX_OFFS_FREG_FA2
+        PUSH_FREG fa3, CTX_OFFS_FREG_FA3
+        PUSH_FREG fa4, CTX_OFFS_FREG_FA4
+        PUSH_FREG fa5, CTX_OFFS_FREG_FA5
+        PUSH_FREG fa6, CTX_OFFS_FREG_FA6
+        PUSH_FREG fa7, CTX_OFFS_FREG_FA7
+        PUSH_FREG fs2, CTX_OFFS_FREG_FS2
+        PUSH_FREG fs3, CTX_OFFS_FREG_FS3
+        PUSH_FREG fs4, CTX_OFFS_FREG_FS4
+        PUSH_FREG fs5, CTX_OFFS_FREG_FS5
+        PUSH_FREG fs6, CTX_OFFS_FREG_FS6
+        PUSH_FREG fs7, CTX_OFFS_FREG_FS7
+        PUSH_FREG fs8, CTX_OFFS_FREG_FS8
+        PUSH_FREG fs9, CTX_OFFS_FREG_FS9
+        PUSH_FREG fs10, CTX_OFFS_FREG_FS10
+        PUSH_FREG fs11, CTX_OFFS_FREG_FS11
+        PUSH_FREG ft8, CTX_OFFS_FREG_FT8
+        PUSH_FREG ft9, CTX_OFFS_FREG_FT9
+        PUSH_FREG ft10, CTX_OFFS_FREG_FT10
+        PUSH_FREG ft11, CTX_OFFS_FREG_FT11
 
         csrrw t0, sscratch, zero
-        ST_REG t0, CTX_OFFS_REG_SP
+        PUSH_REG t0, CTX_OFFS_REG_SP
 
         csrr t1, sstatus
-        ST_REG t1, CTX_OFFS_SSTATUS
+        PUSH_REG t1, CTX_OFFS_SSTATUS
         csrr t2, scause
-        ST_REG t2, CTX_OFFS_SCAUSE
+        PUSH_REG t2, CTX_OFFS_SCAUSE
         csrr t3, sie
-        ST_REG t3, CTX_OFFS_SIE
+        PUSH_REG t3, CTX_OFFS_SIE
         csrr t4, stval
-        ST_REG t4, CTX_OFFS_STVAL
+        PUSH_REG t4, CTX_OFFS_STVAL
         csrr t5, sepc
-        ST_REG t5, CTX_OFFS_SEPC
+        PUSH_REG t5, CTX_OFFS_SEPC
 
         andi t1, t1, 1 << 8
         beqz t1, trap_from_user_ed
@@ -290,22 +290,22 @@ core::arch::global_asm! {
         j trap_exit
 
     trap_from_user_ed:
-        LD_REG sp, 0
+        POP_REG sp, 0
 
-        LD_REG s0, 0 * XLENB
-        LD_REG s1, 1 * XLENB
-        LD_REG s2, 2 * XLENB
-        LD_REG s3, 3 * XLENB
-        LD_REG s4, 4 * XLENB
-        LD_REG s5, 5 * XLENB
-        LD_REG s6, 6 * XLENB
-        LD_REG s7, 7 * XLENB
-        LD_REG s8, 8 * XLENB
-        LD_REG s9, 9 * XLENB
-        LD_REG s10, 10 * XLENB
-        LD_REG s11, 11 * XLENB
-        LD_REG ra, 12 * XLENB
-        LD_REG tp, 13 * XLENB
+        POP_REG s0, 0 * XLENB
+        POP_REG s1, 1 * XLENB
+        POP_REG s2, 2 * XLENB
+        POP_REG s3, 3 * XLENB
+        POP_REG s4, 4 * XLENB
+        POP_REG s5, 5 * XLENB
+        POP_REG s6, 6 * XLENB
+        POP_REG s7, 7 * XLENB
+        POP_REG s8, 8 * XLENB
+        POP_REG s9, 9 * XLENB
+        POP_REG s10, 10 * XLENB
+        POP_REG s11, 11 * XLENB
+        POP_REG ra, 12 * XLENB
+        POP_REG tp, 13 * XLENB
 
         addi sp, sp, 14 * XLENB
         ret
@@ -314,105 +314,105 @@ core::arch::global_asm! {
     run_user:
         addi sp, sp, -14 * XLENB
 
-        ST_REG tp, 13 * XLENB
-        ST_REG ra, 12 * XLENB
-        ST_REG s11, 11 * XLENB
-        ST_REG s10, 10 * XLENB
-        ST_REG s9, 9 * XLENB
-        ST_REG s8, 8 * XLENB
-        ST_REG s7, 7 * XLENB
-        ST_REG s6, 6 * XLENB
-        ST_REG s5, 5 * XLENB
-        ST_REG s4, 4 * XLENB
-        ST_REG s3, 3 * XLENB
-        ST_REG s2, 2 * XLENB
-        ST_REG s1, 1 * XLENB
-        ST_REG s0, 0 * XLENB
+        PUSH_REG tp, 13 * XLENB
+        PUSH_REG ra, 12 * XLENB
+        PUSH_REG s11, 11 * XLENB
+        PUSH_REG s10, 10 * XLENB
+        PUSH_REG s9, 9 * XLENB
+        PUSH_REG s8, 8 * XLENB
+        PUSH_REG s7, 7 * XLENB
+        PUSH_REG s6, 6 * XLENB
+        PUSH_REG s5, 5 * XLENB
+        PUSH_REG s4, 4 * XLENB
+        PUSH_REG s3, 3 * XLENB
+        PUSH_REG s2, 2 * XLENB
+        PUSH_REG s1, 1 * XLENB
+        PUSH_REG s0, 0 * XLENB
 
         mv t0, sp
 
         mv sp, a0
-        ST_REG t0, 0
+        PUSH_REG t0, 0
 
         csrw sscratch, sp
 
     trap_exit:
-        LD_REG t5, CTX_OFFS_SEPC
+        POP_REG t5, CTX_OFFS_SEPC
         csrw sepc, t5
-        LD_REG t4, CTX_OFFS_STVAL
+        POP_REG t4, CTX_OFFS_STVAL
         csrw stval, t4
-        LD_REG t3, CTX_OFFS_SIE
+        POP_REG t3, CTX_OFFS_SIE
         csrw sie, t3
-        LD_REG t2, CTX_OFFS_SCAUSE
+        POP_REG t2, CTX_OFFS_SCAUSE
         csrw scause, t2
-        LD_REG t1, CTX_OFFS_SSTATUS
+        POP_REG t1, CTX_OFFS_SSTATUS
         csrw sstatus, t1
 
-        LD_FREG ft11, CTX_OFFS_FREG_FT11
-        LD_FREG ft10, CTX_OFFS_FREG_FT10
-        LD_FREG ft9, CTX_OFFS_FREG_FT9
-        LD_FREG ft8, CTX_OFFS_FREG_FT8
-        LD_FREG fs11, CTX_OFFS_FREG_FS11
-        LD_FREG fs10, CTX_OFFS_FREG_FS10
-        LD_FREG fs9, CTX_OFFS_FREG_FS9
-        LD_FREG fs8, CTX_OFFS_FREG_FS8
-        LD_FREG fs7, CTX_OFFS_FREG_FS7
-        LD_FREG fs6, CTX_OFFS_FREG_FS6
-        LD_FREG fs5, CTX_OFFS_FREG_FS5
-        LD_FREG fs4, CTX_OFFS_FREG_FS4
-        LD_FREG fs3, CTX_OFFS_FREG_FS3
-        LD_FREG fs2, CTX_OFFS_FREG_FS2
-        LD_FREG fa7, CTX_OFFS_FREG_FA7
-        LD_FREG fa6, CTX_OFFS_FREG_FA6
-        LD_FREG fa5, CTX_OFFS_FREG_FA5
-        LD_FREG fa4, CTX_OFFS_FREG_FA4
-        LD_FREG fa3, CTX_OFFS_FREG_FA3
-        LD_FREG fa2, CTX_OFFS_FREG_FA2
-        LD_FREG fa1, CTX_OFFS_FREG_FA1
-        LD_FREG fa0, CTX_OFFS_FREG_FA0
-        LD_FREG fs1, CTX_OFFS_FREG_FS1
-        LD_FREG fs0, CTX_OFFS_FREG_FS0
-        LD_FREG ft7, CTX_OFFS_FREG_FT7
-        LD_FREG ft6, CTX_OFFS_FREG_FT6
-        LD_FREG ft5, CTX_OFFS_FREG_FT5
-        LD_FREG ft4, CTX_OFFS_FREG_FT4
-        LD_FREG ft3, CTX_OFFS_FREG_FT3
-        LD_FREG ft2, CTX_OFFS_FREG_FT2
-        LD_FREG ft1, CTX_OFFS_FREG_FT1
-        LD_FREG ft0, CTX_OFFS_FREG_FT0
+        POP_FREG ft11, CTX_OFFS_FREG_FT11
+        POP_FREG ft10, CTX_OFFS_FREG_FT10
+        POP_FREG ft9, CTX_OFFS_FREG_FT9
+        POP_FREG ft8, CTX_OFFS_FREG_FT8
+        POP_FREG fs11, CTX_OFFS_FREG_FS11
+        POP_FREG fs10, CTX_OFFS_FREG_FS10
+        POP_FREG fs9, CTX_OFFS_FREG_FS9
+        POP_FREG fs8, CTX_OFFS_FREG_FS8
+        POP_FREG fs7, CTX_OFFS_FREG_FS7
+        POP_FREG fs6, CTX_OFFS_FREG_FS6
+        POP_FREG fs5, CTX_OFFS_FREG_FS5
+        POP_FREG fs4, CTX_OFFS_FREG_FS4
+        POP_FREG fs3, CTX_OFFS_FREG_FS3
+        POP_FREG fs2, CTX_OFFS_FREG_FS2
+        POP_FREG fa7, CTX_OFFS_FREG_FA7
+        POP_FREG fa6, CTX_OFFS_FREG_FA6
+        POP_FREG fa5, CTX_OFFS_FREG_FA5
+        POP_FREG fa4, CTX_OFFS_FREG_FA4
+        POP_FREG fa3, CTX_OFFS_FREG_FA3
+        POP_FREG fa2, CTX_OFFS_FREG_FA2
+        POP_FREG fa1, CTX_OFFS_FREG_FA1
+        POP_FREG fa0, CTX_OFFS_FREG_FA0
+        POP_FREG fs1, CTX_OFFS_FREG_FS1
+        POP_FREG fs0, CTX_OFFS_FREG_FS0
+        POP_FREG ft7, CTX_OFFS_FREG_FT7
+        POP_FREG ft6, CTX_OFFS_FREG_FT6
+        POP_FREG ft5, CTX_OFFS_FREG_FT5
+        POP_FREG ft4, CTX_OFFS_FREG_FT4
+        POP_FREG ft3, CTX_OFFS_FREG_FT3
+        POP_FREG ft2, CTX_OFFS_FREG_FT2
+        POP_FREG ft1, CTX_OFFS_FREG_FT1
+        POP_FREG ft0, CTX_OFFS_FREG_FT0
 
-        LD_REG t6, CTX_OFFS_REG_T6
-        LD_REG t5, CTX_OFFS_REG_T5
-        LD_REG t4, CTX_OFFS_REG_T4
-        LD_REG t3, CTX_OFFS_REG_T3
-        LD_REG s11, CTX_OFFS_REG_S11
-        LD_REG s10, CTX_OFFS_REG_S10
-        LD_REG s9, CTX_OFFS_REG_S9
-        LD_REG s8, CTX_OFFS_REG_S8
-        LD_REG s7, CTX_OFFS_REG_S7
-        LD_REG s6, CTX_OFFS_REG_S6
-        LD_REG s5, CTX_OFFS_REG_S5
-        LD_REG s4, CTX_OFFS_REG_S4
-        LD_REG s3, CTX_OFFS_REG_S3
-        LD_REG s2, CTX_OFFS_REG_S2
-        LD_REG a7, CTX_OFFS_REG_A7
-        LD_REG a6, CTX_OFFS_REG_A6
-        LD_REG a5, CTX_OFFS_REG_A5
-        LD_REG a4, CTX_OFFS_REG_A4
-        LD_REG a3, CTX_OFFS_REG_A3
-        LD_REG a2, CTX_OFFS_REG_A2
-        LD_REG a1, CTX_OFFS_REG_A1
-        LD_REG a0, CTX_OFFS_REG_A0
-        LD_REG s1, CTX_OFFS_REG_S1
-        LD_REG s0, CTX_OFFS_REG_S0
-        LD_REG t2, CTX_OFFS_REG_T2
-        LD_REG t1, CTX_OFFS_REG_T1
-        LD_REG t0, CTX_OFFS_REG_T0
-        LD_REG tp, CTX_OFFS_REG_TP
-        LD_REG gp, CTX_OFFS_REG_GP
-        LD_REG ra, CTX_OFFS_REG_RA
+        POP_REG t6, CTX_OFFS_REG_T6
+        POP_REG t5, CTX_OFFS_REG_T5
+        POP_REG t4, CTX_OFFS_REG_T4
+        POP_REG t3, CTX_OFFS_REG_T3
+        POP_REG s11, CTX_OFFS_REG_S11
+        POP_REG s10, CTX_OFFS_REG_S10
+        POP_REG s9, CTX_OFFS_REG_S9
+        POP_REG s8, CTX_OFFS_REG_S8
+        POP_REG s7, CTX_OFFS_REG_S7
+        POP_REG s6, CTX_OFFS_REG_S6
+        POP_REG s5, CTX_OFFS_REG_S5
+        POP_REG s4, CTX_OFFS_REG_S4
+        POP_REG s3, CTX_OFFS_REG_S3
+        POP_REG s2, CTX_OFFS_REG_S2
+        POP_REG a7, CTX_OFFS_REG_A7
+        POP_REG a6, CTX_OFFS_REG_A6
+        POP_REG a5, CTX_OFFS_REG_A5
+        POP_REG a4, CTX_OFFS_REG_A4
+        POP_REG a3, CTX_OFFS_REG_A3
+        POP_REG a2, CTX_OFFS_REG_A2
+        POP_REG a1, CTX_OFFS_REG_A1
+        POP_REG a0, CTX_OFFS_REG_A0
+        POP_REG s1, CTX_OFFS_REG_S1
+        POP_REG s0, CTX_OFFS_REG_S0
+        POP_REG t2, CTX_OFFS_REG_T2
+        POP_REG t1, CTX_OFFS_REG_T1
+        POP_REG t0, CTX_OFFS_REG_T0
+        POP_REG tp, CTX_OFFS_REG_TP
+        POP_REG gp, CTX_OFFS_REG_GP
+        POP_REG ra, CTX_OFFS_REG_RA
 
-        LD_REG sp, CTX_OFFS_REG_SP
+        POP_REG sp, CTX_OFFS_REG_SP
 
         sret
     ",
