@@ -1,5 +1,6 @@
 #![feature(asm_const)]
 #![feature(btree_cursors)]
+#![feature(is_sorted)]
 #![feature(iter_collect_into)]
 #![feature(linkage)]
 #![feature(map_try_insert)]
@@ -12,9 +13,13 @@
 #![no_std]
 #![no_main]
 
-use error::HaltReason;
-
-use crate::util::{logging, random};
+use crate::{
+    task::{
+        sched::{self, Scheduler},
+        Task,
+    },
+    util::{logging, random},
+};
 
 extern crate alloc;
 
@@ -23,10 +28,12 @@ extern crate log;
 
 mod arch;
 mod conf;
+mod cpudata;
 mod driver;
 mod error;
 mod heap;
 mod mm;
+mod task;
 mod test;
 mod trap;
 mod util;
@@ -52,8 +59,20 @@ fn cold_init(_: usize, fdtaddr: *const u8) -> ! {
     driver::init(fdtaddr);
 
     mm::init();
+    cpudata::init();
+
+    sched::with_global_scheduler(|scheduler| {
+        scheduler.insert(Task::create("init", 0, task_init as usize).unwrap());
+    });
+    sched::global_sched_start();
+}
+
+fn task_init() -> ! {
+    info!(
+        "task '{}' started",
+        cpudata::get_current_task().unwrap().get_name()
+    );
     driver::bootargs::execute();
 
-    info!("init done, halt");
-    arch::halt(HaltReason::NormalExit);
+    sched::global_destroy();
 }

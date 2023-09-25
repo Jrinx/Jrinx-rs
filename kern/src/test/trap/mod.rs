@@ -16,10 +16,8 @@ pub(super) mod page_fault {
 
     use crate::{
         arch::{self, mm::virt::PagePerm},
-        mm::{
-            phys,
-            virt::{VirtAddr, KERN_PAGE_TABLE},
-        },
+        cpudata,
+        mm::{phys, virt::VirtAddr},
         test::test_define,
         trap::TrapReason,
     };
@@ -75,15 +73,18 @@ pub(super) mod page_fault {
 
         let frame = phys::PhysFrame::alloc().unwrap();
         let addr = frame.addr();
-        KERN_PAGE_TABLE
-            .write()
-            .map(
-                VirtAddr::new(USER_TEXT),
-                frame,
-                PagePerm::U | PagePerm::R | PagePerm::X,
-            )
-            .unwrap();
-        arch::mm::virt::sync(VirtAddr::new(USER_TEXT));
+        cpudata::get_current_task()
+            .unwrap()
+            .with_page_table(|page_table| {
+                page_table
+                    .map(
+                        VirtAddr::new(USER_TEXT),
+                        frame,
+                        PagePerm::U | PagePerm::R | PagePerm::X,
+                    )
+                    .unwrap();
+                arch::mm::virt::sync(VirtAddr::new(USER_TEXT));
+            });
 
         code_read_zero!(arch::mm::phys_to_virt(addr));
         ctx.run();
@@ -110,10 +111,8 @@ pub(super) mod page_fault {
 pub(super) mod syscall {
     use crate::{
         arch::{self, mm::virt::PagePerm},
-        mm::{
-            phys,
-            virt::{VirtAddr, KERN_PAGE_TABLE},
-        },
+        cpudata,
+        mm::{phys, virt::VirtAddr},
         test::test_define,
         trap::TrapReason,
     };
@@ -142,14 +141,17 @@ pub(super) mod syscall {
 
         let frame = phys::PhysFrame::alloc().unwrap();
         let addr = frame.addr();
-        KERN_PAGE_TABLE
-            .write()
-            .map(
-                VirtAddr::new(USER_TEXT),
-                frame,
-                PagePerm::U | PagePerm::R | PagePerm::X,
-            )
-            .unwrap();
+        cpudata::get_current_task()
+            .unwrap()
+            .with_page_table(|page_table| {
+                page_table
+                    .map(
+                        VirtAddr::new(USER_TEXT),
+                        frame,
+                        PagePerm::U | PagePerm::R | PagePerm::X,
+                    )
+                    .unwrap();
+            });
         arch::mm::virt::sync(VirtAddr::new(USER_TEXT));
 
         code_syscall_with_num!(arch::mm::phys_to_virt(addr), 32);
