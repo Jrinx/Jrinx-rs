@@ -174,7 +174,6 @@ impl PhysFrameAllocator {
                     );
                 }
                 if l_addr + l_size == addr {
-                    regions.try_insert(l_addr, l_size + size).unwrap();
                     (l_addr, l_size + size)
                 } else {
                     regions.try_insert(l_addr, l_size).unwrap();
@@ -202,7 +201,6 @@ impl PhysFrameAllocator {
                     );
                 }
                 if addr + size == r_addr {
-                    regions.try_insert(addr, size + r_size).unwrap();
                     (addr, size + r_size)
                 } else {
                     regions.try_insert(r_addr, r_size).unwrap();
@@ -213,13 +211,9 @@ impl PhysFrameAllocator {
             }
         }
 
-        let (addr, size) = pending;
-
         let pending = merge_left(&mut self.regions, pending);
         let pending = merge_right(&mut self.regions, pending);
-        if pending == (addr, size) {
-            self.regions.try_insert(addr, size).unwrap();
-        }
+        self.regions.try_insert(pending.0, pending.1).unwrap();
     }
 }
 
