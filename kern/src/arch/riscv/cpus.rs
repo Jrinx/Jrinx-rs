@@ -15,6 +15,23 @@ fn probe(node: &FdtNode) -> Result<()> {
         TIMEBASE_FREQ = timebase_freq;
     }
     debug!("cpus timebase-frequency: {} Hz", timebase_freq);
+
+    let nproc = node
+        .children()
+        .filter_map(|node| {
+            debug!("node: {}", node.name);
+            match node.compatible() {
+                Some(compatible) => compatible.all().any(|c| c == "riscv").then_some(node),
+                None => None,
+            }
+        })
+        .count();
+    debug!("cpus nproc: {}", nproc);
+
+    unsafe {
+        NPROC = nproc;
+    }
+
     Ok(())
 }
 
@@ -28,5 +45,14 @@ pub fn timebase_freq() -> Option<usize> {
     match unsafe { TIMEBASE_FREQ } {
         0 => None,
         freq => Some(freq),
+    }
+}
+
+static mut NPROC: usize = 0;
+
+pub fn nproc() -> Option<usize> {
+    match unsafe { NPROC } {
+        0 => None,
+        nproc => Some(nproc),
     }
 }
