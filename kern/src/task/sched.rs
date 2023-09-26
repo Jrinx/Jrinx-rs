@@ -56,9 +56,7 @@ pub fn global_sched_start() -> ! {
     let switch_info = switch_info_of_task(&task);
     assert!(cpudata::get_current_task().is_none());
     cpudata::set_current_task(task.clone());
-    unsafe {
-        task::switch::task_continue(switch_info);
-    }
+    task::resume(switch_info);
 }
 
 pub fn global_destroy() -> ! {
@@ -68,9 +66,7 @@ pub fn global_destroy() -> ! {
     let next_task = global_get_next_task();
     let next_switch_info = switch_info_of_task(&next_task);
     cpudata::set_current_task(next_task);
-    unsafe {
-        task::switch::task_continue(next_switch_info);
-    }
+    task::resume(next_switch_info);
 }
 
 pub fn global_switch() {
@@ -79,9 +75,7 @@ pub fn global_switch() {
     let prev_task = cpudata::clr_current_task().unwrap();
     let prev_switch_info = switch_info_of_task(&prev_task);
     cpudata::set_current_task(next_task);
-    unsafe {
-        task::switch::task_switch(next_switch_info, prev_switch_info);
-    }
+    task::switch(next_switch_info, prev_switch_info);
 }
 
 fn global_get_next_task() -> Arc<Task> {

@@ -113,8 +113,3 @@ core::arch::global_asm! {
         ret
     "
 }
-
-extern "C" {
-    pub fn task_switch(new: *mut SwitchInfo, old: *mut SwitchInfo);
-    pub fn task_continue(info: *mut SwitchInfo) -> !;
-}

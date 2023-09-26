@@ -2,7 +2,7 @@ use cfg_if::cfg_if;
 
 use crate::{conf, mm::virt::PageTable};
 
-pub mod switch;
+mod entry;
 
 #[derive(Debug, Default, Clone, Copy)]
 #[repr(C)]
@@ -49,5 +49,25 @@ impl SwitchInfo {
             }
         }
         self
+    }
+}
+
+#[inline]
+pub fn switch(new: *mut SwitchInfo, old: *mut SwitchInfo) {
+    extern "C" {
+        fn task_switch(new: *mut SwitchInfo, old: *mut SwitchInfo);
+    }
+    unsafe {
+        task_switch(new, old);
+    }
+}
+
+#[inline]
+pub fn resume(new: *mut SwitchInfo) -> ! {
+    extern "C" {
+        fn task_continue(info: *mut SwitchInfo) -> !;
+    }
+    unsafe {
+        task_continue(new);
     }
 }
