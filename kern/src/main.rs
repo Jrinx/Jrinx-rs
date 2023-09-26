@@ -42,7 +42,7 @@ mod util;
 #[link_section = ".stack"]
 static INIT_STACK: [u8; conf::KSTACK_SIZE] = [0; conf::KSTACK_SIZE];
 
-fn cold_init(_: usize, fdtaddr: *const u8) -> ! {
+extern "C" fn cold_init(_: usize, fdtaddr: *const u8) -> ! {
     logging::init();
     random::init();
 

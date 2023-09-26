@@ -172,7 +172,7 @@ pub(in crate::arch) fn init() {
     }
 }
 
-fn handle_kern_trap(ctx: &mut Context) {
+extern "C" fn handle_kern_trap(ctx: &mut Context) {
     let reason = ctx.trap_reason();
     trace!("kernel trap ({:?}) from {:#x}", reason, ctx.sepc);
     match reason {
