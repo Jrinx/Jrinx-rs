@@ -20,18 +20,25 @@ pub fn init() {
 }
 
 #[inline]
-fn cpu_data() -> &'static mut CpuData {
-    unsafe { &mut CPU_DATA[arch::cpu::id()] }
+fn cpu_data() -> Option<&'static mut CpuData> {
+    if arch::cpu::id() >= unsafe { CPU_DATA.len() } {
+        None
+    } else {
+        Some(unsafe { &mut CPU_DATA[arch::cpu::id()] })
+    }
 }
 
+#[inline]
 pub fn get_current_task() -> Option<Arc<Task>> {
-    cpu_data().task.clone()
+    cpu_data()?.task.clone()
 }
 
+#[inline]
 pub fn set_current_task(task: Arc<Task>) {
-    cpu_data().task.replace(task);
+    cpu_data().unwrap().task.replace(task);
 }
 
+#[inline]
 pub fn clr_current_task() -> Option<Arc<Task>> {
-    cpu_data().task.take()
+    cpu_data()?.task.take()
 }

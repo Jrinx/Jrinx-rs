@@ -1,6 +1,6 @@
 use core::fmt::Write;
 
-use crate::arch;
+use crate::{arch, cpudata};
 
 use super::color::{self, with_color};
 
@@ -45,17 +45,32 @@ impl log::Log for Logger {
             log::Level::Debug => color::ColorCode::CYAN,
             log::Level::Trace => color::ColorCode::MAGENTA,
         };
-        print_fmt(with_color! {
-            color::ColorCode::White,
-            "[ {time} cpu#{id} {level} ] {args}\n",
-            time = {
-                let micros = cpu_time.as_micros();
-                format_args!("{s:>6}.{us:06}", s = micros / 1000000, us = micros % 1000000)
-            },
-            id = cpu_id,
-            level = with_color!(color, "{:>5}", level),
-            args = with_color!(color::ColorCode::White, "{}", record.args()),
-        });
+        if let Some(task) = cpudata::get_current_task() {
+            print_fmt(with_color! {
+                color::ColorCode::White,
+                "[ {time} cpu#{cpu_id} task#{task_id} {level} ] {args}\n",
+                time = {
+                    let micros = cpu_time.as_micros();
+                    format_args!("{s:>6}.{us:06}", s = micros / 1000000, us = micros % 1000000)
+                },
+                cpu_id = cpu_id,
+                task_id = task.get_ident(),
+                level = with_color!(color, "{:>5}", level),
+                args = with_color!(color::ColorCode::White, "{}", record.args()),
+            });
+        } else {
+            print_fmt(with_color! {
+                color::ColorCode::White,
+                "[ {time} cpu#{id} {level} ] {args}\n",
+                time = {
+                    let micros = cpu_time.as_micros();
+                    format_args!("{s:>6}.{us:06}", s = micros / 1000000, us = micros % 1000000)
+                },
+                id = cpu_id,
+                level = with_color!(color, "{:>5}", level),
+                args = with_color!(color::ColorCode::White, "{}", record.args()),
+            });
+        }
     }
 
     fn flush(&self) {}

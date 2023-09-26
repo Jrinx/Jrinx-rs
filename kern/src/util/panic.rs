@@ -1,6 +1,6 @@
 use core::panic::PanicInfo;
 
-use crate::{arch, error::HaltReason};
+use crate::{arch, cpudata, error::HaltReason, task::sched};
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
@@ -14,5 +14,9 @@ fn panic(info: &PanicInfo) -> ! {
     } else {
         error!("panicked: {}", info.message().unwrap());
     }
-    arch::halt(HaltReason::SysFailure);
+    if cpudata::get_current_task().is_none() {
+        arch::halt(HaltReason::SysFailure);
+    } else {
+        sched::global_destroy();
+    }
 }
