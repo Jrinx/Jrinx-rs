@@ -11,4 +11,4 @@ expected:
 unexpected:
   type: unordered
   vals:
-  - Panicked
+  - panicked
