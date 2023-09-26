@@ -69,51 +69,25 @@ core::arch::global_asm! {
     r"
     .global task_switch
     task_switch:
-        ST_REG ra, SWI_OFFS_RA, a0
-        ST_REG sp, SWI_OFFS_SP, a0
-        ST_REG gp, SWI_OFFS_GP, a0
-        ST_REG s0, SWI_OFFS_S0, a0
-        ST_REG s1, SWI_OFFS_S1, a0
-        ST_REG s2, SWI_OFFS_S2, a0
-        ST_REG s3, SWI_OFFS_S3, a0
-        ST_REG s4, SWI_OFFS_S4, a0
-        ST_REG s5, SWI_OFFS_S5, a0
-        ST_REG s6, SWI_OFFS_S6, a0
-        ST_REG s7, SWI_OFFS_S7, a0
-        ST_REG s8, SWI_OFFS_S8, a0
-        ST_REG s9, SWI_OFFS_S9, a0
-        ST_REG s10, SWI_OFFS_S10, a0
-        ST_REG s11, SWI_OFFS_S11, a0
+        ST_REG ra, SWI_OFFS_RA, a1
+        ST_REG sp, SWI_OFFS_SP, a1
+        ST_REG gp, SWI_OFFS_GP, a1
+        ST_REG s0, SWI_OFFS_S0, a1
+        ST_REG s1, SWI_OFFS_S1, a1
+        ST_REG s2, SWI_OFFS_S2, a1
+        ST_REG s3, SWI_OFFS_S3, a1
+        ST_REG s4, SWI_OFFS_S4, a1
+        ST_REG s5, SWI_OFFS_S5, a1
+        ST_REG s6, SWI_OFFS_S6, a1
+        ST_REG s7, SWI_OFFS_S7, a1
+        ST_REG s8, SWI_OFFS_S8, a1
+        ST_REG s9, SWI_OFFS_S9, a1
+        ST_REG s10, SWI_OFFS_S10, a1
+        ST_REG s11, SWI_OFFS_S11, a1
 
         csrr t0, satp
-        ST_REG t0, SWI_OFFS_SATP, a0
+        ST_REG t0, SWI_OFFS_SATP, a1
 
-        LD_REG t0, SWI_OFFS_SATP, a1
-        csrw satp, t0
-        sfence.vma x0, x0
-
-        LD_REG s11, SWI_OFFS_S11, a1
-        LD_REG s10, SWI_OFFS_S10, a1
-        LD_REG s9, SWI_OFFS_S9, a1
-        LD_REG s8, SWI_OFFS_S8, a1
-        LD_REG s7, SWI_OFFS_S7, a1
-        LD_REG s6, SWI_OFFS_S6, a1
-        LD_REG s5, SWI_OFFS_S5, a1
-        LD_REG s4, SWI_OFFS_S4, a1
-        LD_REG s3, SWI_OFFS_S3, a1
-        LD_REG s2, SWI_OFFS_S2, a1
-        LD_REG s1, SWI_OFFS_S1, a1
-        LD_REG s0, SWI_OFFS_S0, a1
-        LD_REG gp, SWI_OFFS_GP, a1
-        LD_REG sp, SWI_OFFS_SP, a1
-        LD_REG ra, SWI_OFFS_RA, a1
-
-        ret
-    "
-}
-
-core::arch::global_asm! {
-    r"
     .global task_continue
     task_continue:
         LD_REG t0, SWI_OFFS_SATP, a0
@@ -137,29 +111,10 @@ core::arch::global_asm! {
         LD_REG ra, SWI_OFFS_RA, a0
 
         ret
-    ",
-}
-
-core::arch::global_asm! {
-    r"
-    .global task_start
-    task_start:
-        LD_REG t0, SWI_OFFS_SATP, a0
-        csrw satp, t0
-        sfence.vma x0, x0
-
-        LD_REG s0, SWI_OFFS_S0, a0
-        LD_REG sp, SWI_OFFS_SP, a0
-        LD_REG ra, SWI_OFFS_RA, a0
-
-        mv a0, s0
-
-        ret
     "
 }
 
 extern "C" {
-    pub fn task_switch(old: *mut SwitchInfo, new: *mut SwitchInfo);
+    pub fn task_switch(new: *mut SwitchInfo, old: *mut SwitchInfo);
     pub fn task_continue(info: *mut SwitchInfo) -> !;
-    pub fn task_start(info: *mut SwitchInfo) -> !;
 }
