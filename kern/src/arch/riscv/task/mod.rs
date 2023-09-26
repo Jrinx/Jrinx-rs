@@ -77,14 +77,19 @@ pub fn resume(new: *mut SwitchInfo) -> ! {
     }
 }
 
-extern "C" fn task_entry_wrapper(arg: usize, next: usize) -> ! {
+pub fn task_setup(
+    stack_ptr: *mut usize,
+    entry: extern "C" fn(usize) -> (),
+    arg: usize,
+) -> *mut usize {
     unsafe {
-        core::arch::asm!(
-            "mv a0, {ARG}",
-            "jalr {NEXT}",
-            ARG = in(reg) arg,
-            NEXT = in(reg) next,
-        );
+        stack_ptr.sub(1).write(arg);
+        stack_ptr.sub(2).write(entry as usize);
+        stack_ptr.sub(2)
     }
+}
+
+extern "C" fn task_entry_wrapper(func: extern "C" fn(usize) -> (), arg: usize) -> ! {
+    func(arg);
     sched::global_destroy();
 }

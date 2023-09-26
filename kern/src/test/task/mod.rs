@@ -23,7 +23,7 @@ pub(super) mod global_sched {
             f(&mut *RECORD.write());
         }
 
-        fn subtask_main(arg: usize) {
+        extern "C" fn subtask_main(arg: usize) {
             let current_task = cpudata::get_current_task().unwrap();
             let task_name = current_task.get_name();
             let task_ident = current_task.get_ident();
@@ -49,7 +49,7 @@ pub(super) mod global_sched {
                     Task::create(
                         format!("task#{}", i).as_str(),
                         priority,
-                        subtask_main as usize,
+                        subtask_main,
                         priority * priority,
                     )
                     .unwrap(),

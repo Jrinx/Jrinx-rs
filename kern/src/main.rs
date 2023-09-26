@@ -62,12 +62,12 @@ fn cold_init(_: usize, fdtaddr: *const u8) -> ! {
     cpudata::init();
 
     sched::with_global_scheduler(|scheduler| {
-        scheduler.insert(Task::create("init", 0, root_task_init as usize, 0).unwrap());
+        scheduler.insert(Task::create("init", 0, root_task_init, 0).unwrap());
     });
     sched::global_sched_start();
 }
 
-fn root_task_init(_: usize) {
+extern "C" fn root_task_init(_: usize) {
     info!(
         "root task '{}' started",
         cpudata::get_current_task().unwrap().get_name()
