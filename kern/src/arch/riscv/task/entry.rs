@@ -113,3 +113,15 @@ core::arch::global_asm! {
         ret
     "
 }
+
+core::arch::global_asm! {
+    r"
+    .global task_entry
+    task_entry:
+        LD_REG a1, (0 * XLENB), sp
+        LD_REG a0, (1 * XLENB), sp
+        addi sp, sp, 2 * XLENB
+        call {TASK_ENTRY_WRAPPER}
+    ",
+    TASK_ENTRY_WRAPPER = sym super::task_entry_wrapper,
+}

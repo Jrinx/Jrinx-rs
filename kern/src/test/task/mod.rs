@@ -23,16 +23,15 @@ pub(super) mod global_sched {
             f(&mut *RECORD.write());
         }
 
-        fn subtask_entry() -> ! {
-            subtask_main();
-            sched::global_destroy();
-        }
-
-        fn subtask_main() {
+        fn subtask_main(arg: usize) {
             let current_task = cpudata::get_current_task().unwrap();
             let task_name = current_task.get_name();
             let task_ident = current_task.get_ident();
-            debug!("task '{}' started", task_name);
+            debug!("task '{}' started with arg {}", task_name, arg);
+            assert_eq!(
+                current_task.get_priority() * current_task.get_priority(),
+                arg,
+            );
             with_result(|record| {
                 match record.last() {
                     Some(last) => assert_eq!(*last, task_ident + 1),
@@ -44,12 +43,14 @@ pub(super) mod global_sched {
         }
 
         for i in MIN_TASK_ID..=MAX_TASK_ID {
+            let priority = (i - MIN_TASK_ID + 1) as usize;
             sched::with_global_scheduler(|scheduler| {
                 scheduler.insert(
                     Task::create(
                         format!("task#{}", i).as_str(),
-                        i as _,
-                        subtask_entry as usize,
+                        priority,
+                        subtask_main as usize,
+                        priority * priority,
                     )
                     .unwrap(),
                 );

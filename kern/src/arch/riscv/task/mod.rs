@@ -1,6 +1,6 @@
 use cfg_if::cfg_if;
 
-use crate::{conf, mm::virt::PageTable};
+use crate::{conf, mm::virt::PageTable, task::sched};
 
 mod entry;
 
@@ -26,9 +26,14 @@ pub struct SwitchInfo {
 }
 
 impl SwitchInfo {
-    pub fn entry(&mut self, entry: usize) -> &mut Self {
-        self.ra = entry;
-        self
+    pub fn new() -> Self {
+        extern "C" {
+            fn task_entry();
+        }
+        Self {
+            ra: task_entry as usize,
+            ..Default::default()
+        }
     }
 
     pub fn stack_top(&mut self, top: usize) -> &mut Self {
@@ -70,4 +75,16 @@ pub fn resume(new: *mut SwitchInfo) -> ! {
     unsafe {
         task_continue(new);
     }
+}
+
+extern "C" fn task_entry_wrapper(arg: usize, next: usize) -> ! {
+    unsafe {
+        core::arch::asm!(
+            "mv a0, {ARG}",
+            "jalr {NEXT}",
+            ARG = in(reg) arg,
+            NEXT = in(reg) next,
+        );
+    }
+    sched::global_destroy();
 }

@@ -1,6 +1,9 @@
 pub mod sched;
 
-use core::sync::atomic::{AtomicUsize, Ordering};
+use core::{
+    ptr::write_volatile,
+    sync::atomic::{AtomicUsize, Ordering},
+};
 
 use alloc::{
     string::{String, ToString},
@@ -29,10 +32,10 @@ pub struct Task {
 }
 
 impl Task {
-    pub fn create(name: &str, priority: usize, entry: usize) -> Result<Task> {
+    pub fn create(name: &str, priority: usize, entry: usize, arg: usize) -> Result<Task> {
         let ident = Self::new_id();
         let name = name.to_string();
-        let switch_info = RwLock::new(SwitchInfo::default());
+        let switch_info = RwLock::new(SwitchInfo::new());
         let addrspace = Arc::new(RwLock::new(PageTable::clone_from(
             &*KERN_PAGE_TABLE.read(),
         )?));
@@ -44,13 +47,7 @@ impl Task {
             addrspace,
         };
 
-        task.setup_vm(arch::layout::KTASK_STACK_TOP)?;
-
-        task.switch_info
-            .write()
-            .entry(entry)
-            .stack_top(arch::layout::KTASK_STACK_TOP)
-            .page_table(&*task.addrspace.read());
+        task.setup_vm(arch::layout::KTASK_STACK_TOP, entry, arg)?;
 
         Ok(task)
     }
@@ -76,13 +73,25 @@ impl Task {
         ID.fetch_add(1, Ordering::SeqCst).try_into().unwrap()
     }
 
-    fn setup_vm(&mut self, stack_top: usize) -> Result<()> {
+    fn setup_vm(&mut self, stack_top: usize, entry: usize, arg: usize) -> Result<()> {
         let mut page_table = self.addrspace.write();
         for i in (0..conf::KSTACK_SIZE).step_by(conf::PAGE_SIZE) {
             let virt_addr = VirtAddr::new(stack_top - i - conf::PAGE_SIZE);
             let frame = phys::PhysFrame::alloc()?;
             page_table.map(virt_addr, frame, PagePerm::R | PagePerm::W)?;
         }
+
+        let (stack_top_frame, _) = page_table.lookup(VirtAddr::new(stack_top - conf::PAGE_SIZE))?;
+        let stack_top_page = arch::mm::phys_to_virt(stack_top_frame.addr());
+        let stack_ptr = (stack_top_page + conf::PAGE_SIZE).as_usize() as *mut usize;
+        unsafe {
+            write_volatile(stack_ptr.sub(1), arg);
+            write_volatile(stack_ptr.sub(2), entry);
+        }
+        self.switch_info
+            .write()
+            .stack_top(unsafe { stack_ptr.sub(2) } as usize)
+            .page_table(&page_table);
         Ok(())
     }
 }
