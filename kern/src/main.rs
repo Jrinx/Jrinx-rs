@@ -1,3 +1,4 @@
+#![feature(allocator_api)]
 #![feature(asm_const)]
 #![feature(btree_cursors)]
 #![feature(is_sorted)]

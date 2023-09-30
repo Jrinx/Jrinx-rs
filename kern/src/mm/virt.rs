@@ -65,10 +65,6 @@ impl VirtAddr {
         Self(self.0 & !(conf::PAGE_SIZE - 1))
     }
 
-    pub fn align_page_up(self) -> Self {
-        Self((self.0 + conf::PAGE_SIZE - 1) & !(conf::PAGE_SIZE - 1))
-    }
-
     #[cfg(feature = "pt_level_2")]
     pub fn indexes(self) -> [usize; 2] {
         [self.0 >> 22 & 0x3ff, self.0 >> 12 & 0x3ff]
@@ -255,7 +251,7 @@ pub(super) fn init() {
     }
 
     // Map physical memory regions
-    for (addr, size) in phys::get_init_regions() {
+    for &(addr, size) in &*phys::get_init_regions() {
         let perm = PagePerm::G | PagePerm::R | PagePerm::W | PagePerm::V;
         info!(
             "mapping memory region  ({} - {}) with perm {}",

@@ -1,6 +1,6 @@
-use alloc::{collections::BTreeMap, format, sync::Arc, vec::Vec};
+use alloc::{alloc::Global, sync::Arc, vec, vec::Vec};
 use fdt::node::FdtNode;
-use spin::Mutex;
+use spin::{Mutex, MutexGuard};
 
 use crate::{
     arch, conf,
@@ -11,8 +11,10 @@ use crate::{
 };
 
 use core::{
+    alloc::{Allocator, Layout},
     fmt::Display,
-    ops::{Add, Bound, Sub},
+    ops::{Add, Sub},
+    ptr::NonNull,
     slice,
 };
 
@@ -74,172 +76,56 @@ impl PhysAddr {
     }
 }
 
-pub(super) struct PhysFrameAllocator {
-    regions: BTreeMap<PhysAddr, usize>,
-    init_state: Vec<(PhysAddr, usize)>,
-}
-
-impl PhysFrameAllocator {
-    const fn new() -> Self {
-        Self {
-            regions: BTreeMap::new(),
-            init_state: Vec::new(),
-        }
-    }
-
-    fn append_region(&mut self, regions: (PhysAddr, usize)) {
-        self.merge_or_insert(regions);
-    }
-
-    fn remove_region(&mut self, regions: (PhysAddr, usize)) {
-        let (addr, size) = regions;
-        let Some((l_addr, l_size)) = self
-            .regions
-            .upper_bound_mut(Bound::Included(&addr))
-            .remove_current()
-        else {
-            panic!("no such physical memory region: {} - {}", addr, addr + size);
-        };
-
-        let size = size + (addr - addr.align_page_down());
-        let addr = addr.align_page_down();
-        let size = size + ((addr + size).align_page_up() - (addr + size));
-
-        if addr - l_addr >= conf::PAGE_SIZE {
-            self.regions
-                .try_insert(l_addr, addr.align_page_down() - l_addr)
-                .unwrap();
-        }
-        if (l_addr + l_size) - (addr + size) >= conf::PAGE_SIZE {
-            self.regions
-                .try_insert(addr + size, l_addr + l_size - addr - size)
-                .unwrap();
-        }
-    }
-
-    fn set_init_regions(&mut self) {
-        for region in self.regions.iter() {
-            self.init_state.push((*region.0, *region.1));
-        }
-    }
-
-    fn get_init_regions(&self) -> slice::Iter<'_, (PhysAddr, usize)> {
-        self.init_state.iter()
-    }
-
-    fn alloc(&mut self) -> Result<PhysAddr> {
-        let (addr, size) = self
-            .regions
-            .first_entry()
-            .ok_or(InternalError::NotEnoughMem)?
-            .remove_entry();
-        if addr != addr.align_page_down() {
-            panic!("unaligned physical address: {}", addr);
-        }
-        if size < conf::PAGE_SIZE {
-            Err(InternalError::NotEnoughMem)
-        } else {
-            if size > conf::PAGE_SIZE {
-                self.regions
-                    .try_insert(addr + conf::PAGE_SIZE, size - conf::PAGE_SIZE)
-                    .unwrap();
-            }
-            Ok(addr)
-        }
-    }
-
-    fn dealloc(&mut self, addr: PhysAddr) -> Result<()> {
-        if addr != addr.align_page_down() {
-            panic!("unaligned physical address: {}", addr);
-        }
-        self.merge_or_insert((addr, conf::PAGE_SIZE));
-        Ok(())
-    }
-
-    fn merge_or_insert(&mut self, pending: (PhysAddr, usize)) {
-        fn merge_left(
-            regions: &mut BTreeMap<PhysAddr, usize>,
-            pending: (PhysAddr, usize),
-        ) -> (PhysAddr, usize) {
-            let (addr, size) = pending;
-            if let Some((l_addr, l_size)) = regions
-                .upper_bound_mut(Bound::Included(&addr))
-                .remove_current()
-            {
-                if addr < l_addr + l_size {
-                    panic!(
-                        "overlapped physical memory regions: {} - {}",
-                        addr,
-                        l_addr + l_size
-                    );
-                }
-                if l_addr + l_size == addr {
-                    (l_addr, l_size + size)
-                } else {
-                    regions.try_insert(l_addr, l_size).unwrap();
-                    pending
-                }
-            } else {
-                pending
-            }
-        }
-
-        fn merge_right(
-            regions: &mut BTreeMap<PhysAddr, usize>,
-            pending: (PhysAddr, usize),
-        ) -> (PhysAddr, usize) {
-            let (addr, size) = pending;
-            if let Some((r_addr, r_size)) = regions
-                .lower_bound_mut(Bound::Included(&(addr + size)))
-                .remove_current()
-            {
-                if addr + size > r_addr {
-                    panic!(
-                        "overlapped physical memory regions: {} - {}",
-                        addr,
-                        r_addr + r_size
-                    );
-                }
-                if addr + size == r_addr {
-                    (addr, size + r_size)
-                } else {
-                    regions.try_insert(r_addr, r_size).unwrap();
-                    pending
-                }
-            } else {
-                pending
-            }
-        }
-
-        let pending = merge_left(&mut self.regions, pending);
-        let pending = merge_right(&mut self.regions, pending);
-        self.regions.try_insert(pending.0, pending.1).unwrap();
-    }
-}
-
-static PHYS_FRAME_ALLOCATOR: Mutex<PhysFrameAllocator> = Mutex::new(PhysFrameAllocator::new());
+static INIT_MEM_REGIONS: Mutex<Vec<(VirtAddr, usize)>> = Mutex::new(Vec::new());
 
 fn probe(node: &FdtNode) -> Result<()> {
-    let mut allocator = PHYS_FRAME_ALLOCATOR.lock();
-    for mem_region in node.reg().ok_or(InternalError::DevProbeError)? {
-        let addr = PhysAddr::new(mem_region.starting_address as usize);
-        let size = mem_region.size.ok_or(InternalError::DevProbeError)?;
-        trace!("probed physical memory region: {} - {}", addr, addr + size);
-        allocator.append_region((addr, size));
-    }
-    for (addr, size) in arch::layout::get_prot_addrs() {
-        trace!("probed protected memory region: {} - {}", addr, addr + size);
-        allocator.remove_region((arch::mm::virt_to_phys(addr), size));
-    }
-    allocator.set_init_regions();
-    debug!(
-        "usable physical memory regions: {}",
-        allocator
-            .get_init_regions()
-            .map(|&(addr, size)| { format!("{} - {}", addr, addr + size) })
-            .collect::<Vec<_>>()
-            .join(",")
-    );
+    let mut init_mem_regions = INIT_MEM_REGIONS.lock();
+    node.reg()
+        .ok_or(InternalError::DevProbeError)?
+        .filter_map(|mem_region| {
+            let addr = arch::mm::phys_to_virt(PhysAddr::new(mem_region.starting_address as usize));
+            if let Some(size) = mem_region.size {
+                trace!("probed physical memory region: {} - {}", addr, addr + size);
+                Some(
+                    arch::layout::get_protected_mem_regions()
+                        .iter()
+                        .filter_map(|&(protected_addr, protected_size)| {
+                            if protected_addr >= addr
+                                && protected_addr + protected_size <= addr + size
+                            {
+                                if protected_addr == addr && protected_size == size {
+                                    None
+                                } else if protected_addr == addr {
+                                    Some(vec![(
+                                        protected_addr + protected_size,
+                                        size - protected_size,
+                                    )])
+                                } else if protected_addr + protected_size == addr + size {
+                                    Some(vec![(addr, protected_addr - addr)])
+                                } else {
+                                    Some(vec![
+                                        (addr, protected_addr - addr),
+                                        (protected_addr + protected_size, size - protected_size),
+                                    ])
+                                }
+                            } else {
+                                Some(vec![(addr, size)])
+                            }
+                        })
+                        .collect::<Vec<_>>(),
+                )
+            } else {
+                None
+            }
+        })
+        .flatten()
+        .flatten()
+        .collect_into(&mut *init_mem_regions);
+
+    init_mem_regions
+        .iter()
+        .for_each(|&region| heap::enlarge(region));
+
     Ok(())
 }
 
@@ -247,35 +133,8 @@ device_probe! {
     devtyp("memory") => probe
 }
 
-pub(super) fn init() {
-    let mut allocator = PHYS_FRAME_ALLOCATOR.lock();
-    let heap_start = VirtAddr::new(conf::layout::_end()).align_page_up();
-    let heap_size = (heap_start.align_page_up()
-        + (allocator
-            .regions
-            .iter()
-            .map(|(_, &size)| size)
-            .sum::<usize>()
-            / 128))
-        .align_page_up()
-        - heap_start;
-    debug!(
-        "enlarge heap with memory region: {} - {}",
-        heap_start,
-        heap_start + heap_size,
-    );
-    let heap_region = (heap_start, heap_size);
-    heap::enlarge(heap_region);
-    allocator.remove_region((arch::mm::virt_to_phys(heap_region.0), heap_region.1));
-}
-
-pub(super) fn get_init_regions() -> Vec<(PhysAddr, usize)> {
-    let mut vec = Vec::new();
-    PHYS_FRAME_ALLOCATOR
-        .lock()
-        .get_init_regions()
-        .collect_into(&mut vec);
-    vec
+pub(super) fn get_init_regions() -> MutexGuard<'static, Vec<(VirtAddr, usize)>> {
+    INIT_MEM_REGIONS.lock()
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -283,16 +142,30 @@ pub struct PhysFrame {
     addr: PhysAddr,
 }
 
+#[repr(C, align(4096))]
+struct PhysFrameMemory([u8; conf::PAGE_SIZE]);
+
+const PHYS_FRAME_MEMORY_LAYOUT: Layout = Layout::new::<PhysFrameMemory>();
+
 impl Drop for PhysFrame {
     fn drop(&mut self) {
-        PHYS_FRAME_ALLOCATOR.lock().dealloc(self.addr).unwrap();
+        unsafe {
+            Global.deallocate(
+                NonNull::new(arch::mm::phys_to_virt(self.addr()).as_usize() as *mut u8).unwrap(),
+                PHYS_FRAME_MEMORY_LAYOUT,
+            );
+        }
     }
 }
 
 impl PhysFrame {
     pub fn alloc() -> Result<Arc<Self>> {
-        let addr = PHYS_FRAME_ALLOCATOR.lock().alloc()?;
-        addr.as_array_base::<u8>().fill(0);
+        let addr: NonNull<u8> = Global
+            .allocate_zeroed(PHYS_FRAME_MEMORY_LAYOUT)
+            .map_err(|_| InternalError::NotEnoughMem)?
+            .cast();
+        let addr = addr.as_ptr() as usize;
+        let addr = arch::mm::virt_to_phys(VirtAddr::new(addr));
         Ok(Arc::new(Self { addr }))
     }
 
