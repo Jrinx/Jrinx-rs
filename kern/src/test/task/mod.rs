@@ -11,7 +11,7 @@ pub(super) mod global_sched {
         test::test_define,
     };
 
-    test_define!("task::global-sched" => test);
+    test_define!("task::global_sched" => test);
     fn test() {
         const MIN_TASK_ID: TaskId = 2;
         const MAX_TASK_ID: TaskId = 10;
