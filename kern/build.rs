@@ -25,11 +25,11 @@ fn create_ld_file(arch: &str, lds_path: &str) -> io::Result<()> {
 fn find_lds(arch: &str) -> Option<String> {
     for i in 0..arch.len() {
         let path = format!("tgt/{}.ldS", &arch[..arch.len() - i]);
-        if let Ok(_) = fs::metadata(&path) {
+        if fs::metadata(&path).is_ok() {
             return Some(path);
         }
     }
-    return None;
+    None
 }
 
 fn base_addr_of(arch: &str) -> usize {
