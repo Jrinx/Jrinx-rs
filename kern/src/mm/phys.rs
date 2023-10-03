@@ -87,7 +87,7 @@ fn probe(node: &FdtNode) -> Result<()> {
             if let Some(size) = mem_region.size {
                 trace!("probed physical memory region: {} - {}", addr, addr + size);
                 Some(
-                    arch::layout::get_protected_mem_regions()
+                    arch::mm::get_protected_mem_regions()
                         .iter()
                         .filter_map(|&(protected_addr, protected_size)| {
                             if protected_addr >= addr

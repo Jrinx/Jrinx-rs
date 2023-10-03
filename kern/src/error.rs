@@ -3,6 +3,7 @@ pub enum InternalError {
     DevProbeError,
     NotEnoughMem,
     InvalidVirtAddr,
+    DuplicateTaskId,
 }
 
 pub type Result<T> = core::result::Result<T, InternalError>;

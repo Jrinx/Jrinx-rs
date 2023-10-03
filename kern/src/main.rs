@@ -9,18 +9,13 @@
 #![feature(offset_of)]
 #![feature(panic_info_message)]
 #![feature(stmt_expr_attributes)]
+#![feature(trait_alias)]
 #![feature(used_with_arg)]
 #![deny(warnings)]
 #![no_std]
 #![no_main]
 
-use crate::{
-    task::{
-        sched::{self, Scheduler},
-        Task,
-    },
-    util::{logging, random},
-};
+use crate::util::{logging, random};
 
 extern crate alloc;
 
@@ -62,16 +57,13 @@ extern "C" fn cold_init(_: usize, fdtaddr: *const u8) -> ! {
     mm::init();
     cpudata::init();
 
-    sched::with_global_scheduler(|scheduler| {
-        scheduler.insert(Task::create("init", 0, root_task_init, 0).unwrap());
-    });
-    sched::global_sched_start();
+    task::spawn(master_init());
+
+    let (address, stack_top) =
+        cpudata::with_cpu_executor(|executor| (executor.addr(), executor.stack_top()));
+    arch::task::executor::launch(address, stack_top);
 }
 
-extern "C" fn root_task_init(_: usize) {
-    info!(
-        "root task '{}' started",
-        cpudata::get_current_task().unwrap().get_name()
-    );
-    driver::bootargs::execute();
+async fn master_init() {
+    driver::bootargs::execute().await;
 }

@@ -1,68 +1,47 @@
-pub(super) mod global_sched {
-    use alloc::{format, vec::Vec};
+pub(super) mod executor {
+    use alloc::vec::Vec;
     use spin::RwLock;
 
     use crate::{
-        cpudata,
-        task::{
-            sched::{self, Scheduler},
-            Task, TaskId,
-        },
+        task::{self, TaskPriority},
         test::test_define,
     };
 
-    test_define!("task::global_sched" => test);
+    static QUEUE: RwLock<Vec<i32>> = RwLock::new(Vec::new());
+
+    fn queue_push(val: i32) {
+        assert_eq!(QUEUE.writer_count(), 0);
+        assert_eq!(QUEUE.reader_count(), 0);
+        let guard = QUEUE.try_write();
+        assert!(guard.is_some());
+        guard.unwrap().push(val);
+    }
+
+    test_define!("task::executor" => test);
     fn test() {
-        const MIN_TASK_ID: TaskId = 2;
-        const MAX_TASK_ID: TaskId = 10;
-
-        fn with_result(f: impl FnOnce(&mut Vec<TaskId>)) {
-            static RECORD: RwLock<Vec<TaskId>> = RwLock::new(Vec::new());
-            assert_eq!(RECORD.reader_count(), 0);
-            assert_eq!(RECORD.writer_count(), 0);
-            f(&mut *RECORD.write());
-        }
-
-        extern "C" fn subtask_main(arg: usize) {
-            let current_task = cpudata::get_current_task().unwrap();
-            let task_name = current_task.get_name();
-            let task_ident = current_task.get_ident();
-            debug!("task '{}' started with arg {}", task_name, arg);
-            assert_eq!(
-                current_task.get_priority() * current_task.get_priority(),
-                arg,
-            );
-            with_result(|record| {
-                match record.last() {
-                    Some(last) => assert_eq!(*last, task_ident + 1),
-                    None => assert_eq!(task_ident, MAX_TASK_ID),
-                }
-                record.push(cpudata::get_current_task().unwrap().get_ident());
-            });
-            debug!("task '{}' ended", task_name);
-        }
-
-        for i in MIN_TASK_ID..=MAX_TASK_ID {
-            let priority = (i - MIN_TASK_ID + 1) as usize;
-            sched::with_global_scheduler(|scheduler| {
-                scheduler.insert(
-                    Task::create(
-                        format!("task#{}", i).as_str(),
+        task::spawn_with_priority(
+            async {
+                for i in 0..10 {
+                    let priority = TaskPriority::new(i + 128);
+                    let this_value = i as i32 * i as i32;
+                    let prev_value = if i < 9 {
+                        Some((i + 1) as i32 * (i + 1) as i32)
+                    } else {
+                        None
+                    };
+                    task::spawn_with_priority(
+                        async move {
+                            trace!("spawned task: value = {}", this_value);
+                            assert_eq!(QUEUE.read().last(), prev_value.as_ref());
+                            queue_push(this_value);
+                        },
                         priority,
-                        subtask_main,
-                        priority * priority,
-                    )
-                    .unwrap(),
-                );
-            })
-        }
-
-        sched::global_switch();
-        with_result(|record| {
-            assert_eq!(record.len(), (MAX_TASK_ID - MIN_TASK_ID + 1) as usize);
-            assert_eq!(record.first(), Some(&MAX_TASK_ID));
-            assert_eq!(record.last(), Some(&MIN_TASK_ID));
-            assert!(record.is_sorted_by_key(|&x| u64::MAX - x));
-        });
+                    );
+                }
+                task::yield_now().await;
+                assert_eq!(QUEUE.read().len(), 10);
+            },
+            TaskPriority::new(127),
+        );
     }
 }

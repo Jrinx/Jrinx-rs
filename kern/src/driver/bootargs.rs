@@ -1,7 +1,10 @@
 use alloc::{borrow::ToOwned, format, string::String, vec::Vec};
 use getargs::{Opt, Options};
 
-use crate::{arch, error::HaltReason, test};
+use crate::{
+    task::{self, TaskPriority},
+    test,
+};
 
 static mut BOOTARGS: Option<String> = None;
 
@@ -11,7 +14,7 @@ pub(super) fn set(bootargs: &str) {
     }
 }
 
-pub fn execute() {
+pub async fn execute() {
     if let Some(bootargs) = unsafe { &mut BOOTARGS } {
         let args = bootargs
             .split_whitespace()
@@ -32,14 +35,18 @@ pub fn execute() {
                     let func = test::find(test)
                         .expect(format!("unrecognized test case: {}", test).as_str());
                     info!("test case {} begin", test);
-                    func();
+                    task::spawn_with_priority(
+                        async move {
+                            func();
+                        },
+                        TaskPriority::new(1),
+                    );
+                    task::yield_now().await;
                     info!("test case {} end", test);
-
-                    arch::halt(HaltReason::NormalExit);
                 }
 
                 Opt::Short(_) | Opt::Long(_) => panic!("unrecognized option: {}", opt),
-            }
+            };
         }
     }
 }

@@ -94,22 +94,6 @@ impl PageTable {
         Ok(Self { root, frames })
     }
 
-    pub fn clone_from(src_table: &Self) -> Result<Self> {
-        let dst_table = Self::new()?;
-
-        let dst = dst_table.root.as_array_base::<PageTableEntry>();
-        let src = src_table.root.as_array_base::<PageTableEntry>();
-
-        for (d, s) in dst.iter_mut().zip(src.iter()) {
-            if s.is_valid() {
-                let (addr, perm) = s.as_tuple();
-                d.set(addr, perm);
-            }
-        }
-
-        Ok(dst_table)
-    }
-
     fn find(&self, addr: VirtAddr) -> Result<&mut PageTableEntry> {
         let indexes = addr.indexes();
         let mut pa = self.root;

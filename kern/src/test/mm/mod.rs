@@ -41,8 +41,11 @@ pub(super) mod virt {
 
     use crate::{
         arch::{self, mm::virt::PagePerm},
-        conf, cpudata,
-        mm::{phys::PhysFrame, virt::VirtAddr},
+        conf,
+        mm::{
+            phys::PhysFrame,
+            virt::{VirtAddr, KERN_PAGE_TABLE},
+        },
         test::test_define,
         util::random,
     };
@@ -53,50 +56,44 @@ pub(super) mod virt {
         let vaddr2 = VirtAddr::new(conf::PAGE_SIZE * 2);
 
         for _ in 0..10 {
-            cpudata::get_current_task()
-                .unwrap()
-                .with_page_table(|page_table| {
-                    let frame = PhysFrame::alloc().unwrap();
-                    let paddr = frame.addr();
-                    page_table
-                        .map(vaddr1, frame, PagePerm::G | PagePerm::W | PagePerm::R)
-                        .unwrap();
-                    let (frame, perm) = page_table.lookup(vaddr1).unwrap();
+            let mut page_table = KERN_PAGE_TABLE.write();
+            let frame = PhysFrame::alloc().unwrap();
+            let paddr = frame.addr();
+            page_table
+                .map(vaddr1, frame, PagePerm::G | PagePerm::W | PagePerm::R)
+                .unwrap();
+            let (frame, perm) = page_table.lookup(vaddr1).unwrap();
 
-                    assert_eq!(frame.addr(), paddr);
-                    page_table.map(vaddr2, frame, perm).unwrap();
+            assert_eq!(frame.addr(), paddr);
+            page_table.map(vaddr2, frame, perm).unwrap();
 
-                    let (paddr1, perm1) = page_table.translate(vaddr1).unwrap();
-                    let (paddr2, perm2) = page_table.translate(vaddr2).unwrap();
-                    assert_eq!(paddr1, paddr2);
-                    assert_eq!(perm1.bits(), perm2.bits());
+            let (paddr1, perm1) = page_table.translate(vaddr1).unwrap();
+            let (paddr2, perm2) = page_table.translate(vaddr2).unwrap();
+            assert_eq!(paddr1, paddr2);
+            assert_eq!(perm1.bits(), perm2.bits());
 
-                    arch::mm::virt::sync(vaddr1);
-                    arch::mm::virt::sync(vaddr2);
+            arch::mm::virt::sync(vaddr1);
+            arch::mm::virt::sync(vaddr2);
 
-                    let space = [
-                        vaddr1.as_usize() as *mut usize,
-                        paddr.as_usize() as *mut usize,
-                    ];
+            let space = [
+                vaddr1.as_usize() as *mut usize,
+                paddr.as_usize() as *mut usize,
+            ];
 
-                    for i in 0..conf::PAGE_SIZE / mem::size_of::<usize>() {
-                        let src = space[i % 2];
-                        let dst = space[1 - i % 2];
-                        let rand = random::rand();
-                        write(src, rand);
-                        assert_eq!(read(dst), rand);
-                        write(src, !read(dst));
-                        assert_eq!(read(src), read(dst));
-                    }
-                });
+            for i in 0..conf::PAGE_SIZE / mem::size_of::<usize>() {
+                let src = space[i % 2];
+                let dst = space[1 - i % 2];
+                let rand = random::rand();
+                write(src, rand);
+                assert_eq!(read(dst), rand);
+                write(src, !read(dst));
+                assert_eq!(read(src), read(dst));
+            }
         }
 
-        cpudata::get_current_task()
-            .unwrap()
-            .with_page_table(|page_table| {
-                page_table.unmap(vaddr1).unwrap();
-                page_table.unmap(vaddr2).unwrap();
-            });
+        let mut page_table = KERN_PAGE_TABLE.write();
+        page_table.unmap(vaddr1).unwrap();
+        page_table.unmap(vaddr2).unwrap();
     }
 
     fn write<T>(src: *mut T, val: T)
