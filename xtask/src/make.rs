@@ -116,7 +116,7 @@ fn setup_envs(arg: &MakeArg) {
         (
             "BUILD_TIME",
             chrono::offset::Local::now()
-                .format("+%Y-%m-%d %H:%M:%S")
+                .format("%Y-%m-%d %H:%M:%S")
                 .to_string(),
         ),
         (
