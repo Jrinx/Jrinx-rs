@@ -107,27 +107,23 @@ fn setup_envs(arg: &MakeArg) {
     let &MakeArg { debug, arch, .. } = arg;
     let ArchArg { arch, .. } = arch;
 
-    let default_envs = [
-        ("ARCH", arch.to_string()),
-        (
-            "BUILD_MODE",
-            if debug { "debug" } else { "release" }.to_string(),
-        ),
-        (
-            "BUILD_TIME",
-            chrono::offset::Local::now()
-                .format("%Y-%m-%d %H:%M:%S")
-                .to_string(),
-        ),
-        (
-            "RAND_SEED",
-            rand::thread_rng().gen_range(0..0x8000).to_string(),
-        ),
-    ];
+    macro_rules! export_env {
+        ($env:literal ?= $val:expr) => {
+            if std::env::vars_os().all(|(k, _)| k != $env) {
+                std::env::set_var($env, $val);
+            }
+        };
+        ($( $env:literal ?= $val:expr ),* ) => {
+            $(
+                export_env!($env ?= $val);
+            )*
+        };
+    }
 
-    for (env_key, env_val) in default_envs {
-        if std::env::vars_os().all(|(k, _)| k != env_key) {
-            std::env::set_var(env_key, env_val);
-        }
+    export_env! {
+        "ARCH" ?= arch.to_string(),
+        "BUILD_MODE" ?= if debug { "debug" } else { "release" }.to_string(),
+        "BUILD_TIME" ?= chrono::offset::Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+        "RAND_SEED" ?= rand::thread_rng().gen_range(0..0x8000).to_string()
     }
 }
