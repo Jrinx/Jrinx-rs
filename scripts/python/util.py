@@ -112,7 +112,7 @@ def read_board_list(arch: str) -> list[str]:
         'scripts',
     ).parent / 'kern' / 'tgt'
 
-    while not (board_list_file := board_list_dir / f'{arch}-board.list').exists():
+    while not (board_list_file := board_list_dir / f'{arch}.board-list').exists():
         arch = arch[:-1]
 
     with board_list_file.open() as f:
