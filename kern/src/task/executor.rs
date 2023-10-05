@@ -23,6 +23,7 @@ type TaskQueue = PriorityQueueWithLock<TaskPriority, TaskId>;
 static EXECUTOR_STACK_ALLOCATOR: StackAllocator = StackAllocator::new(
     VirtAddr::new(arch::layout::EXECUTOR_STACK_LIMIT),
     arch::layout::EXECUTOR_STACK_SIZE,
+    conf::PAGE_SIZE,
 );
 
 pub struct Executor {

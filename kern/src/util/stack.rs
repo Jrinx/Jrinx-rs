@@ -4,22 +4,23 @@ use alloc::collections::{BTreeSet, VecDeque};
 use spin::Mutex;
 
 use crate::{
-    conf,
     error::{InternalError, Result},
     mm::virt::VirtAddr,
 };
 
 pub struct StackAllocator {
     stack_size: usize,
+    guard_size: usize,
     next_top: AtomicUsize,
     allocated_tops: Mutex<BTreeSet<VirtAddr>>,
     recycled_tops: Mutex<VecDeque<VirtAddr>>,
 }
 
 impl StackAllocator {
-    pub const fn new(limit: VirtAddr, stack_size: usize) -> Self {
+    pub const fn new(limit: VirtAddr, stack_size: usize, guard_size: usize) -> Self {
         Self {
             stack_size,
+            guard_size,
             next_top: AtomicUsize::new(limit.as_usize()),
             allocated_tops: Mutex::new(BTreeSet::new()),
             recycled_tops: Mutex::new(VecDeque::new()),
@@ -32,7 +33,7 @@ impl StackAllocator {
         } else {
             let stack_top = VirtAddr::new(
                 self.next_top
-                    .fetch_sub(self.stack_size + conf::PAGE_SIZE, Ordering::SeqCst),
+                    .fetch_sub(self.stack_size + self.guard_size, Ordering::SeqCst),
             );
             self.allocated_tops.lock().insert(stack_top);
             stack_top
