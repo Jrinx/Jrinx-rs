@@ -53,11 +53,11 @@ impl Display for VirtAddr {
 }
 
 impl VirtAddr {
-    pub fn new(addr: usize) -> Self {
+    pub const fn new(addr: usize) -> Self {
         Self(addr)
     }
 
-    pub fn as_usize(self) -> usize {
+    pub const fn as_usize(self) -> usize {
         self.0
     }
 

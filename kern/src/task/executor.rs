@@ -1,6 +1,5 @@
 use core::{
     pin::Pin,
-    sync::atomic::{AtomicUsize, Ordering},
     task::{Context, Poll, Waker},
 };
 
@@ -14,15 +13,20 @@ use crate::{
         phys::PhysFrame,
         virt::{VirtAddr, KERN_PAGE_TABLE},
     },
-    util::priority::PriorityQueueWithLock,
+    util::{priority::PriorityQueueWithLock, stack::StackAllocator},
 };
 
 use super::{Task, TaskId, TaskPriority};
 
 type TaskQueue = PriorityQueueWithLock<TaskPriority, TaskId>;
 
+static EXECUTOR_STACK_ALLOCATOR: StackAllocator = StackAllocator::new(
+    VirtAddr::new(arch::layout::EXECUTOR_STACK_LIMIT),
+    arch::layout::EXECUTOR_STACK_SIZE,
+);
+
 pub struct Executor {
-    stack_top: usize,
+    stack_top: VirtAddr,
     task_registry: BTreeMap<TaskId, Task>,
     task_queue: Arc<TaskQueue>,
     task_waker: BTreeMap<TaskId, Waker>,
@@ -42,11 +46,11 @@ impl Executor {
         Box::pin(executor)
     }
 
-    pub fn addr(&self) -> usize {
-        self as *const _ as usize
+    pub fn addr(&self) -> VirtAddr {
+        VirtAddr::new(self as *const _ as usize)
     }
 
-    pub fn stack_top(&self) -> usize {
+    pub fn stack_top(&self) -> VirtAddr {
         self.stack_top
     }
 
@@ -93,16 +97,12 @@ impl Executor {
         }
     }
 
-    fn setup_vm() -> Result<usize> {
-        static EXECUTOR_STACK_TOP_PREV: AtomicUsize =
-            AtomicUsize::new(arch::layout::EXECUTOR_STACK_LIMIT);
-        let stack_top = EXECUTOR_STACK_TOP_PREV.fetch_add(
-            !(arch::layout::EXECUTOR_STACK_SIZE + conf::PAGE_SIZE) + 1,
-            Ordering::SeqCst,
-        );
+    fn setup_vm() -> Result<VirtAddr> {
+        let stack_top = EXECUTOR_STACK_ALLOCATOR.alloc();
+
         let mut page_table = KERN_PAGE_TABLE.write();
         for i in (0..arch::layout::EXECUTOR_STACK_SIZE).step_by(conf::PAGE_SIZE) {
-            let virt_addr = VirtAddr::new(stack_top - i - conf::PAGE_SIZE);
+            let virt_addr = stack_top - i - conf::PAGE_SIZE;
             let phys_frame = PhysFrame::alloc()?;
             page_table.map(
                 virt_addr,
@@ -111,6 +111,12 @@ impl Executor {
             )?;
         }
         Ok(stack_top)
+    }
+}
+
+impl Drop for Executor {
+    fn drop(&mut self) {
+        EXECUTOR_STACK_ALLOCATOR.dealloc(self.stack_top).unwrap();
     }
 }
 
