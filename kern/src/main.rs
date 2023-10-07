@@ -42,6 +42,7 @@ mod util;
 static INIT_STACK: [u8; conf::KSTACK_SIZE] = [0; conf::KSTACK_SIZE];
 
 extern "C" fn cold_init(_: usize, fdtaddr: *const u8) -> ! {
+    heap::init();
     logging::init();
     random::init();
 
@@ -53,7 +54,6 @@ extern "C" fn cold_init(_: usize, fdtaddr: *const u8) -> ! {
         arch, build_time, build_mode
     );
 
-    heap::init();
     arch::init();
     driver::init(fdtaddr);
 
