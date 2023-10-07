@@ -14,21 +14,31 @@ pub struct StackAllocator {
     next_top: AtomicUsize,
     allocated_tops: Mutex<BTreeSet<VirtAddr>>,
     recycled_tops: Mutex<VecDeque<VirtAddr>>,
+    vm_map: fn(VirtAddr, usize) -> Result<()>,
+    vm_unmap: fn(VirtAddr, usize) -> Result<()>,
 }
 
 impl StackAllocator {
-    pub const fn new(limit: VirtAddr, stack_size: usize, guard_size: usize) -> Self {
+    pub const fn new(
+        limit: VirtAddr,
+        stack_size: usize,
+        guard_size: usize,
+        map: fn(VirtAddr, usize) -> Result<()>,
+        unmap: fn(VirtAddr, usize) -> Result<()>,
+    ) -> Self {
         Self {
             stack_size,
             guard_size,
             next_top: AtomicUsize::new(limit.as_usize()),
             allocated_tops: Mutex::new(BTreeSet::new()),
             recycled_tops: Mutex::new(VecDeque::new()),
+            vm_map: map,
+            vm_unmap: unmap,
         }
     }
 
-    pub fn alloc(&self) -> VirtAddr {
-        if let Some(top) = self.recycled_tops.lock().pop_front() {
+    pub fn alloc(&self) -> Result<VirtAddr> {
+        let stack_top = if let Some(top) = self.recycled_tops.lock().pop_front() {
             top
         } else {
             let stack_top = VirtAddr::new(
@@ -37,15 +47,23 @@ impl StackAllocator {
             );
             self.allocated_tops.lock().insert(stack_top);
             stack_top
-        }
+        };
+
+        (self.vm_map)(stack_top - self.stack_size, self.stack_size)?;
+
+        Ok(stack_top)
     }
 
     pub fn dealloc(&self, top: VirtAddr) -> Result<()> {
-        if !self.allocated_tops.lock().remove(&top) {
+        let stack_top = if !self.allocated_tops.lock().remove(&top) {
             Err(InternalError::InvalidVirtAddr)
         } else {
             self.recycled_tops.lock().push_back(top);
-            Ok(())
-        }
+            Ok(top)
+        }?;
+
+        (self.vm_unmap)(stack_top - self.stack_size, self.stack_size)?;
+
+        Ok(())
     }
 }

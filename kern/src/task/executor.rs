@@ -24,6 +24,27 @@ static EXECUTOR_STACK_ALLOCATOR: StackAllocator = StackAllocator::new(
     VirtAddr::new(arch::layout::EXECUTOR_STACK_LIMIT),
     arch::layout::EXECUTOR_STACK_SIZE,
     conf::PAGE_SIZE,
+    |addr, size| {
+        let mut page_table = KERN_PAGE_TABLE.write();
+        for i in (0..size).step_by(conf::PAGE_SIZE) {
+            let virt_addr = addr + i;
+            let phys_frame = PhysFrame::alloc()?;
+            page_table.map(
+                virt_addr,
+                phys_frame,
+                PagePerm::G | PagePerm::R | PagePerm::W,
+            )?;
+        }
+        Ok(())
+    },
+    |addr, size| {
+        let mut page_table = KERN_PAGE_TABLE.write();
+        for i in (0..size).step_by(conf::PAGE_SIZE) {
+            let virt_addr = addr + i;
+            page_table.unmap(virt_addr)?;
+        }
+        Ok(())
+    },
 );
 
 pub struct Executor {
@@ -99,7 +120,7 @@ impl Executor {
     }
 
     fn setup_vm() -> Result<VirtAddr> {
-        let stack_top = EXECUTOR_STACK_ALLOCATOR.alloc();
+        let stack_top = EXECUTOR_STACK_ALLOCATOR.alloc()?;
 
         let mut page_table = KERN_PAGE_TABLE.write();
         for i in (0..arch::layout::EXECUTOR_STACK_SIZE).step_by(conf::PAGE_SIZE) {
