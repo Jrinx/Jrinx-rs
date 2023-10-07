@@ -55,7 +55,7 @@ impl log::Log for Logger {
         .unwrap_or("bootstrap".to_string());
 
         print_fmt(with_color! {
-            color::ColorCode::White,
+            color::ColorCode::WHITE,
             "[ {time} cpu#{id} {level} ] ( {kernel_state} ) {args}\n",
             time = {
                 let micros = cpu_time.as_micros();
@@ -64,7 +64,7 @@ impl log::Log for Logger {
             id = cpu_id,
             level = with_color!(color, "{:>5}", level),
             kernel_state = with_color!(color::ColorCode::BLUE, "{:^14}", kernel_state),
-            args = with_color!(color::ColorCode::White, "{}", record.args()),
+            args = with_color!(color::ColorCode::WHITE, "{}", record.args()),
         });
     }
 

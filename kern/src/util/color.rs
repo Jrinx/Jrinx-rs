@@ -7,7 +7,7 @@ pub enum ColorCode {
     BLUE = 34,
     MAGENTA = 35,
     CYAN = 36,
-    White = 37,
+    WHITE = 37,
 }
 
 macro_rules! with_color {
