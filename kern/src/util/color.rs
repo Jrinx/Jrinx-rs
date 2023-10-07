@@ -11,15 +11,21 @@ pub enum ColorCode {
 }
 
 macro_rules! with_color {
-    ($color:expr, $($arg:tt)*) => {{
+    ($color:expr, $restore_color:expr, $($arg:tt)*) => {{
         #[cfg(feature = "colorful")]
         {
-            format_args!("\u{1B}[{}m{}\u{1B}[0m", $color as u8, format_args!($($arg)*))
+            format_args!(
+                "\u{1B}[{color}m{arg}\u{1B}[{restore}m",
+                color = $color as u8,
+                arg = format_args!($($arg)*),
+                restore = $restore_color as u8,
+            )
         }
 
         #[cfg(not(feature = "colorful"))]
         {
             $color as u8;
+            $restore_color as u8;
             format_args!($($arg)*)
         }
     }};
