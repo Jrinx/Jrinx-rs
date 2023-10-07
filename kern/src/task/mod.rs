@@ -1,4 +1,5 @@
 pub mod executor;
+pub mod runtime;
 
 use core::{
     future::Future,
@@ -72,6 +73,13 @@ impl Future for YieldNow {
             Poll::Pending
         }
     }
+}
+
+pub fn bootstrap_spawn(future: impl Future<Output = ()> + 'static) {
+    let priority = TaskPriority::default();
+    cpudata::with_cpu_bootstrap_executor(|executor| {
+        executor.spawn(Task::new(future, priority)).unwrap();
+    });
 }
 
 pub fn spawn(future: impl Future<Output = ()> + 'static, priority: TaskPriority) {

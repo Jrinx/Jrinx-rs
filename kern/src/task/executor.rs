@@ -6,17 +6,17 @@ use core::{
 use alloc::{boxed::Box, collections::BTreeMap, sync::Arc, task::Wake};
 
 use crate::{
-    arch::{self, mm::virt::PagePerm},
+    arch::{self, mm::virt::PagePerm, task::executor::SwitchContext},
     conf,
-    error::{HaltReason, InternalError, Result},
+    error::{InternalError, Result},
     mm::{
         phys::PhysFrame,
         virt::{VirtAddr, KERN_PAGE_TABLE},
     },
-    util::{priority::PriorityQueueWithLock, stack::StackAllocator},
+    util::{identity::IdGenerater, priority::PriorityQueueWithLock, stack::StackAllocator},
 };
 
-use super::{Task, TaskId, TaskPriority};
+use super::{runtime, Task, TaskId, TaskPriority};
 
 type TaskQueue = PriorityQueueWithLock<TaskPriority, TaskId>;
 
@@ -47,33 +47,94 @@ static EXECUTOR_STACK_ALLOCATOR: StackAllocator = StackAllocator::new(
     },
 );
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ExecutorId(u64);
+
+impl IdGenerater for ExecutorId {}
+
+impl ExecutorId {
+    fn new() -> Self {
+        Self(Self::generate())
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ExecutorPriority(u16);
+
+impl ExecutorPriority {
+    pub const fn new(priority: u16) -> Self {
+        Self(priority)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExecutorBehaviorOnNoTask {
+    IDLE,
+    EXIT,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExecutorStatus {
+    Running,
+    Finished,
+}
+
 pub struct Executor {
+    id: ExecutorId,
+    priority: ExecutorPriority,
+    beh_on_no_task: ExecutorBehaviorOnNoTask,
+    status: ExecutorStatus,
     stack_top: VirtAddr,
+    switch_context: SwitchContext,
     task_registry: BTreeMap<TaskId, Task>,
     task_queue: Arc<TaskQueue>,
     task_waker: BTreeMap<TaskId, Waker>,
 }
 
 impl Executor {
-    pub fn new() -> Pin<Box<Self>> {
-        let stack_top = Self::setup_vm().unwrap();
+    pub fn new(
+        priority: ExecutorPriority,
+        beh_on_no_task: ExecutorBehaviorOnNoTask,
+    ) -> Pin<Box<Self>> {
+        let entry = VirtAddr::new(arch::task::executor::launch as usize);
+        let stack_top = EXECUTOR_STACK_ALLOCATOR.alloc().unwrap();
 
-        let executor = Self {
+        let executor = Box::pin(Self {
+            id: ExecutorId::new(),
+            priority,
+            beh_on_no_task,
+            status: ExecutorStatus::Running,
             stack_top,
+            switch_context: SwitchContext::new_executor(
+                entry,
+                stack_top - core::mem::size_of::<usize>(),
+            ),
             task_registry: BTreeMap::new(),
             task_queue: Arc::new(TaskQueue::new()),
             task_waker: BTreeMap::new(),
-        };
+        });
 
-        Box::pin(executor)
+        unsafe {
+            arch::mm::push_stack(stack_top, &*executor.as_ref() as *const _ as usize);
+        }
+
+        executor
     }
 
-    pub fn addr(&self) -> VirtAddr {
-        VirtAddr::new(self as *const _ as usize)
+    pub fn id(&self) -> ExecutorId {
+        self.id
     }
 
-    pub fn stack_top(&self) -> VirtAddr {
-        self.stack_top
+    pub fn priority(&self) -> ExecutorPriority {
+        self.priority
+    }
+
+    pub fn status(&self) -> ExecutorStatus {
+        self.status
+    }
+
+    pub fn switch_context_addr(&self) -> VirtAddr {
+        VirtAddr::new(&self.switch_context as *const _ as usize)
     }
 
     pub fn spawn(&mut self, task: Task) -> Result<&mut Self> {
@@ -85,7 +146,7 @@ impl Executor {
         Ok(self)
     }
 
-    pub fn run(&mut self) -> ! {
+    pub fn run(&mut self) {
         let Self {
             task_registry,
             task_queue,
@@ -114,25 +175,13 @@ impl Executor {
                 }
             }
 
-            // TODO: Wait for interrupt?
-            arch::halt(HaltReason::NormalExit);
+            if self.beh_on_no_task == ExecutorBehaviorOnNoTask::IDLE {
+                arch::wait_for_interrupt();
+            } else {
+                self.status = ExecutorStatus::Finished;
+                break;
+            }
         }
-    }
-
-    fn setup_vm() -> Result<VirtAddr> {
-        let stack_top = EXECUTOR_STACK_ALLOCATOR.alloc()?;
-
-        let mut page_table = KERN_PAGE_TABLE.write();
-        for i in (0..arch::layout::EXECUTOR_STACK_SIZE).step_by(conf::PAGE_SIZE) {
-            let virt_addr = stack_top - i - conf::PAGE_SIZE;
-            let phys_frame = PhysFrame::alloc()?;
-            page_table.map(
-                virt_addr,
-                phys_frame,
-                PagePerm::G | PagePerm::R | PagePerm::W,
-            )?;
-        }
-        Ok(stack_top)
     }
 }
 
@@ -143,8 +192,11 @@ impl Drop for Executor {
 }
 
 pub extern "C" fn start(address: usize) -> ! {
-    let executor = unsafe { &mut *(address as *mut Executor) };
+    let mut executor = unsafe { Box::from_raw(address as *mut Executor) };
     executor.run();
+
+    runtime::switch_yield();
+    unreachable!();
 }
 
 struct TaskWaker {

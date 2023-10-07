@@ -16,7 +16,7 @@
 #![no_main]
 
 use crate::{
-    task::TaskPriority,
+    task::runtime,
     util::{logging, random},
 };
 
@@ -60,11 +60,9 @@ extern "C" fn cold_init(_: usize, fdtaddr: *const u8) -> ! {
     mm::init();
     cpudata::init();
 
-    task::spawn(master_init(), TaskPriority::default());
+    task::bootstrap_spawn(master_init());
 
-    let (address, stack_top) =
-        cpudata::with_cpu_executor(|executor| (executor.addr(), executor.stack_top()));
-    arch::task::executor::launch(address, stack_top);
+    runtime::start();
 }
 
 async fn master_init() {

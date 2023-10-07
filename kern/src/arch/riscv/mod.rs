@@ -56,6 +56,12 @@ pub fn halt(reason: HaltReason) -> ! {
     unreachable!();
 }
 
+pub fn wait_for_interrupt() {
+    unsafe {
+        riscv::asm::wfi();
+    }
+}
+
 pub fn breakpoint() {
     unsafe {
         riscv::asm::ebreak();
