@@ -4,6 +4,7 @@ use core::{
 };
 
 use alloc::{boxed::Box, collections::BTreeMap, sync::Arc, task::Wake};
+use spin::Mutex;
 
 use crate::{
     arch::{self, mm::virt::PagePerm, task::executor::SwitchContext},
@@ -13,7 +14,7 @@ use crate::{
         phys::PhysFrame,
         virt::{VirtAddr, KERN_PAGE_TABLE},
     },
-    util::{identity::IdGenerater, priority::PriorityQueueWithLock, stack::StackAllocator},
+    util::{priority::PriorityQueueWithLock, serial_id::SerialIdGenerator, stack::StackAllocator},
 };
 
 use super::{runtime, Task, TaskId, TaskPriority};
@@ -50,11 +51,11 @@ static EXECUTOR_STACK_ALLOCATOR: StackAllocator = StackAllocator::new(
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ExecutorId(u64);
 
-impl IdGenerater for ExecutorId {}
-
 impl ExecutorId {
     fn new() -> Self {
-        Self(Self::generate())
+        static ID_GENERATOR: Mutex<SerialIdGenerator> = Mutex::new(SerialIdGenerator::new());
+
+        Self(ID_GENERATOR.lock().generate())
     }
 }
 

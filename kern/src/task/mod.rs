@@ -8,17 +8,18 @@ use core::{
 };
 
 use alloc::boxed::Box;
+use spin::Mutex;
 
-use crate::{cpudata, util::identity::IdGenerater};
+use crate::{cpudata, util::serial_id::SerialIdGenerator};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TaskId(u64);
 
-impl IdGenerater for TaskId {}
-
 impl TaskId {
     fn new() -> Self {
-        Self(Self::generate())
+        static ID_GENERATOR: Mutex<SerialIdGenerator> = Mutex::new(SerialIdGenerator::new());
+
+        Self(ID_GENERATOR.lock().generate())
     }
 }
 
