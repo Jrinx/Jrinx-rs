@@ -2,6 +2,7 @@
 pub enum InternalError {
     DevProbeError,
     NotEnoughMem,
+    InvalidCpuId,
     InvalidVirtAddr,
     DuplicateTaskId,
     InvalidExecutorId,

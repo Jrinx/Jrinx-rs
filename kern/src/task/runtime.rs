@@ -150,12 +150,13 @@ impl Runtime {
 }
 
 pub fn start() -> ! {
-    let runtime_switch_ctx = cpudata::with_cpu_runtime(|rt| rt.switch_context_addr());
-    while let Some(executor_id) = cpudata::with_cpu_runtime(|rt| rt.pop_executor()) {
-        cpudata::with_cpu_runtime(|rt| rt.set_current_executor(Some(executor_id)));
+    let runtime_switch_ctx = cpudata::with_cpu_runtime(|rt| rt.switch_context_addr()).unwrap();
+    while let Some(executor_id) = cpudata::with_cpu_runtime(|rt| rt.pop_executor()).unwrap() {
+        cpudata::with_cpu_runtime(|rt| rt.set_current_executor(Some(executor_id))).unwrap();
 
         let executor_switch_ctx =
-            cpudata::with_cpu_runtime(|rt| rt.executor_switch_context_addr(executor_id)).unwrap();
+            cpudata::with_cpu_runtime(|rt| rt.executor_switch_context_addr(executor_id).unwrap())
+                .unwrap();
         // TODO: setup timer
         unsafe {
             arch::task::executor::switch(
@@ -164,17 +165,19 @@ pub fn start() -> ! {
             );
         }
 
-        cpudata::with_cpu_runtime(|rt| rt.set_current_executor(None));
+        cpudata::with_cpu_runtime(|rt| rt.set_current_executor(None)).unwrap();
 
         if cpudata::with_cpu_runtime(|rt| {
             rt.with_specific_executor(executor_id, |executor| {
                 executor.status() == ExecutorStatus::Finished
             })
             .unwrap()
-        }) {
-            cpudata::with_cpu_runtime(|rt| rt.unregister_executor(executor_id).unwrap());
+        })
+        .unwrap()
+        {
+            cpudata::with_cpu_runtime(|rt| rt.unregister_executor(executor_id).unwrap()).unwrap();
         } else {
-            cpudata::with_cpu_runtime(|rt| rt.add_executor(executor_id).unwrap());
+            cpudata::with_cpu_runtime(|rt| rt.add_executor(executor_id).unwrap()).unwrap();
         }
     }
     info!("all executors finished");
@@ -182,8 +185,8 @@ pub fn start() -> ! {
 }
 
 pub fn switch_yield() {
-    let runtime_switch_ctx = cpudata::with_cpu_runtime(|rt| rt.switch_context_addr());
-    let executor_switch_ctx = cpudata::with_cpu_executor(|ex| ex.switch_context_addr());
+    let runtime_switch_ctx = cpudata::with_cpu_runtime(|rt| rt.switch_context_addr()).unwrap();
+    let executor_switch_ctx = cpudata::with_cpu_executor(|ex| ex.switch_context_addr()).unwrap();
     unsafe {
         arch::task::executor::switch(
             executor_switch_ctx.as_usize(),

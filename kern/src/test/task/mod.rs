@@ -75,7 +75,9 @@ pub(super) mod runtime {
         const TASK_MAX: u16 = 5;
         const EXECUTOR_PRIORITY: ExecutorPriority = ExecutorPriority::new(1);
 
-        assert!(EXECUTOR_PRIORITY > cpudata::with_cpu_executor(|executor| executor.priority()));
+        assert!(
+            EXECUTOR_PRIORITY > cpudata::with_cpu_executor(|executor| executor.priority()).unwrap()
+        );
 
         for i in 1..=EXECUTOR_MAX {
             let mut executor = Executor::new(EXECUTOR_PRIORITY, ExecutorBehaviorOnNoTask::EXIT);
@@ -112,7 +114,7 @@ pub(super) mod runtime {
                     .unwrap();
             }
 
-            cpudata::with_cpu_runtime(|rt| rt.register_executor(executor)).unwrap();
+            cpudata::with_cpu_runtime(|rt| rt.register_executor(executor).unwrap()).unwrap();
         }
 
         runtime::switch_yield();

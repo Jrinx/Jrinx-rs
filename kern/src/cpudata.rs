@@ -5,6 +5,7 @@ use spin::Mutex;
 
 use crate::{
     arch,
+    error::{InternalError, Result},
     task::{executor::Executor, runtime::Runtime},
 };
 
@@ -26,24 +27,35 @@ pub fn init() {
     }
 }
 
-pub fn with_cpu_runtime<F, R>(f: F) -> R
+fn cpu_data() -> Option<&'static CpuData> {
+    if arch::cpu::id() >= unsafe { CPU_DATA.len() } {
+        None
+    } else {
+        Some(unsafe { &CPU_DATA[arch::cpu::id()] })
+    }
+}
+
+pub fn with_cpu_runtime<F, R>(f: F) -> Result<R>
 where
     F: FnOnce(&mut Runtime) -> R,
 {
-    let mut runtime = unsafe { CPU_DATA[arch::cpu::id()].runtime.lock() };
-    f(&mut runtime)
+    let mut runtime = cpu_data()
+        .ok_or(InternalError::InvalidCpuId)?
+        .runtime
+        .lock();
+    Ok(f(&mut runtime))
 }
 
-pub fn with_cpu_bootstrap_executor<F, R>(f: F) -> R
+pub fn with_cpu_bootstrap_executor<F, R>(f: F) -> Result<R>
 where
     F: FnOnce(&mut Pin<Box<Executor>>) -> R,
 {
-    with_cpu_runtime(|rt| rt.with_bootstrap_executor(f).unwrap())
+    with_cpu_runtime(|rt| rt.with_bootstrap_executor(f))?
 }
 
-pub fn with_cpu_executor<F, R>(f: F) -> R
+pub fn with_cpu_executor<F, R>(f: F) -> Result<R>
 where
     F: FnOnce(&mut Pin<Box<Executor>>) -> R,
 {
-    with_cpu_runtime(|rt| rt.with_current_executor(f).unwrap())
+    with_cpu_runtime(|rt| rt.with_current_executor(f))?
 }
