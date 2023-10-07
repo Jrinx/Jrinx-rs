@@ -35,7 +35,7 @@ pub async fn execute() {
                     let func = test::find(test)
                         .expect(format!("unrecognized test case: {}", test).as_str());
                     info!("test case {} begin", test);
-                    task::spawn_with_priority(
+                    task::spawn(
                         async move {
                             func();
                         },

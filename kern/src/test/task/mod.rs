@@ -19,7 +19,7 @@ pub(super) mod executor {
 
     test_define!("task::executor" => test);
     fn test() {
-        task::spawn_with_priority(
+        task::spawn(
             async {
                 for i in 0..10 {
                     let priority = TaskPriority::new(i + 128);
@@ -29,7 +29,7 @@ pub(super) mod executor {
                     } else {
                         None
                     };
-                    task::spawn_with_priority(
+                    task::spawn(
                         async move {
                             trace!("spawned task: value = {}", this_value);
                             assert_eq!(QUEUE.read().last(), prev_value.as_ref());

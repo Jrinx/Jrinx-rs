@@ -15,7 +15,10 @@
 #![no_std]
 #![no_main]
 
-use crate::util::{logging, random};
+use crate::{
+    task::TaskPriority,
+    util::{logging, random},
+};
 
 extern crate alloc;
 
@@ -57,7 +60,7 @@ extern "C" fn cold_init(_: usize, fdtaddr: *const u8) -> ! {
     mm::init();
     cpudata::init();
 
-    task::spawn(master_init());
+    task::spawn(master_init(), TaskPriority::default());
 
     let (address, stack_top) =
         cpudata::with_cpu_executor(|executor| (executor.addr(), executor.stack_top()));
