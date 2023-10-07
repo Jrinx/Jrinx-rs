@@ -1,4 +1,5 @@
 use core::{
+    fmt::Display,
     pin::Pin,
     task::{Context, Poll, Waker},
 };
@@ -56,6 +57,12 @@ impl ExecutorId {
         static ID_GENERATOR: Mutex<SerialIdGenerator> = Mutex::new(SerialIdGenerator::new());
 
         Self(ID_GENERATOR.lock().generate())
+    }
+}
+
+impl Display for ExecutorId {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
