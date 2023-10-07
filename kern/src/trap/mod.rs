@@ -8,5 +8,5 @@ pub enum TrapReason {
     SystemCall,
     Breakpoint { addr: VirtAddr },
     PageFault { addr: VirtAddr, perm: PagePerm },
-    Unknown,
+    Unknown { code: usize },
 }

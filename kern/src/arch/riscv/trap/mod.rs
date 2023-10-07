@@ -127,7 +127,7 @@ impl Context {
                     addr: VirtAddr::new(self.stval),
                     perm: PagePerm::X,
                 },
-                _ => TrapReason::Unknown,
+                _ => TrapReason::Unknown { code: self.scause },
             }
         }
     }
