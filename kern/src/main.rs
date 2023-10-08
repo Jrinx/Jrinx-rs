@@ -50,8 +50,8 @@ extern "C" fn cold_init(_: usize, fdtaddr: *const u8) -> ! {
     let build_time = core::option_env!("BUILD_TIME").unwrap_or("unknown");
     let build_mode = core::option_env!("BUILD_MODE").unwrap_or("unknown");
     info!(
-        "target-arch is {}, build at {} in {} mode",
-        arch, build_time, build_mode
+        "arch = {}, built at {} in {} mode",
+        arch, build_time, build_mode,
     );
 
     arch::init();
