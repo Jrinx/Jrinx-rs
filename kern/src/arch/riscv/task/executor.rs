@@ -32,6 +32,10 @@ impl SwitchContext {
         }
     }
 
+    pub fn init_executor_addr(&mut self, executor: VirtAddr) {
+        self.s0 = executor.as_usize();
+    }
+
     pub fn new_runtime() -> Self {
         Default::default()
     }
@@ -123,11 +127,9 @@ core::arch::global_asm! {
     r"
     .global executor_launch
     executor_launch:
-        LD_REG a0, 0, sp
-        addi sp, sp, {XLENB}
+        mv a0, s0
         call {EXECUTOR_START}
     ",
-    XLENB = const core::mem::size_of::<usize>(),
     EXECUTOR_START = sym crate::task::executor::start,
 }
 

@@ -107,24 +107,23 @@ impl Executor {
         let entry = VirtAddr::new(arch::task::executor::launch as usize);
         let stack_top = EXECUTOR_STACK_ALLOCATOR.alloc().unwrap();
 
-        let executor = Box::pin(Self {
+        let mut executor = Box::pin(Self {
             id: ExecutorId::new(),
             priority,
             beh_on_no_task,
             status: ExecutorStatus::Running,
             stack_top,
-            switch_context: SwitchContext::new_executor(
-                entry,
-                stack_top - core::mem::size_of::<usize>(),
-            ),
+            switch_context: SwitchContext::new_executor(entry, stack_top),
             task_registry: BTreeMap::new(),
             task_queue: Arc::new(TaskQueue::new()),
             task_waker: BTreeMap::new(),
         });
 
-        unsafe {
-            arch::mm::push_stack(stack_top, &*executor.as_ref() as *const _ as usize);
-        }
+        let executor_addr = &*executor as *const _ as usize;
+
+        executor
+            .switch_context
+            .init_executor_addr(VirtAddr::new(executor_addr));
 
         executor
     }
