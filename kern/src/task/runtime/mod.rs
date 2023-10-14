@@ -152,6 +152,8 @@ pub fn start() -> ! {
                 arch::wait_for_interrupt();
                 continue;
             };
+            trace!("switch to executor {:?}", executor_id);
+
             cpudata::with_cpu_inspector(|inspector| {
                 inspector.set_current_executor(Some(executor_id));
             })
@@ -160,16 +162,15 @@ pub fn start() -> ! {
             let executor_switch_ctx =
                 cpudata::with_cpu_executor(|executor| executor.switch_context_addr()).unwrap();
 
-            trace!("switch to executor {:?}", executor_id);
             unsafe {
                 arch::task::executor::switch(
                     runtime_switch_ctx.as_usize(),
                     executor_switch_ctx.as_usize(),
                 );
             }
-            trace!("switch back from executor {:?}", executor_id);
-
             cpudata::with_cpu_inspector(|inspector| inspector.set_current_executor(None)).unwrap();
+
+            trace!("switch back from executor {:?}", executor_id);
 
             if cpudata::with_cpu_inspector(|inspector| {
                 inspector

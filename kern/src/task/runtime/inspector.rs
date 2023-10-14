@@ -1,4 +1,4 @@
-use core::pin::Pin;
+use core::{fmt::Display, pin::Pin};
 
 use alloc::{boxed::Box, collections::BTreeMap};
 use spin::Mutex;
@@ -19,6 +19,12 @@ impl InspectorId {
         static ID_GENERATOR: Mutex<SerialIdGenerator> = Mutex::new(SerialIdGenerator::new());
 
         Self(ID_GENERATOR.lock().generate())
+    }
+}
+
+impl Display for InspectorId {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 

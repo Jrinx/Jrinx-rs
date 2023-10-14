@@ -1,6 +1,8 @@
 use core::fmt::Write;
 
-use crate::arch;
+use alloc::{format, string::ToString};
+
+use crate::{arch, cpudata};
 
 use super::color::{self, with_color};
 
@@ -46,7 +48,15 @@ impl log::Log for Logger {
             log::Level::Trace => color::ColorCode::MAGENTA,
         };
 
-        let kernel_state = "todo";
+        let kernel_state = cpudata::with_cpu_runtime(|rt| {
+            rt.with_current_inspector(|inspector| {
+                inspector
+                    .with_current_executor(|executor| format!("executor#{}", executor.id()))
+                    .unwrap_or(format!("inspector#{}", inspector.id()))
+            })
+            .unwrap_or("runtime".to_string())
+        })
+        .unwrap_or("bootstrap".to_string());
 
         print_fmt(with_color! {
             color::ColorCode::WHITE,
