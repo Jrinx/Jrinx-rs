@@ -76,21 +76,14 @@ impl ExecutorPriority {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ExecutorBehaviorOnNoTask {
-    IDLE,
-    EXIT,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ExecutorStatus {
-    Running,
+    Runnable,
     Finished,
 }
 
 pub struct Executor {
     id: ExecutorId,
     priority: ExecutorPriority,
-    beh_on_no_task: ExecutorBehaviorOnNoTask,
     status: ExecutorStatus,
     stack_top: VirtAddr,
     switch_context: SwitchContext,
@@ -100,18 +93,14 @@ pub struct Executor {
 }
 
 impl Executor {
-    pub fn new(
-        priority: ExecutorPriority,
-        beh_on_no_task: ExecutorBehaviorOnNoTask,
-    ) -> Pin<Box<Self>> {
+    pub fn new(priority: ExecutorPriority, root_task: Task) -> Pin<Box<Self>> {
         let entry = VirtAddr::new(arch::task::executor::launch as usize);
         let stack_top = EXECUTOR_STACK_ALLOCATOR.alloc().unwrap();
 
         let mut executor = Box::pin(Self {
             id: ExecutorId::new(),
             priority,
-            beh_on_no_task,
-            status: ExecutorStatus::Running,
+            status: ExecutorStatus::Runnable,
             stack_top,
             switch_context: SwitchContext::new_executor(entry, stack_top),
             task_registry: BTreeMap::new(),
@@ -124,6 +113,8 @@ impl Executor {
         executor
             .switch_context
             .init_executor_addr(VirtAddr::new(executor_addr));
+
+        executor.spawn(root_task).unwrap();
 
         executor
     }
@@ -161,34 +152,27 @@ impl Executor {
             ..
         } = self;
 
-        loop {
-            while let Some(task_id) = task_queue.pop() {
-                let task = match task_registry.get_mut(&task_id) {
-                    Some(task) => task,
-                    None => continue,
-                };
+        while let Some(task_id) = task_queue.pop() {
+            let task = match task_registry.get_mut(&task_id) {
+                Some(task) => task,
+                None => continue,
+            };
 
-                let waker = task_waker
-                    .entry(task_id)
-                    .or_insert_with(|| TaskWaker::new(task.id, task.priority, task_queue.clone()));
+            let waker = task_waker
+                .entry(task_id)
+                .or_insert_with(|| TaskWaker::new(task.id, task.priority, task_queue.clone()));
 
-                let mut context = Context::from_waker(waker);
-                match task.poll(&mut context) {
-                    Poll::Ready(()) => {
-                        task_registry.remove(&task_id);
-                        task_waker.remove(&task_id);
-                    }
-                    Poll::Pending => {}
+            let mut context = Context::from_waker(waker);
+            match task.poll(&mut context) {
+                Poll::Ready(()) => {
+                    task_registry.remove(&task_id);
+                    task_waker.remove(&task_id);
                 }
-            }
-
-            if self.beh_on_no_task == ExecutorBehaviorOnNoTask::IDLE {
-                arch::wait_for_interrupt();
-            } else {
-                self.status = ExecutorStatus::Finished;
-                break;
+                Poll::Pending => {}
             }
         }
+
+        self.status = ExecutorStatus::Finished;
     }
 }
 

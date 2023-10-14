@@ -60,8 +60,6 @@ extern "C" fn cold_init(_: usize, fdtaddr: *const u8) -> ! {
     mm::init();
     cpudata::init();
 
-    task::bootstrap_spawn(master_init());
-
     runtime::start();
 }
 

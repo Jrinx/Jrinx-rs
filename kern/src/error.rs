@@ -7,6 +7,9 @@ pub enum InternalError {
     DuplicateTaskId,
     InvalidExecutorId,
     DuplicateExecutorId,
+    InvalidInspectorId,
+    DuplicateInspectorId,
+    InvalidInspectorStatus,
     InvalidRuntimeStatus,
 }
 

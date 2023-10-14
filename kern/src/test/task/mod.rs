@@ -53,7 +53,7 @@ pub(super) mod runtime {
     use crate::{
         cpudata,
         task::{
-            executor::{Executor, ExecutorBehaviorOnNoTask, ExecutorPriority},
+            executor::{Executor, ExecutorPriority},
             runtime, Task, TaskPriority,
         },
         test::test_define,
@@ -80,7 +80,10 @@ pub(super) mod runtime {
         );
 
         for i in 1..=EXECUTOR_MAX {
-            let mut executor = Executor::new(EXECUTOR_PRIORITY, ExecutorBehaviorOnNoTask::EXIT);
+            let mut executor = Executor::new(
+                EXECUTOR_PRIORITY,
+                Task::new(async {}, TaskPriority::default()),
+            );
 
             for j in 1..=TASK_MAX {
                 let executor_order = i;
@@ -114,7 +117,8 @@ pub(super) mod runtime {
                     .unwrap();
             }
 
-            cpudata::with_cpu_runtime(|rt| rt.register_executor(executor).unwrap()).unwrap();
+            cpudata::with_cpu_inspector(|inspector| inspector.register_executor(executor).unwrap())
+                .unwrap();
         }
 
         runtime::switch_yield();

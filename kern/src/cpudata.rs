@@ -6,7 +6,14 @@ use spin::Mutex;
 use crate::{
     arch,
     error::{InternalError, Result},
-    task::{executor::Executor, runtime::Runtime},
+    task::{
+        executor::{Executor, ExecutorPriority},
+        runtime::{
+            inspector::{Inspector, InspectorMode},
+            Runtime,
+        },
+        Task, TaskPriority,
+    },
 };
 
 #[repr(align(4096))]
@@ -21,7 +28,13 @@ pub fn init() {
     for _ in 0..nproc {
         unsafe {
             CPU_DATA.push(CpuData {
-                runtime: Mutex::new(Runtime::new()),
+                runtime: Mutex::new(Runtime::new(Inspector::new(
+                    InspectorMode::Bootstrap,
+                    Executor::new(
+                        ExecutorPriority::default(),
+                        Task::new(super::master_init(), TaskPriority::default()),
+                    ),
+                ))),
             });
         }
     }
@@ -46,16 +59,16 @@ where
     Ok(f(&mut runtime))
 }
 
-pub fn with_cpu_bootstrap_executor<F, R>(f: F) -> Result<R>
+pub fn with_cpu_inspector<F, R>(f: F) -> Result<R>
 where
-    F: FnOnce(&mut Pin<Box<Executor>>) -> R,
+    F: FnOnce(&mut Inspector) -> R,
 {
-    with_cpu_runtime(|rt| rt.with_bootstrap_executor(f))?
+    with_cpu_runtime(|rt| rt.with_current_inspector(f))?
 }
 
 pub fn with_cpu_executor<F, R>(f: F) -> Result<R>
 where
     F: FnOnce(&mut Pin<Box<Executor>>) -> R,
 {
-    with_cpu_runtime(|rt| rt.with_current_executor(f))?
+    with_cpu_inspector(|inspector| inspector.with_current_executor(f))?
 }

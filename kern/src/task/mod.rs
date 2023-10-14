@@ -76,14 +76,6 @@ impl Future for YieldNow {
     }
 }
 
-pub fn bootstrap_spawn(future: impl Future<Output = ()> + 'static) {
-    let priority = TaskPriority::default();
-    cpudata::with_cpu_bootstrap_executor(|executor| {
-        executor.spawn(Task::new(future, priority)).unwrap();
-    })
-    .unwrap();
-}
-
 pub fn spawn(future: impl Future<Output = ()> + 'static, priority: TaskPriority) {
     cpudata::with_cpu_executor(|executor| {
         executor.spawn(Task::new(future, priority)).unwrap();
