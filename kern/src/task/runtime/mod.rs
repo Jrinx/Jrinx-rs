@@ -30,6 +30,7 @@ enum RuntimeStatus {
 pub struct Runtime {
     inspector_registry: BTreeMap<InspectorId, Inspector>,
     inspector_queue: VecDeque<InspectorId>,
+    inspector_switch_pending: bool,
     status: RuntimeStatus,
     switch_context: SwitchContext,
 }
@@ -39,6 +40,7 @@ impl Runtime {
         let mut runtime = Box::pin(Self {
             inspector_registry: BTreeMap::new(),
             inspector_queue: VecDeque::new(),
+            inspector_switch_pending: false,
             status: RuntimeStatus::Init,
             switch_context: SwitchContext::new_runtime(),
         });
@@ -72,6 +74,14 @@ impl Runtime {
             return Err(InternalError::InvalidRuntimeStatus);
         };
         self.with_inspector(inspector_id, f)
+    }
+
+    pub fn set_inspector_switch_pending(&mut self) {
+        self.inspector_switch_pending = true;
+    }
+
+    fn clr_inspector_switch_pending(&mut self) {
+        self.inspector_switch_pending = false;
     }
 
     fn with_inspector<F, R>(&mut self, id: InspectorId, f: F) -> Result<R>
@@ -127,11 +137,11 @@ pub fn start() -> ! {
         cpudata::with_cpu_runtime(|rt| rt.set_current_inspector(Some(inspector_id))).unwrap();
 
         loop {
-            if cpudata::with_cpu_inspector(|inspector| {
-                inspector.status() == InspectorStatus::Switched
-                    || inspector.status() == InspectorStatus::Finished
-            })
-            .unwrap()
+            if cpudata::with_cpu_runtime(|rt| rt.inspector_switch_pending).unwrap()
+                || cpudata::with_cpu_inspector(|inspector| {
+                    inspector.status() == InspectorStatus::Finished
+                })
+                .unwrap()
             {
                 break;
             }
@@ -189,6 +199,8 @@ pub fn start() -> ! {
                 cpudata::with_cpu_inspector(|inspector| inspector.mark_finished()).unwrap();
             }
         }
+
+        cpudata::with_cpu_runtime(|rt| rt.clr_inspector_switch_pending()).unwrap();
 
         cpudata::with_cpu_runtime(|rt| rt.set_current_inspector(None)).unwrap();
         if cpudata::with_cpu_runtime(|rt| {

@@ -31,7 +31,6 @@ pub enum InspectorMode {
 pub enum InspectorStatus {
     Idle,
     Running(ExecutorId),
-    Switched,
     Finished,
 }
 

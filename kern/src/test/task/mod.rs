@@ -117,3 +117,83 @@ pub(super) mod inspector {
         }
     }
 }
+
+pub(super) mod runtime {
+    use alloc::vec::Vec;
+    use spin::Mutex;
+
+    use crate::{
+        cpudata,
+        task::{
+            executor::{Executor, ExecutorPriority},
+            runtime::{
+                self,
+                inspector::{Inspector, InspectorMode},
+            },
+            Task, TaskPriority,
+        },
+        test::test_define,
+    };
+
+    test_define!("task::runtime" => test);
+    fn test() {
+        static ORDER: Mutex<Vec<(u16, u16)>> = Mutex::new(Vec::new());
+
+        fn order_push(inspector_order: u16, executor_order: u16) {
+            ORDER.lock().push((inspector_order, executor_order));
+        }
+
+        const INSPECTOR_MAX: u16 = 3;
+        const EXECUTOR_MAX: u16 = 4;
+
+        for i in 1..=INSPECTOR_MAX {
+            let mut inspector = Inspector::new(
+                InspectorMode::Bootstrap,
+                Executor::new(
+                    ExecutorPriority::default(),
+                    Task::new(async {}, TaskPriority::default()),
+                ),
+            );
+
+            for j in 1..=EXECUTOR_MAX {
+                let inspector_order = i;
+                let executor_order = j;
+
+                inspector
+                    .register_executor(Executor::new(
+                        ExecutorPriority::new(j),
+                        Task::new(
+                            async move {
+                                trace!(
+                                    "spawned task: inspector = {:?}, executor = {:?}",
+                                    inspector_order,
+                                    executor_order
+                                );
+
+                                order_push(inspector_order, executor_order);
+                            },
+                            TaskPriority::default(),
+                        ),
+                    ))
+                    .unwrap();
+            }
+
+            cpudata::with_cpu_runtime(|rt| rt.register_inspector(inspector).unwrap()).unwrap();
+        }
+
+        cpudata::with_cpu_runtime(|rt| rt.set_inspector_switch_pending()).unwrap();
+        runtime::switch_yield();
+
+        assert_eq!(ORDER.is_locked(), false);
+
+        let order = ORDER.lock();
+        assert_eq!(order.len(), (INSPECTOR_MAX * EXECUTOR_MAX) as usize);
+
+        for i in 1..=INSPECTOR_MAX {
+            for j in 1..=EXECUTOR_MAX {
+                let index = ((i - 1) * EXECUTOR_MAX + (j - 1)) as usize;
+                assert_eq!(order[index], (i, EXECUTOR_MAX - j + 1));
+            }
+        }
+    }
+}
