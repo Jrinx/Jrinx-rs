@@ -46,7 +46,7 @@ pub(super) mod executor {
     }
 }
 
-pub(super) mod runtime {
+pub(super) mod inspector {
     use alloc::vec::Vec;
     use spin::Mutex;
 
@@ -59,7 +59,7 @@ pub(super) mod runtime {
         test::test_define,
     };
 
-    test_define!("task::runtime" => test);
+    test_define!("task::inspector" => test);
     fn test() {
         static ORDER: Mutex<Vec<(u16, u16)>> = Mutex::new(Vec::new());
 
@@ -67,21 +67,12 @@ pub(super) mod runtime {
             ORDER.lock().push((executor_order, task_order));
         }
 
-        fn order_last() -> Option<(u16, u16)> {
-            ORDER.lock().last().cloned()
-        }
-
-        const EXECUTOR_MAX: u16 = 5;
+        const EXECUTOR_MAX: u16 = 4;
         const TASK_MAX: u16 = 5;
-        const EXECUTOR_PRIORITY: ExecutorPriority = ExecutorPriority::new(1);
-
-        assert!(
-            EXECUTOR_PRIORITY > cpudata::with_cpu_executor(|executor| executor.priority()).unwrap()
-        );
 
         for i in 1..=EXECUTOR_MAX {
             let mut executor = Executor::new(
-                EXECUTOR_PRIORITY,
+                ExecutorPriority::new(i),
                 Task::new(async {}, TaskPriority::default()),
             );
 
@@ -92,16 +83,6 @@ pub(super) mod runtime {
                 executor
                     .spawn(Task::new(
                         async move {
-                            let prev_order = order_last();
-
-                            if executor_order == 1 && task_order == TASK_MAX {
-                                assert_eq!(prev_order, None);
-                            } else if executor_order == 1 {
-                                assert_eq!(prev_order, Some((EXECUTOR_MAX, task_order + 1)));
-                            } else {
-                                assert_eq!(prev_order, Some((executor_order - 1, task_order)));
-                            }
-
                             trace!(
                                 "spawned task: executor = {:?}, task order = {:?}",
                                 executor_order,
@@ -128,10 +109,10 @@ pub(super) mod runtime {
         let order = ORDER.lock();
         assert_eq!(order.len(), (EXECUTOR_MAX * TASK_MAX) as usize);
 
-        for i in 1..=TASK_MAX {
-            for j in 1..=EXECUTOR_MAX {
-                let index = ((i - 1) * EXECUTOR_MAX + (j - 1)) as usize;
-                assert_eq!(order[index], (j, TASK_MAX - i + 1));
+        for i in 1..=EXECUTOR_MAX {
+            for j in 1..=TASK_MAX {
+                let index = ((i - 1) * TASK_MAX + (j - 1)) as usize;
+                assert_eq!(order[index], (EXECUTOR_MAX - i + 1, TASK_MAX - j + 1));
             }
         }
     }
