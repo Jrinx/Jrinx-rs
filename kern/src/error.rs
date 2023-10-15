@@ -11,6 +11,8 @@ pub enum InternalError {
     DuplicateInspectorId,
     InvalidInspectorStatus,
     InvalidRuntimeStatus,
+    InvalidTimedEventId,
+    InvalidTimedEventStatus,
 }
 
 pub type Result<T> = core::result::Result<T, InternalError>;

@@ -1,6 +1,7 @@
 mod heap;
 mod mm;
 mod task;
+mod time;
 mod trap;
 
 use cfg_if::cfg_if;

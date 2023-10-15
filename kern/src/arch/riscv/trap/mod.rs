@@ -3,14 +3,14 @@ mod entry;
 use core::mem::size_of;
 
 use riscv::register::{
-    scause::{Exception, Interrupt},
+    scause::Exception,
     sstatus::{FS, SPP},
     utvec::TrapMode,
 };
 
 use crate::{
     mm::virt::VirtAddr,
-    trap::{breakpoint, TrapReason},
+    trap::{breakpoint, timer_int, TrapReason},
 };
 
 use super::mm::virt::PagePerm;
@@ -106,7 +106,7 @@ impl Context {
         let cause = self.scause;
         let is_interrupt = (cause & (1 << (size_of::<usize>() * 8 - 1))) != 0;
         if is_interrupt {
-            let code = Interrupt::from(cause & !(1 << (size_of::<usize>() * 8 - 1)));
+            let code = cause & !(1 << (size_of::<usize>() * 8 - 1));
             TrapReason::Interrupt(code as usize)
         } else {
             let code = Exception::from(cause);
@@ -177,6 +177,7 @@ extern "C" fn handle_kern_trap(ctx: &mut Context) {
     trace!("kernel trap ({:?}) from {:#x}", reason, ctx.sepc);
     match reason {
         TrapReason::Breakpoint { addr: _ } => breakpoint::handle(ctx),
+        TrapReason::Interrupt(5) => timer_int::handle(ctx),
         _ => todo!(),
     }
 }

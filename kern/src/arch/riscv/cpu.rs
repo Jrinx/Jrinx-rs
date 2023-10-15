@@ -21,3 +21,11 @@ pub fn time() -> Duration {
         None => Duration::ZERO,
     }
 }
+
+pub fn set_timer(next: Duration) {
+    sbi::timer::set_timer(
+        (next.as_nanos() as u128 * cpus::timebase_freq().unwrap() as u128 / 1_000_000_000u128)
+            as u64,
+    )
+    .unwrap();
+}

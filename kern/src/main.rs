@@ -34,6 +34,7 @@ mod heap;
 mod mm;
 mod task;
 mod test;
+mod time;
 mod trap;
 mod util;
 

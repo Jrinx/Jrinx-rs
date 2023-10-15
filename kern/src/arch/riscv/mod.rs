@@ -41,6 +41,9 @@ unsafe extern "C" fn _start() -> ! {
 pub fn init() {
     unsafe {
         riscv::register::sstatus::set_sum();
+        riscv::register::sie::set_sext();
+        riscv::register::sie::set_stimer();
+        riscv::register::sie::set_ssoft();
     }
     trap::init();
 }
@@ -65,5 +68,21 @@ pub fn wait_for_interrupt() {
 pub fn breakpoint() {
     unsafe {
         riscv::asm::ebreak();
+    }
+}
+
+pub fn int_is_enabled() -> bool {
+    riscv::register::sstatus::read().sie()
+}
+
+pub fn int_enable() {
+    unsafe {
+        riscv::register::sstatus::set_sie();
+    }
+}
+
+pub fn int_disable() {
+    unsafe {
+        riscv::register::sstatus::clear_sie();
     }
 }

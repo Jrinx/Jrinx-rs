@@ -130,6 +130,8 @@ impl Runtime {
 pub fn start() -> ! {
     info!("runtime started running all inspectors");
 
+    arch::int_enable();
+
     let runtime_switch_ctx = cpudata::with_cpu_runtime(|rt| rt.switch_context_addr()).unwrap();
     while let Some(inspector_id) = cpudata::with_cpu_runtime(|rt| rt.pop_inspector()).unwrap() {
         debug!("runtime running inspector {:?}", inspector_id);
