@@ -75,9 +75,15 @@ def run_testset(testset: tuple[pathlib.Path],
 
     comb = tuple(itertools.product(testset, board))
 
+    start_time = datetime.datetime.now()
+
     result = mp.ThreadingPool(
         mp.cpu_count() if parallel else 1
     ).map(run, comb)
+
+    time_cost = datetime.datetime.now() - start_time
+
+    info(f'Cost {time_cost}')
 
     if any(result):
         failed_testset = tuple((
@@ -109,11 +115,14 @@ def run_testset_rich(testset: tuple[pathlib.Path],
         'waiting',
     ) for (test, board) in comb)
 
+    start_time = datetime.datetime.now()
+
     def gen_table():
         table = Table('Test', 'Board',
                       'Status (waiting|running|passed|failed)')
+        time_cost = datetime.datetime.now() - start_time
         table.title = Text(
-            f'Run testset on {os.environ["ARCH"]} in {os.environ["BUILD_MODE"]} mode',
+            f'Run testset on {os.environ["ARCH"]} in {os.environ["BUILD_MODE"]} mode (cost {time_cost})',
             style='bold',
         )
         for (test, board), status in test_status.items():
