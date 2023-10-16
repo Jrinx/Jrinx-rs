@@ -13,7 +13,7 @@ pub(super) mod status {
     fn test() {
         static DATA: Mutex<Option<TimedEventStatus>> = Mutex::new(None);
 
-        let timed_event = TimedEvent::new(
+        TimedEvent::new(
             arch::cpu::time() + Duration::from_secs(1),
             || {
                 *DATA.lock() = Some(TimedEventStatus::Timeout);
@@ -22,14 +22,12 @@ pub(super) mod status {
                 *DATA.lock() = Some(TimedEventStatus::Cancelled);
             },
         );
-
-        cpudata::with_cpu_timed_event_queue(|queue| queue.add(timed_event.clone())).unwrap();
 
         arch::wait_for_interrupt();
 
         assert_eq!(*DATA.lock(), Some(TimedEventStatus::Timeout));
 
-        let timed_event = TimedEvent::new(
+        let tracker = TimedEvent::new(
             arch::cpu::time() + Duration::from_secs(1),
             || {
                 *DATA.lock() = Some(TimedEventStatus::Timeout);
@@ -38,17 +36,13 @@ pub(super) mod status {
                 *DATA.lock() = Some(TimedEventStatus::Cancelled);
             },
         );
-
-        let timed_event_id = { timed_event.lock().id() };
-
-        cpudata::with_cpu_timed_event_queue(|queue| queue.add(timed_event.clone())).unwrap();
-
-        cpudata::with_cpu_timed_event_queue(|queue| queue.cancel(timed_event_id).unwrap()).unwrap();
+        tracker.cancel().unwrap();
 
         assert_eq!(*DATA.lock(), Some(TimedEventStatus::Cancelled));
-        assert_eq!(
-            cpudata::with_cpu_timed_event_queue(|queue| queue.peek()).unwrap(),
-            None
+        assert!(
+            cpudata::with_cpu_timed_event_queue(|queue| queue.peek_outdated())
+                .unwrap()
+                .is_none()
         );
     }
 }
@@ -59,7 +53,7 @@ pub(super) mod queue {
     use alloc::vec::Vec;
     use spin::Mutex;
 
-    use crate::{arch, cpudata, test::test_define, time::TimedEvent};
+    use crate::{arch, test::test_define, time::TimedEvent};
 
     test_define!("time::queue" => test);
     fn test() {
@@ -72,7 +66,7 @@ pub(super) mod queue {
 
         for i in (1..=EVENT_MAX).rev() {
             let this_order = i;
-            let timed_event = TimedEvent::new(
+            TimedEvent::new(
                 arch::cpu::time() + Duration::from_secs(i as u64),
                 move || {
                     order_push(this_order);
@@ -81,8 +75,6 @@ pub(super) mod queue {
                     order_push(this_order);
                 },
             );
-
-            cpudata::with_cpu_timed_event_queue(|queue| queue.add(timed_event)).unwrap();
         }
 
         for i in 1..=EVENT_MAX {

@@ -44,12 +44,16 @@ pub fn init() {
     }
 }
 
-fn cpu_data() -> Option<&'static CpuData> {
-    if arch::cpu::id() >= unsafe { CPU_DATA.len() } {
+fn cpu_data_by_id(cpu_id: usize) -> Option<&'static CpuData> {
+    if cpu_id >= unsafe { CPU_DATA.len() } {
         None
     } else {
-        Some(unsafe { &CPU_DATA[arch::cpu::id()] })
+        Some(unsafe { &CPU_DATA[cpu_id] })
     }
+}
+
+fn cpu_data() -> Option<&'static CpuData> {
+    cpu_data_by_id(arch::cpu::id())
 }
 
 pub fn with_cpu_runtime<F, R>(f: F) -> Result<R>
@@ -79,14 +83,21 @@ where
     with_cpu_inspector(|inspector| inspector.with_current_executor(f))?
 }
 
-pub fn with_cpu_timed_event_queue<F, R>(f: F) -> Result<R>
+pub fn with_timed_event_queue<F, R>(cpu_id: usize, f: F) -> Result<R>
 where
     F: FnOnce(&mut TimedEventQueue) -> R,
 {
     interrupt::with_interrupt_saved_off(|| {
-        Ok(f(&mut cpu_data()
+        Ok(f(&mut cpu_data_by_id(cpu_id)
             .ok_or(InternalError::InvalidCpuId)?
             .timed_event_queue
             .lock()))
     })
+}
+
+pub fn with_cpu_timed_event_queue<F, R>(f: F) -> Result<R>
+where
+    F: FnOnce(&mut TimedEventQueue) -> R,
+{
+    with_timed_event_queue(arch::cpu::id(), f)
 }
