@@ -1,6 +1,7 @@
 use core::{cmp::Reverse, time::Duration};
 
 use alloc::{
+    boxed::Box,
     collections::{BTreeMap, BinaryHeap},
     sync::Arc,
 };
@@ -34,18 +35,22 @@ pub struct TimedEvent {
     id: TimedEventId,
     time: Duration,
     status: TimedEventStatus,
-    timeout_handler: fn(),
-    cancel_handler: fn(),
+    timeout_handler: Option<Box<dyn FnOnce()>>,
+    cancel_handler: Option<Box<dyn FnOnce()>>,
 }
 
 impl TimedEvent {
-    pub fn new(time: Duration, timeout_handler: fn(), cancel_handler: fn()) -> Arc<Mutex<Self>> {
+    pub fn new(
+        time: Duration,
+        timeout_handler: impl FnOnce() + 'static,
+        cancel_handler: impl FnOnce() + 'static,
+    ) -> Arc<Mutex<Self>> {
         Arc::new(Mutex::new(Self {
             time,
             id: TimedEventId::new(),
             status: TimedEventStatus::Pending,
-            timeout_handler,
-            cancel_handler,
+            timeout_handler: Some(Box::new(timeout_handler)),
+            cancel_handler: Some(Box::new(cancel_handler)),
         }))
     }
 
@@ -59,7 +64,11 @@ impl TimedEvent {
         } else {
             self.status = TimedEventStatus::Timeout;
         }
-        (self.timeout_handler)();
+        let handler = self
+            .timeout_handler
+            .take()
+            .ok_or(InternalError::InvalidTimedEventStatus)?;
+        handler();
         Ok(())
     }
 
@@ -69,7 +78,11 @@ impl TimedEvent {
         } else {
             self.status = TimedEventStatus::Cancelled;
         }
-        (self.cancel_handler)();
+        let handler = self
+            .cancel_handler
+            .take()
+            .ok_or(InternalError::InvalidTimedEventStatus)?;
+        handler();
         Ok(())
     }
 }

@@ -64,20 +64,21 @@ pub(super) mod queue {
     test_define!("time::queue" => test);
     fn test() {
         const EVENT_MAX: usize = 3;
-        static ORDER: Mutex<Vec<Duration>> = Mutex::new(Vec::new());
+        static ORDER: Mutex<Vec<usize>> = Mutex::new(Vec::new());
 
-        fn order_push(time: Duration) {
-            ORDER.lock().push(time);
+        fn order_push(order: usize) {
+            ORDER.lock().push(order);
         }
 
         for i in (1..=EVENT_MAX).rev() {
+            let this_order = i;
             let timed_event = TimedEvent::new(
                 arch::cpu::time() + Duration::from_secs(i as u64),
-                || {
-                    order_push(arch::cpu::time());
+                move || {
+                    order_push(this_order);
                 },
-                || {
-                    order_push(arch::cpu::time());
+                move || {
+                    order_push(this_order);
                 },
             );
 
@@ -90,8 +91,8 @@ pub(super) mod queue {
         }
 
         let order = ORDER.lock();
-        for i in 0..EVENT_MAX - 1 {
-            assert!(order[i] < order[i + 1]);
+        for i in 0..EVENT_MAX {
+            assert_eq!(order[i], i + 1);
         }
     }
 }
