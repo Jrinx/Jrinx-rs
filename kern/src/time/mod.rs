@@ -59,9 +59,6 @@ impl TimedEvent {
     }
 
     fn invoke(&mut self, target_status: TimedEventStatus) -> Result<()> {
-        if target_status == TimedEventStatus::Pending || self.status != TimedEventStatus::Pending {
-            return Err(InternalError::InvalidTimedEventStatus);
-        }
         self.status = target_status;
         match target_status {
             TimedEventStatus::Timeout => {
@@ -74,7 +71,7 @@ impl TimedEvent {
                     .take()
                     .ok_or(InternalError::InvalidTimedEventStatus)?()
             }
-            _ => unreachable!(),
+            _ => return Err(InternalError::InvalidTimedEventStatus),
         }
         Ok(())
     }
