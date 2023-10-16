@@ -51,35 +51,39 @@ def run_test(file: pathlib.Path,
 
 def run_testset(testset: tuple[pathlib.Path],
                 include_dirs: list[pathlib.Path],
-                board: str,
+                board: tuple[str],
                 /, *,
                 parallel: bool = False,
                 verbose: bool = False,
                 ) -> Sequence[int]:
     info(
-        f'Run testset on {os.environ["ARCH"]} ({board}) in {os.environ["BUILD_MODE"]} mode'
+        f'Run testset on {os.environ["ARCH"]} in {os.environ["BUILD_MODE"]} mode'
     )
 
-    def run(file: pathlib.Path) -> int:
+    def run(arg) -> int:
+        file, board = arg[0], arg[1]
         slug = str(file.relative_to(TESTS_DIR))
         return run_test(
             file,
             include_dirs,
             board,
             verbose=verbose,
-            pre_run=lambda: info(f'Run    {slug}'),
-            on_success=lambda: info(f'Passed {slug}'),
-            on_failure=lambda: fatal(f'Failed {slug}'),
+            pre_run=lambda: info(f'On {board:<14} Run    {slug}'),
+            on_success=lambda: info(f'On {board:<14} Passed {slug}'),
+            on_failure=lambda: fatal(f'On {board:<14} Failed {slug}'),
         )
+
+    comb = tuple(itertools.product(testset, board))
 
     result = mp.ThreadingPool(
         mp.cpu_count() if parallel else 1
-    ).map(run, testset)
+    ).map(run, comb)
 
     if any(result):
-        failed_testset = tuple(str(
-            test.relative_to(TESTS_DIR)
-        ) for (test, ret) in zip(testset, result) if ret != 0)
+        failed_testset = tuple((
+            str(test.relative_to(TESTS_DIR)),
+            board
+        ) for ((test, board), ret) in zip(comb, result) if ret != 0)
         fatal(f'Failed in {failed_testset}')
 
     return result
@@ -87,7 +91,7 @@ def run_testset(testset: tuple[pathlib.Path],
 
 def run_testset_rich(testset: tuple[pathlib.Path],
                      include_dirs: list[pathlib.Path],
-                     board: str,
+                     board: tuple[str],
                      /, *,
                      parallel: bool = False,
                      verbose: bool = False,
@@ -98,20 +102,24 @@ def run_testset_rich(testset: tuple[pathlib.Path],
     from rich.table import Table
     from rich.text import Text
 
+    comb = tuple(itertools.product(testset, board))
+
     test_status = OrderedDict((
-        str(test.relative_to(TESTS_DIR)),
+        (str(test.relative_to(TESTS_DIR)), board),
         'waiting',
-    ) for test in testset)
+    ) for (test, board) in comb)
 
     def gen_table():
-        table = Table('Test', 'Status (waiting|running|passed|failed)')
+        table = Table('Test', 'Board',
+                      'Status (waiting|running|passed|failed)')
         table.title = Text(
-            f'Run testset on {os.environ["ARCH"]} ({board}) in {os.environ["BUILD_MODE"]} mode',
+            f'Run testset on {os.environ["ARCH"]} in {os.environ["BUILD_MODE"]} mode',
             style='bold',
         )
-        for test, status in test_status.items():
+        for (test, board), status in test_status.items():
             table.add_row(
                 test,
+                board,
                 Align.center(Text(
                     status,
                     style='white' if status == 'waiting'
@@ -129,8 +137,9 @@ def run_testset_rich(testset: tuple[pathlib.Path],
         screen=False,
         refresh_per_second=1,
     ) as live:
-        def run(file):
-            slug = str(file.relative_to(TESTS_DIR))
+        def run(arg):
+            file, board = arg[0], arg[1]
+            slug = (str(file.relative_to(TESTS_DIR)), board)
 
             def pre_run():
                 test_status[slug] = 'running'
@@ -156,7 +165,7 @@ def run_testset_rich(testset: tuple[pathlib.Path],
 
         result = mp.ThreadingPool(
             mp.cpu_count() if parallel else 1
-        ).map(run, testset)
+        ).map(run, comb)
 
     console.print('')  # newline
 
@@ -197,18 +206,8 @@ def main():
 
     runner = run_testset_rich if args.rich else run_testset
 
-    def run(board) -> bool:
-        return any(runner(
-            testset,
-            include_dirs,
-            board,
-            parallel=args.parallel,
-            verbose=args.verbose,
-        )) is False
-
-    exit_code = 0
-    for board in read_board_list(os.environ['ARCH']):
-        exit_code += int(not run(board))
+    exit_code = any(runner(testset, include_dirs, read_board_list(
+        os.environ['ARCH']), parallel=args.parallel, verbose=args.verbose))
 
     exit(exit_code)
 
