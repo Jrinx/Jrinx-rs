@@ -31,48 +31,53 @@ pub enum TimedEventStatus {
     Cancelled,
 }
 
+pub struct TimedEventHandler {
+    timeout: Box<dyn FnOnce()>,
+    cancel: Box<dyn FnOnce()>,
+}
+
+impl TimedEventHandler {
+    pub fn new(timeout: impl FnOnce() + 'static, cancel: impl FnOnce() + 'static) -> Self {
+        Self {
+            timeout: Box::new(timeout),
+            cancel: Box::new(cancel),
+        }
+    }
+}
+
 pub struct TimedEvent {
     id: TimedEventId,
     cpu_id: usize,
     time: Duration,
     status: TimedEventStatus,
-    timeout_handler: Option<Box<dyn FnOnce()>>,
-    cancel_handler: Option<Box<dyn FnOnce()>>,
+    handler: Option<TimedEventHandler>,
 }
 
 impl TimedEvent {
-    pub fn new(
-        time: Duration,
-        timeout_handler: impl FnOnce() + 'static,
-        cancel_handler: impl FnOnce() + 'static,
-    ) -> TimedEventTracker {
+    pub fn create(time: Duration, handler: TimedEventHandler) -> TimedEventTracker {
         let tracker = TimedEventTracker(Arc::new(Mutex::new(Self {
             id: TimedEventId::new(),
             cpu_id: arch::cpu::id(),
             time,
             status: TimedEventStatus::Pending,
-            timeout_handler: Some(Box::new(timeout_handler)),
-            cancel_handler: Some(Box::new(cancel_handler)),
+            handler: Some(handler),
         })));
         cpudata::with_cpu_timed_event_queue(|queue| queue.add(tracker.clone())).unwrap();
         tracker
     }
 
-    fn invoke(&mut self, target_status: TimedEventStatus) -> Result<()> {
-        self.status = target_status;
-        match target_status {
-            TimedEventStatus::Timeout => {
-                self.timeout_handler
-                    .take()
-                    .ok_or(InternalError::InvalidTimedEventStatus)?()
-            }
-            TimedEventStatus::Cancelled => {
-                self.cancel_handler
-                    .take()
-                    .ok_or(InternalError::InvalidTimedEventStatus)?()
-            }
-            _ => return Err(InternalError::InvalidTimedEventStatus),
-        }
+    fn invoke(&mut self, target: TimedEventStatus) -> Result<()> {
+        let handler = self
+            .handler
+            .take()
+            .ok_or(InternalError::InvalidTimedEventStatus)?;
+        let func = match target {
+            TimedEventStatus::Timeout => handler.timeout,
+            TimedEventStatus::Cancelled => handler.cancel,
+            _ => panic!("Invalid timed event status"),
+        };
+        self.status = target;
+        func();
         Ok(())
     }
 }

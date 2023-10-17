@@ -6,35 +6,39 @@ pub(super) mod status {
     use crate::{
         arch, cpudata,
         test::test_define,
-        time::{TimedEvent, TimedEventStatus},
+        time::{TimedEvent, TimedEventHandler, TimedEventStatus},
     };
 
     test_define!("time::status" => test);
     fn test() {
         static DATA: Mutex<Option<TimedEventStatus>> = Mutex::new(None);
 
-        TimedEvent::new(
+        TimedEvent::create(
             arch::cpu::time() + Duration::from_secs(1),
-            || {
-                *DATA.lock() = Some(TimedEventStatus::Timeout);
-            },
-            || {
-                *DATA.lock() = Some(TimedEventStatus::Cancelled);
-            },
+            TimedEventHandler::new(
+                || {
+                    *DATA.lock() = Some(TimedEventStatus::Timeout);
+                },
+                || {
+                    *DATA.lock() = Some(TimedEventStatus::Cancelled);
+                },
+            ),
         );
 
         arch::wait_for_interrupt();
 
         assert_eq!(*DATA.lock(), Some(TimedEventStatus::Timeout));
 
-        let tracker = TimedEvent::new(
+        let tracker = TimedEvent::create(
             arch::cpu::time() + Duration::from_secs(1),
-            || {
-                *DATA.lock() = Some(TimedEventStatus::Timeout);
-            },
-            || {
-                *DATA.lock() = Some(TimedEventStatus::Cancelled);
-            },
+            TimedEventHandler::new(
+                || {
+                    *DATA.lock() = Some(TimedEventStatus::Timeout);
+                },
+                || {
+                    *DATA.lock() = Some(TimedEventStatus::Cancelled);
+                },
+            ),
         );
         tracker.cancel().unwrap();
 
@@ -53,7 +57,11 @@ pub(super) mod queue {
     use alloc::vec::Vec;
     use spin::Mutex;
 
-    use crate::{arch, test::test_define, time::TimedEvent};
+    use crate::{
+        arch,
+        test::test_define,
+        time::{TimedEvent, TimedEventHandler},
+    };
 
     test_define!("time::queue" => test);
     fn test() {
@@ -66,14 +74,14 @@ pub(super) mod queue {
 
         for i in (1..=EVENT_MAX).rev() {
             let this_order = i;
-            TimedEvent::new(
+            TimedEvent::create(
                 arch::cpu::time() + Duration::from_secs(i as u64),
-                move || {
-                    order_push(this_order);
-                },
-                move || {
-                    order_push(this_order);
-                },
+                TimedEventHandler::new(
+                    move || {
+                        order_push(this_order);
+                    },
+                    || panic!("this timed-event should not be cancelled"),
+                ),
             );
         }
 
