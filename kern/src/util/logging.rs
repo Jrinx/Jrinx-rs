@@ -1,6 +1,6 @@
 use core::fmt::Write;
 
-use alloc::{format, string::ToString};
+use alloc::{fmt, format, string::ToString};
 
 use crate::{arch, cpudata};
 
@@ -58,18 +58,20 @@ impl log::Log for Logger {
         })
         .unwrap_or("bootstrap".to_string());
 
-        print_fmt(with_color! {
-            color::ColorCode::WHITE,
-            color::ColorCode::WHITE,
-            "[ {time} cpu#{id} {level} ] ( {kernel_state} ) {args}\n",
-            time = {
-                let micros = cpu_time.as_micros();
-                format_args!("{s:>6}.{us:06}", s = micros / 1000000, us = micros % 1000000)
-            },
-            id = cpu_id,
-            level = with_color!(color, color::ColorCode::WHITE, "{:>5}", level),
-            kernel_state = with_color!(color::ColorCode::BLUE, color::ColorCode::WHITE, "{:^14}", kernel_state),
-            args = with_color!(color::ColorCode::WHITE, color::ColorCode::WHITE, "{}", record.args()),
+        fmt::format(*record.args()).split('\n').for_each(|args| {
+            print_fmt(with_color! {
+                color::ColorCode::WHITE,
+                color::ColorCode::WHITE,
+                "[ {time} cpu#{id} {level} ] ( {kernel_state} ) {args}\n",
+                time = {
+                    let micros = cpu_time.as_micros();
+                    format_args!("{s:>6}.{us:06}", s = micros / 1000000, us = micros % 1000000)
+                },
+                id = cpu_id,
+                level = with_color!(color, color::ColorCode::WHITE, "{:>5}", level),
+                kernel_state = with_color!(color::ColorCode::BLUE, color::ColorCode::WHITE, "{:^14}", kernel_state),
+                args = with_color!(color::ColorCode::WHITE, color::ColorCode::WHITE, "{}", args),
+            });
         });
     }
 
