@@ -53,3 +53,10 @@ pub fn find(test: &str) -> Option<fn()> {
             }
         })
 }
+
+pub fn all() -> impl Iterator<Item = &'static str> {
+    (conf::layout::_stest()..conf::layout::_etest())
+        .step_by(mem::size_of::<&TestDef>())
+        .map(|a| unsafe { *(a as *const &TestDef) })
+        .map(|test_def| test_def.name)
+}
