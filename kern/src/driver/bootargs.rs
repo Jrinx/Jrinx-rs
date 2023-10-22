@@ -1,10 +1,7 @@
 use alloc::{borrow::ToOwned, format, string::String, vec::Vec};
 use getargs::{Opt, Options};
 
-use crate::{
-    task::{self, TaskPriority},
-    test,
-};
+use crate::{task, test};
 
 static mut BOOTARGS: Option<String> = None;
 
@@ -49,13 +46,10 @@ pub async fn execute() {
                         let func = test::find(test)
                             .expect(format!("unrecognized test case: {}", test).as_str());
                         info!("test case {} begin", test);
-                        task::spawn(
-                            async move {
-                                func();
-                            },
-                            TaskPriority::new(1),
-                        );
-                        task::yield_now().await;
+                        task::spawn!(async move {
+                            func();
+                        });
+                        task::yield_now!();
                         info!("test case {} end", test);
                     }
                 }

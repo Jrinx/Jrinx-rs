@@ -32,6 +32,12 @@ impl TaskPriority {
     }
 }
 
+impl From<u16> for TaskPriority {
+    fn from(value: u16) -> Self {
+        Self::new(value)
+    }
+}
+
 pub struct Task {
     id: TaskId,
     priority: TaskPriority,
@@ -52,37 +58,48 @@ impl Task {
     }
 }
 
-struct YieldNow {
-    done: bool,
-}
-
-impl YieldNow {
-    fn new() -> Self {
-        Self { done: false }
-    }
-}
-
-impl Future for YieldNow {
-    type Output = ();
-
-    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        if self.done {
-            Poll::Ready(())
-        } else {
-            self.done = true;
-            cx.waker().wake_by_ref();
-            Poll::Pending
-        }
-    }
-}
-
-pub fn spawn(future: impl Future<Output = ()> + 'static, priority: TaskPriority) {
+pub fn do_spawn(future: impl Future<Output = ()> + 'static, priority: TaskPriority) {
     cpudata::with_cpu_executor(|executor| {
         executor.spawn(Task::new(future, priority)).unwrap();
     })
     .unwrap();
 }
 
-pub async fn yield_now() {
-    YieldNow::new().await;
+macro_rules! spawn {
+    ($future: expr) => {
+        $crate::task::do_spawn($future, $crate::task::TaskPriority::default())
+    };
+    (pri := $priority:expr => $future: expr) => {
+        $crate::task::do_spawn($future, $priority.into())
+    };
 }
+pub(crate) use spawn;
+
+pub async fn do_yield() {
+    struct YieldNow {
+        done: bool,
+    }
+
+    impl Future for YieldNow {
+        type Output = ();
+
+        fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+            if self.done {
+                Poll::Ready(())
+            } else {
+                self.done = true;
+                cx.waker().wake_by_ref();
+                Poll::Pending
+            }
+        }
+    }
+
+    YieldNow { done: false }.await;
+}
+
+macro_rules! yield_now {
+    () => {
+        $crate::task::do_yield().await
+    };
+}
+pub(crate) use yield_now;
