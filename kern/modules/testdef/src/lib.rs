@@ -19,6 +19,10 @@ impl TestDef {
         self.test
     }
 
+    /// # Safety
+    ///
+    /// This function is safe as long as the caller ensures that the [`start`, `end`) is a valid
+    /// contiguous range of pointers to [`TestDef`].
     pub unsafe fn iter(start: usize, end: usize) -> impl Iterator<Item = &'static TestDef> {
         (start..end)
             .step_by(core::mem::size_of::<&TestDef>())
