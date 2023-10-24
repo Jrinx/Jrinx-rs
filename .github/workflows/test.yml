@@ -100,6 +100,26 @@ jobs:
                         tail -n 1 | \
                         cut -d/ -f3)" >> $GITHUB_OUTPUT
 
+      - name: Cache Cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Lint Xtask Code
+        run: cargo clippy
+
+      - name: Lint Kern Code
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: cargo lint
+
       - name: Cache QEMU
         id: qemu-cache
         uses: actions/cache@v3
@@ -113,18 +133,6 @@ jobs:
         run: |
           ls -l /opt/qemu/bin/
           echo "/opt/qemu/bin/" >> $GITHUB_PATH
-
-      - name: Cache Cargo
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-
 
       - name: Run All Tests
         env:
