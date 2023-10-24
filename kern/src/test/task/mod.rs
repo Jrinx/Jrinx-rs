@@ -1,8 +1,9 @@
 pub(super) mod executor {
     use alloc::vec::Vec;
+    use jrinx_testdef_macro::testdef;
     use spin::RwLock;
 
-    use crate::{task, test::test_define};
+    use crate::task;
 
     static QUEUE: RwLock<Vec<i32>> = RwLock::new(Vec::new());
 
@@ -14,7 +15,7 @@ pub(super) mod executor {
         guard.unwrap().push(val);
     }
 
-    test_define!("task::executor" => test);
+    #[testdef]
     fn test() {
         task::spawn!(
             pri := 127 => async {
@@ -42,6 +43,7 @@ pub(super) mod executor {
 
 pub(super) mod inspector {
     use alloc::vec::Vec;
+    use jrinx_testdef_macro::testdef;
     use spin::Mutex;
 
     use crate::{
@@ -50,10 +52,9 @@ pub(super) mod inspector {
             executor::{Executor, ExecutorPriority},
             runtime, Task, TaskPriority,
         },
-        test::test_define,
     };
 
-    test_define!("task::inspector" => test);
+    #[testdef]
     fn test() {
         static ORDER: Mutex<Vec<(u16, u16)>> = Mutex::new(Vec::new());
 
@@ -114,6 +115,7 @@ pub(super) mod inspector {
 
 pub(super) mod runtime {
     use alloc::vec::Vec;
+    use jrinx_testdef_macro::testdef;
     use spin::Mutex;
 
     use crate::{
@@ -126,10 +128,9 @@ pub(super) mod runtime {
             },
             Task, TaskPriority,
         },
-        test::test_define,
     };
 
-    test_define!("task::runtime" => test);
+    #[testdef]
     fn test() {
         static ORDER: Mutex<Vec<(u16, u16)>> = Mutex::new(Vec::new());
 

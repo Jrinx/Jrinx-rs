@@ -1,15 +1,15 @@
 pub(super) mod status {
     use core::time::Duration;
 
+    use jrinx_testdef_macro::testdef;
     use spin::Mutex;
 
     use crate::{
         arch, cpudata,
-        test::test_define,
         time::{TimedEvent, TimedEventHandler, TimedEventStatus},
     };
 
-    test_define!("time::status" => test);
+    #[testdef]
     fn test() {
         static DATA: Mutex<Option<TimedEventStatus>> = Mutex::new(None);
 
@@ -55,15 +55,15 @@ pub(super) mod queue {
     use core::time::Duration;
 
     use alloc::vec::Vec;
+    use jrinx_testdef_macro::testdef;
     use spin::Mutex;
 
     use crate::{
         arch,
-        test::test_define,
         time::{TimedEvent, TimedEventHandler},
     };
 
-    test_define!("time::queue" => test);
+    #[testdef]
     fn test() {
         const EVENT_MAX: usize = 3;
         static ORDER: Mutex<Vec<usize>> = Mutex::new(Vec::new());

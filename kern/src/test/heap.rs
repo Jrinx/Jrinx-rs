@@ -1,8 +1,7 @@
 use alloc::vec;
+use jrinx_testdef_macro::testdef;
 
-use super::test_define;
-
-test_define!("heap" => test);
+#[testdef]
 fn test() {
     let mut v = vec![1, 2, 3];
     assert_eq!(v.len(), 3);

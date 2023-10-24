@@ -1,7 +1,9 @@
 pub(super) mod breakpoint {
-    use crate::{arch, test::test_define, trap::breakpoint};
+    use jrinx_testdef_macro::testdef;
 
-    test_define!("trap::breakpoint" => test);
+    use crate::{arch, trap::breakpoint};
+
+    #[testdef]
     fn test() {
         for i in 0..10 {
             assert_eq!(breakpoint::count(), i);
@@ -13,6 +15,7 @@ pub(super) mod breakpoint {
 
 pub(super) mod page_fault {
     use cfg_if::cfg_if;
+    use jrinx_testdef_macro::testdef;
 
     use crate::{
         arch::{self, mm::virt::PagePerm},
@@ -20,7 +23,6 @@ pub(super) mod page_fault {
             phys,
             virt::{VirtAddr, KERN_PAGE_TABLE},
         },
-        test::test_define,
         trap::TrapReason,
     };
 
@@ -60,7 +62,7 @@ pub(super) mod page_fault {
 
     const USER_TEXT: usize = 0x10000;
 
-    test_define!("trap::page_fault" => test);
+    #[testdef]
     fn test() {
         let mut ctx = arch::trap::Context::default();
         ctx.setup_user(USER_TEXT, 0);
@@ -108,13 +110,14 @@ pub(super) mod page_fault {
 }
 
 pub(super) mod syscall {
+    use jrinx_testdef_macro::testdef;
+
     use crate::{
         arch::{self, mm::virt::PagePerm},
         mm::{
             phys,
             virt::{VirtAddr, KERN_PAGE_TABLE},
         },
-        test::test_define,
         trap::TrapReason,
     };
 
@@ -136,7 +139,7 @@ pub(super) mod syscall {
 
     const USER_TEXT: usize = 0x10000;
 
-    test_define!("trap::syscall" => test);
+    #[testdef]
     fn test() {
         let mut ctx = arch::trap::Context::default();
 

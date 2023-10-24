@@ -2,14 +2,14 @@ pub(super) mod phys {
     use core::mem::forget;
 
     use alloc::sync::Arc;
+    use jrinx_testdef_macro::testdef;
 
     use crate::{
         error::Result,
         mm::phys::{PhysAddr, PhysFrame},
-        test::test_define,
     };
 
-    test_define!("mm::phys" => test);
+    #[testdef]
     fn test() {
         let (frame1, addr1) = alloc().unwrap();
         let (frame2, addr2) = alloc().unwrap();
@@ -39,6 +39,8 @@ pub(super) mod phys {
 pub(super) mod virt {
     use core::mem;
 
+    use jrinx_testdef_macro::testdef;
+
     use crate::{
         arch::{self, mm::virt::PagePerm},
         conf,
@@ -46,11 +48,10 @@ pub(super) mod virt {
             phys::PhysFrame,
             virt::{VirtAddr, KERN_PAGE_TABLE},
         },
-        test::test_define,
         util::random,
     };
 
-    test_define!("mm::virt" => test);
+    #[testdef]
     fn test() {
         let vaddr1 = VirtAddr::new(conf::PAGE_SIZE);
         let vaddr2 = VirtAddr::new(conf::PAGE_SIZE * 2);
