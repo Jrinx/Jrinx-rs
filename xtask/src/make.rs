@@ -1,3 +1,5 @@
+pub mod lint;
+
 use std::{
     env, fs,
     process::{Command, ExitStatus},
@@ -40,16 +42,7 @@ static DEFAULT_FEATURES: &[&str] = &["colorful"];
 pub fn run(arg: &MakeArg) -> Option<ExitStatus> {
     setup_envs(arg);
 
-    let MakeArg {
-        arch,
-        log_level,
-        feat,
-        no_default_feat,
-        always_make,
-        ..
-    } = arg.clone();
-
-    let ArchArg { arch, .. } = arch;
+    let MakeArg { always_make, .. } = arg.clone();
 
     let cmd = &mut Command::new(env!("CARGO"));
 
@@ -66,9 +59,25 @@ pub fn run(arg: &MakeArg) -> Option<ExitStatus> {
         return None;
     }
 
-    cmd.current_dir(kern_path)
-        .arg("build")
-        .args(["--target", format!("tgt/{}.json", arch).as_str()])
+    cmd.current_dir(kern_path).arg("build");
+
+    construct_cmd(arg, cmd);
+
+    cmd.status().ok()
+}
+
+fn construct_cmd(arg: &MakeArg, cmd: &mut Command) {
+    let MakeArg {
+        arch,
+        log_level,
+        feat,
+        no_default_feat,
+        ..
+    } = arg.clone();
+
+    let ArchArg { arch, .. } = arch;
+
+    cmd.args(["--target", format!("tgt/{}.json", arch).as_str()])
         .args([
             "--features",
             feat.iter()
@@ -80,7 +89,7 @@ pub fn run(arg: &MakeArg) -> Option<ExitStatus> {
                         .unwrap()
                         .1
                         .iter()
-                        .map(|s| *s),
+                        .copied(),
                 )
                 .chain(
                     if no_default_feat {
@@ -88,7 +97,7 @@ pub fn run(arg: &MakeArg) -> Option<ExitStatus> {
                     } else {
                         DEFAULT_FEATURES.iter()
                     }
-                    .map(|s| *s),
+                    .copied(),
                 )
                 .collect::<Vec<_>>()
                 .join(",")
@@ -100,7 +109,6 @@ pub fn run(arg: &MakeArg) -> Option<ExitStatus> {
     if let Some(level) = log_level {
         cmd.env("LOGLEVEL", level);
     }
-    cmd.status().ok()
 }
 
 fn setup_envs(arg: &MakeArg) {
@@ -122,7 +130,7 @@ fn setup_envs(arg: &MakeArg) {
 
     export_env! {
         "ARCH" ?= arch.to_string(),
-        "BUILD_MODE" ?= if debug { "debug" } else { "release" }.to_string(),
+        "BUILD_MODE" ?= if debug { "debug" } else { "release" },
         "BUILD_TIME" ?= chrono::offset::Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
         "RAND_SEED" ?= rand::thread_rng().gen_range(0..0x8000).to_string()
     }

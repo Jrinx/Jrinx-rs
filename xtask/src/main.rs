@@ -7,7 +7,7 @@ use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 
-use make::MakeArg;
+use make::{lint, MakeArg};
 use qemu::QemuArg;
 
 #[derive(Parser)]
@@ -23,14 +23,16 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Cmd {
-    MAKE(MakeArg),
-    QEMU(QemuArg),
+    Make(MakeArg),
+    Lint(MakeArg),
+    Qemu(QemuArg),
 }
 
 fn main() -> ExitCode {
     if let Some(code) = match Cli::parse().cmd {
-        Cmd::MAKE(ref arg) => make::run(arg),
-        Cmd::QEMU(ref arg) => qemu::run(arg),
+        Cmd::Make(ref arg) => make::run(arg),
+        Cmd::Lint(ref arg) => lint::run(arg),
+        Cmd::Qemu(ref arg) => qemu::run(arg),
     } {
         if code.success() {
             return ExitCode::SUCCESS;
