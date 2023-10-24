@@ -18,10 +18,7 @@ where
     }
 
     pub fn add(&mut self, item: I, priority: P) {
-        self.queue
-            .entry(priority)
-            .or_insert_with(VecDeque::new)
-            .push_back(item);
+        self.queue.entry(priority).or_default().push_back(item);
     }
 
     pub fn pop(&mut self) -> Option<I> {

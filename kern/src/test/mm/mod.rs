@@ -107,6 +107,6 @@ pub(super) mod virt {
     where
         T: Clone + Copy,
     {
-        unsafe { *dst.clone() }
+        unsafe { *dst }
     }
 }

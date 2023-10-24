@@ -41,11 +41,11 @@ impl log::Log for Logger {
         let cpu_time = arch::cpu::time();
         let level = record.level();
         let color = match level {
-            log::Level::Error => color::ColorCode::RED,
-            log::Level::Warn => color::ColorCode::YELLOW,
-            log::Level::Info => color::ColorCode::GREEN,
-            log::Level::Debug => color::ColorCode::CYAN,
-            log::Level::Trace => color::ColorCode::MAGENTA,
+            log::Level::Error => color::ColorCode::Red,
+            log::Level::Warn => color::ColorCode::Yellow,
+            log::Level::Info => color::ColorCode::Green,
+            log::Level::Debug => color::ColorCode::Cyan,
+            log::Level::Trace => color::ColorCode::Magenta,
         };
 
         let kernel_state = cpudata::with_cpu_runtime(|rt| {
@@ -60,17 +60,17 @@ impl log::Log for Logger {
 
         fmt::format(*record.args()).split('\n').for_each(|args| {
             print_fmt(with_color! {
-                color::ColorCode::WHITE,
-                color::ColorCode::WHITE,
+                color::ColorCode::White,
+                color::ColorCode::White,
                 "[ {time} cpu#{id} {level} ] ( {kernel_state} ) {args}\n",
                 time = {
                     let micros = cpu_time.as_micros();
                     format_args!("{s:>6}.{us:06}", s = micros / 1000000, us = micros % 1000000)
                 },
                 id = cpu_id,
-                level = with_color!(color, color::ColorCode::WHITE, "{:>5}", level),
-                kernel_state = with_color!(color::ColorCode::BLUE, color::ColorCode::WHITE, "{:^14}", kernel_state),
-                args = with_color!(color::ColorCode::WHITE, color::ColorCode::WHITE, "{}", args),
+                level = with_color!(color, color::ColorCode::White, "{:>5}", level),
+                kernel_state = with_color!(color::ColorCode::Blue, color::ColorCode::White, "{:^14}", kernel_state),
+                args = with_color!(color::ColorCode::White, color::ColorCode::White, "{}", args),
             });
         });
     }

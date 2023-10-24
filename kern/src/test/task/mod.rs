@@ -98,7 +98,7 @@ pub(super) mod inspector {
 
         runtime::switch_yield();
 
-        assert_eq!(ORDER.is_locked(), false);
+        assert!(!ORDER.is_locked());
 
         let order = ORDER.lock();
         assert_eq!(order.len(), (EXECUTOR_MAX * TASK_MAX) as usize);
@@ -178,7 +178,7 @@ pub(super) mod runtime {
         cpudata::with_cpu_runtime(|rt| rt.set_inspector_switch_pending()).unwrap();
         runtime::switch_yield();
 
-        assert_eq!(ORDER.is_locked(), false);
+        assert!(!ORDER.is_locked());
 
         let order = ORDER.lock();
         assert_eq!(order.len(), (INSPECTOR_MAX * EXECUTOR_MAX) as usize);

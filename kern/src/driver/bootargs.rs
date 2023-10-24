@@ -1,4 +1,4 @@
-use alloc::{borrow::ToOwned, format, string::String, vec::Vec};
+use alloc::{borrow::ToOwned, string::String, vec::Vec};
 use getargs::{Opt, Options};
 
 use crate::{task, test};
@@ -44,7 +44,7 @@ pub async fn execute() {
                     } else {
                         let test = arg;
                         let func = test::find(test)
-                            .expect(format!("unrecognized test case: {}", test).as_str());
+                            .unwrap_or_else(|| panic!("unrecognized test case: {}", test));
                         info!("test case {} begin", test);
                         task::spawn!(async move {
                             func();

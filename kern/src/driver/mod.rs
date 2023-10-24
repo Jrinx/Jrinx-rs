@@ -41,7 +41,7 @@ pub struct DevReg {
 }
 
 impl DevReg {
-    fn suit<'a>(&self, node: &FdtNode) -> Option<fn(node: &FdtNode) -> Result<()>> {
+    fn suit(&self, node: &FdtNode) -> Option<fn(node: &FdtNode) -> Result<()>> {
         match self.ident {
             DevIdent::Compatible(compat) => node
                 .compatible()

@@ -160,7 +160,7 @@ impl Executor {
 
             let waker = task_waker
                 .entry(task_id)
-                .or_insert_with(|| TaskWaker::new(task.id, task.priority, task_queue.clone()));
+                .or_insert_with(|| TaskWaker::create(task.id, task.priority, task_queue.clone()));
 
             let mut context = Context::from_waker(waker);
             match task.poll(&mut context) {
@@ -207,7 +207,7 @@ impl Wake for TaskWaker {
 }
 
 impl TaskWaker {
-    fn new(task_id: TaskId, task_priority: TaskPriority, task_queue: Arc<TaskQueue>) -> Waker {
+    fn create(task_id: TaskId, task_priority: TaskPriority, task_queue: Arc<TaskQueue>) -> Waker {
         Waker::from(Arc::new(Self {
             task_id,
             task_priority,

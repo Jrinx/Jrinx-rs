@@ -9,7 +9,7 @@ fn test() {
     for i in 4..10 {
         v.push(i);
     }
-    for i in 0..9 {
-        assert_eq!(v[i], i + 1);
+    for (i, &item) in v.iter().enumerate().take(9) {
+        assert_eq!(item, i + 1);
     }
 }

@@ -1,7 +1,5 @@
 mod entry;
 
-use core::mem::size_of;
-
 use riscv::register::{
     scause::Exception,
     sstatus::{FS, SPP},
@@ -104,10 +102,10 @@ pub struct Context {
 impl Context {
     pub fn trap_reason(&self) -> TrapReason {
         let cause = self.scause;
-        let is_interrupt = (cause & (1 << (size_of::<usize>() * 8 - 1))) != 0;
+        let is_interrupt = (cause & (1 << (usize::BITS - 1))) != 0;
         if is_interrupt {
-            let code = cause & !(1 << (size_of::<usize>() * 8 - 1));
-            TrapReason::Interrupt(code as usize)
+            let code = cause & !(1 << (usize::BITS - 1));
+            TrapReason::Interrupt(code)
         } else {
             let code = Exception::from(cause);
             match code {

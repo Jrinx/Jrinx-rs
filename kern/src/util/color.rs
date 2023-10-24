@@ -2,13 +2,13 @@
 #[allow(dead_code)]
 #[repr(u8)]
 pub enum ColorCode {
-    RED = 31,
-    GREEN = 32,
-    YELLOW = 33,
-    BLUE = 34,
-    MAGENTA = 35,
-    CYAN = 36,
-    WHITE = 37,
+    Red = 31,
+    Green = 32,
+    Yellow = 33,
+    Blue = 34,
+    Magenta = 35,
+    Cyan = 36,
+    White = 37,
 }
 
 macro_rules! with_color {

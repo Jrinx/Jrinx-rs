@@ -82,6 +82,9 @@ impl TimedEvent {
     }
 }
 
+unsafe impl Send for TimedEvent {}
+unsafe impl Sync for TimedEvent {}
+
 #[derive(Clone)]
 pub struct TimedEventTracker(Arc<Mutex<TimedEvent>>);
 

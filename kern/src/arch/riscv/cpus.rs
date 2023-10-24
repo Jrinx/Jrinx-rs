@@ -18,12 +18,9 @@ fn probe(node: &FdtNode) -> Result<()> {
 
     let nproc = node
         .children()
-        .filter_map(|node| {
-            debug!("node: {}", node.name);
-            match node.compatible() {
-                Some(compatible) => compatible.all().any(|c| c == "riscv").then_some(node),
-                None => None,
-            }
+        .filter(|node| match node.compatible() {
+            Some(compatible) => compatible.all().any(|c| c == "riscv"),
+            None => false,
         })
         .count();
     debug!("cpus nproc: {}", nproc);
