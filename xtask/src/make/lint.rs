@@ -16,5 +16,6 @@ pub fn run(arg: &MakeArg) -> Option<ExitStatus> {
 
     construct_cmd(arg, cmd);
 
+    cmd.args(["--", "-Dwarnings"]);
     cmd.status().ok()
 }
