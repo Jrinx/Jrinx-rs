@@ -8,20 +8,13 @@ use core::{
 };
 
 use alloc::boxed::Box;
-use spin::Mutex;
+use jrinx_serial_id::SerialIdGenerator;
+use jrinx_serial_id_macro::SerialId;
 
-use crate::{cpudata, util::serial_id::SerialIdGenerator};
+use crate::cpudata;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, SerialId)]
 pub struct TaskId(u64);
-
-impl TaskId {
-    fn new() -> Self {
-        static ID_GENERATOR: Mutex<SerialIdGenerator> = Mutex::new(SerialIdGenerator::new());
-
-        Self(ID_GENERATOR.lock().generate())
-    }
-}
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TaskPriority(u16);
@@ -47,7 +40,7 @@ pub struct Task {
 impl Task {
     pub fn new(future: impl Future<Output = ()> + 'static, priority: TaskPriority) -> Self {
         Self {
-            id: TaskId::new(),
+            id: TaskId::generate(),
             priority,
             future: Box::pin(future),
         }

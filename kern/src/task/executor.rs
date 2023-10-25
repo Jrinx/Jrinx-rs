@@ -5,7 +5,8 @@ use core::{
 };
 
 use alloc::{boxed::Box, collections::BTreeMap, sync::Arc, task::Wake};
-use spin::Mutex;
+use jrinx_serial_id::SerialIdGenerator;
+use jrinx_serial_id_macro::SerialId;
 
 use crate::{
     arch::{self, mm::virt::PagePerm, task::executor::SwitchContext},
@@ -15,7 +16,7 @@ use crate::{
         phys::PhysFrame,
         virt::{VirtAddr, KERN_PAGE_TABLE},
     },
-    util::{priority::PriorityQueueWithLock, serial_id::SerialIdGenerator, stack::StackAllocator},
+    util::{priority::PriorityQueueWithLock, stack::StackAllocator},
 };
 
 use super::{runtime, Task, TaskId, TaskPriority};
@@ -49,16 +50,8 @@ static EXECUTOR_STACK_ALLOCATOR: StackAllocator = StackAllocator::new(
     },
 );
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, SerialId)]
 pub struct ExecutorId(u64);
-
-impl ExecutorId {
-    fn new() -> Self {
-        static ID_GENERATOR: Mutex<SerialIdGenerator> = Mutex::new(SerialIdGenerator::new());
-
-        Self(ID_GENERATOR.lock().generate())
-    }
-}
 
 impl Display for ExecutorId {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -98,7 +91,7 @@ impl Executor {
         let stack_top = EXECUTOR_STACK_ALLOCATOR.alloc().unwrap();
 
         let mut executor = Box::pin(Self {
-            id: ExecutorId::new(),
+            id: ExecutorId::generate(),
             priority,
             status: ExecutorStatus::Runnable,
             stack_top,

@@ -256,6 +256,8 @@ dependencies = [
  "cfg-if",
  "fdt",
  "getargs",
+ "jrinx-serial-id",
+ "jrinx-serial-id-macro",
  "jrinx-testdef",
  "jrinx-testdef-macro",
  "lazy_static",
@@ -263,6 +265,18 @@ dependencies = [
  "riscv",
  "sbi",
  "spin 0.9.8",
+]
+
+[[package]]
+name = "jrinx-serial-id"
+version = "0.1.0"
+
+[[package]]
+name = "jrinx-serial-id-macro"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
 ]
 
 [[package]]

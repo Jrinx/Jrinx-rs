@@ -5,24 +5,17 @@ use alloc::{
     collections::{BTreeMap, BinaryHeap},
     sync::Arc,
 };
+use jrinx_serial_id::SerialIdGenerator;
+use jrinx_serial_id_macro::SerialId;
 use spin::Mutex;
 
 use crate::{
     arch, cpudata,
     error::{InternalError, Result},
-    util::serial_id::SerialIdGenerator,
 };
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, SerialId)]
 struct TimedEventId(u64);
-
-impl TimedEventId {
-    fn new() -> Self {
-        static ID_GENERATOR: Mutex<SerialIdGenerator> = Mutex::new(SerialIdGenerator::new());
-
-        Self(ID_GENERATOR.lock().generate())
-    }
-}
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum TimedEventStatus {
@@ -56,7 +49,7 @@ pub struct TimedEvent {
 impl TimedEvent {
     pub fn create(time: Duration, handler: TimedEventHandler) -> TimedEventTracker {
         let tracker = TimedEventTracker(Arc::new(Mutex::new(Self {
-            id: TimedEventId::new(),
+            id: TimedEventId::generate(),
             cpu_id: arch::cpu::id(),
             time,
             status: TimedEventStatus::Pending,

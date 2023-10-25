@@ -16,6 +16,8 @@ buddy_system_allocator = { version = "0.9.0", features = ["const_fn"] }
 cfg-if = "1.0.0"
 fdt = "0.1.5"
 getargs = { version = "0.5.0", default-features = false }
+jrinx-serial-id = { version = "0.1.0", path = "modules/serial-id" }
+jrinx-serial-id-macro = { version = "0.1.0", path = "modules/serial-id-macro" }
 jrinx-testdef = { version = "0.1.0", path = "modules/testdef" }
 jrinx-testdef-macro = { version = "0.1.0", path = "modules/testdef-macro" }
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }

@@ -1,26 +1,19 @@
 use core::{fmt::Display, pin::Pin};
 
 use alloc::{boxed::Box, collections::BTreeMap};
-use spin::Mutex;
+use jrinx_serial_id::SerialIdGenerator;
+use jrinx_serial_id_macro::SerialId;
 
 use crate::{
     error::{InternalError, Result},
     task::executor::{Executor, ExecutorId, ExecutorPriority},
-    util::{priority::PriorityQueueWithLock, serial_id::SerialIdGenerator},
+    util::priority::PriorityQueueWithLock,
 };
 
 type ExecutorQueue = PriorityQueueWithLock<ExecutorPriority, ExecutorId>;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, SerialId)]
 pub struct InspectorId(u64);
-
-impl InspectorId {
-    fn new() -> Self {
-        static ID_GENERATOR: Mutex<SerialIdGenerator> = Mutex::new(SerialIdGenerator::new());
-
-        Self(ID_GENERATOR.lock().generate())
-    }
-}
 
 impl Display for InspectorId {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -51,7 +44,7 @@ pub struct Inspector {
 impl Inspector {
     pub fn new(mode: InspectorMode, root_executor: Pin<Box<Executor>>) -> Self {
         let mut inspector = Self {
-            id: InspectorId::new(),
+            id: InspectorId::generate(),
             mode,
             status: InspectorStatus::Idle,
             executor_registry: BTreeMap::new(),
