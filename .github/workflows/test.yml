@@ -113,7 +113,7 @@ jobs:
           restore-keys: ${{ runner.os }}-cargo-
 
       - name: Lint Xtask Code
-        run: cargo clippy
+        run: cargo clippy --release -- -Dwarnings
 
       - name: Lint Kern Code
         env:
