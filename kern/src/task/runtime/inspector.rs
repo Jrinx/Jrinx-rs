@@ -1,11 +1,11 @@
 use core::{fmt::Display, pin::Pin};
 
 use alloc::{boxed::Box, collections::BTreeMap};
+use jrinx_error::{InternalError, Result};
 use jrinx_serial_id::SerialIdGenerator;
 use jrinx_serial_id_macro::SerialId;
 
 use crate::{
-    error::{InternalError, Result},
     task::executor::{Executor, ExecutorId, ExecutorPriority},
     util::priority::PriorityQueueWithLock,
 };

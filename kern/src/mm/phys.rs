@@ -1,14 +1,9 @@
 use alloc::{alloc::Global, sync::Arc, vec, vec::Vec};
 use fdt::node::FdtNode;
+use jrinx_error::{InternalError, Result};
 use spin::{Mutex, MutexGuard};
 
-use crate::{
-    arch,
-    driver::device_probe,
-    error::{InternalError, Result},
-    heap,
-    mm::virt::VirtAddr,
-};
+use crate::{arch, driver::device_probe, heap, mm::virt::VirtAddr};
 
 use core::{
     alloc::{Allocator, Layout},

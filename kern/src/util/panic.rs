@@ -1,6 +1,8 @@
 use core::panic::PanicInfo;
 
-use crate::{arch, error::HaltReason};
+use jrinx_error::HaltReason;
+
+use crate::arch;
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {

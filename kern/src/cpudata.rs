@@ -1,11 +1,11 @@
 use core::pin::Pin;
 
 use alloc::{boxed::Box, vec::Vec};
+use jrinx_error::{InternalError, Result};
 use spin::Mutex;
 
 use crate::{
     arch,
-    error::{InternalError, Result},
     task::{
         executor::{Executor, ExecutorPriority},
         runtime::{

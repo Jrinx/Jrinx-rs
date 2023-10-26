@@ -5,14 +5,12 @@ use alloc::{
     collections::{BTreeMap, BinaryHeap},
     sync::Arc,
 };
+use jrinx_error::{InternalError, Result};
 use jrinx_serial_id::SerialIdGenerator;
 use jrinx_serial_id_macro::SerialId;
 use spin::Mutex;
 
-use crate::{
-    arch, cpudata,
-    error::{InternalError, Result},
-};
+use crate::{arch, cpudata};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, SerialId)]
 struct TimedEventId(u64);

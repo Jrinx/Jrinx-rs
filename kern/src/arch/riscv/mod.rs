@@ -1,4 +1,5 @@
 use cfg_if::cfg_if;
+use jrinx_error::HaltReason;
 
 cfg_if! {
     if #[cfg(target_arch = "riscv32")] {
@@ -11,8 +12,6 @@ cfg_if! {
         pub use riscv64::*;
     }
 }
-
-use crate::error::HaltReason;
 
 pub mod cpu;
 pub mod cpus;

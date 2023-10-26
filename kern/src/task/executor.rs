@@ -5,12 +5,12 @@ use core::{
 };
 
 use alloc::{boxed::Box, collections::BTreeMap, sync::Arc, task::Wake};
+use jrinx_error::{InternalError, Result};
 use jrinx_serial_id::SerialIdGenerator;
 use jrinx_serial_id_macro::SerialId;
 
 use crate::{
     arch::{self, mm::virt::PagePerm, task::executor::SwitchContext},
-    error::{InternalError, Result},
     mm::{
         phys::PhysFrame,
         virt::{VirtAddr, KERN_PAGE_TABLE},

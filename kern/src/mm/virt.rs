@@ -4,6 +4,7 @@ use core::{
 };
 
 use alloc::{collections::BTreeMap, sync::Arc};
+use jrinx_error::{InternalError, Result};
 use lazy_static::lazy_static;
 use spin::RwLock;
 
@@ -12,7 +13,6 @@ use crate::{
         self,
         mm::virt::{PagePerm, PageTableEntry},
     },
-    error::{InternalError, Result},
     mm::phys,
 };
 

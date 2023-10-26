@@ -2,12 +2,10 @@ pub(super) mod phys {
     use core::mem::forget;
 
     use alloc::sync::Arc;
+    use jrinx_error::Result;
     use jrinx_testdef_macro::testdef;
 
-    use crate::{
-        error::Result,
-        mm::phys::{PhysAddr, PhysFrame},
-    };
+    use crate::mm::phys::{PhysAddr, PhysFrame};
 
     #[testdef]
     fn test() {

@@ -1,9 +1,7 @@
 use fdt::node::FdtNode;
+use jrinx_error::{InternalError, Result};
 
-use crate::{
-    driver::device_probe,
-    error::{InternalError, Result},
-};
+use crate::driver::device_probe;
 
 fn probe(node: &FdtNode) -> Result<()> {
     let timebase_freq = node

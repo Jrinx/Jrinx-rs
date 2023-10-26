@@ -1,3 +1,5 @@
+#![no_std]
+
 #[derive(Debug)]
 pub enum InternalError {
     DevProbeError,

@@ -10,8 +10,6 @@ use alloc::{
 };
 use fdt::{node::FdtNode, Fdt};
 
-use crate::error::Result;
-
 #[repr(C)]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum DevIdent {
@@ -85,6 +83,7 @@ macro_rules! device_probe {
     };
 }
 pub(crate) use device_probe;
+use jrinx_error::Result;
 
 pub(super) fn init(fdtaddr: *const u8) {
     let dt = unsafe { Fdt::from_ptr(fdtaddr) }.unwrap();

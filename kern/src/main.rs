@@ -28,7 +28,6 @@ extern crate log;
 mod arch;
 mod cpudata;
 mod driver;
-mod error;
 mod heap;
 mod mm;
 mod task;
