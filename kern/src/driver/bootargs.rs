@@ -1,7 +1,7 @@
 use alloc::{borrow::ToOwned, string::String, vec::Vec};
 use getargs::{Opt, Options};
 
-use crate::{task, test};
+use crate::task;
 
 static mut BOOTARGS: Option<String> = None;
 
@@ -38,12 +38,12 @@ pub async fn execute() {
                     };
                     if arg == "help" {
                         info!("all available tests:");
-                        let mut all_tests = test::all().collect::<Vec<_>>();
+                        let mut all_tests = jrinx_testdef::all().collect::<Vec<_>>();
                         all_tests.sort();
                         all_tests.iter().for_each(|test| info!("- {test}"));
                     } else {
                         let test = arg;
-                        let func = test::find(test)
+                        let func = jrinx_testdef::find(test)
                             .unwrap_or_else(|| panic!("unrecognized test case: {}", test));
                         info!("test case {} begin", test);
                         task::spawn!(async move {

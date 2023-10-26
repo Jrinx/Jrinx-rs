@@ -10,26 +10,20 @@ impl TestDef {
     pub const fn new(name: &'static str, test: fn()) -> Self {
         Self { name, test }
     }
+}
 
-    pub fn name(&self) -> &'static str {
-        self.name
-    }
+pub fn all() -> impl Iterator<Item = &'static str> {
+    unsafe { testdef_iter() }.map(|test_def| test_def.name)
+}
 
-    pub fn name_match(&self, s: &str) -> bool {
-        self.name.contains(s)
+pub fn find(name: &str) -> Option<fn()> {
+    unsafe {
+        testdef_iter().find_map(|test_def| test_def.name.contains(name).then_some(test_def.test))
     }
+}
 
-    pub fn test(&self) -> fn() {
-        self.test
-    }
-
-    /// # Safety
-    ///
-    /// This function is safe as long as the caller ensures that the [`start`, `end`) is a valid
-    /// contiguous range of pointers to [`TestDef`].
-    pub unsafe fn iter(start: usize, end: usize) -> impl Iterator<Item = &'static TestDef> {
-        (start..end)
-            .step_by(core::mem::size_of::<&TestDef>())
-            .map(|a| *(a as *const &TestDef))
-    }
+unsafe fn testdef_iter() -> impl Iterator<Item = &'static TestDef> {
+    (jrinx_layout::_stest()..jrinx_layout::_etest())
+        .step_by(core::mem::size_of::<&TestDef>())
+        .map(|a| *(a as *const &TestDef))
 }

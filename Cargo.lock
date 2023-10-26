@@ -292,6 +292,9 @@ dependencies = [
 [[package]]
 name = "jrinx-testdef"
 version = "0.1.0"
+dependencies = [
+ "jrinx-layout",
+]
 
 [[package]]
 name = "jrinx-testdef-macro"
