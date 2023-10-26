@@ -10,7 +10,7 @@ use crate::conf;
 
 pub fn find(test: &str) -> Option<fn()> {
     unsafe { TestDef::iter(conf::layout::_stest(), conf::layout::_etest()) }.find_map(|test_def| {
-        if test_def.name() == test {
+        if test_def.name_match(test) {
             Some(test_def.test())
         } else {
             None

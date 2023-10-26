@@ -12,7 +12,11 @@ impl TestDef {
     }
 
     pub fn name(&self) -> &'static str {
-        self.name.strip_prefix("jrinx::test::").unwrap()
+        self.name
+    }
+
+    pub fn name_match(&self, s: &str) -> bool {
+        self.name.contains(s)
     }
 
     pub fn test(&self) -> fn() {
