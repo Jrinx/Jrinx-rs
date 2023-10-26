@@ -1,9 +1,10 @@
 use alloc::{alloc::Global, sync::Arc, vec, vec::Vec};
 use fdt::node::FdtNode;
+use jrinx_devprober_macro::devprober;
 use jrinx_error::{InternalError, Result};
 use spin::{Mutex, MutexGuard};
 
-use crate::{arch, driver::device_probe, heap, mm::virt::VirtAddr};
+use crate::{arch, heap, mm::virt::VirtAddr};
 
 use core::{
     alloc::{Allocator, Layout},
@@ -76,6 +77,7 @@ impl PhysAddr {
 
 static INIT_MEM_REGIONS: Mutex<Vec<(VirtAddr, usize)>> = Mutex::new(Vec::new());
 
+#[devprober(device_type = "memory")]
 fn probe(node: &FdtNode) -> Result<()> {
     let mut init_mem_regions = INIT_MEM_REGIONS.lock();
     node.reg()
@@ -125,10 +127,6 @@ fn probe(node: &FdtNode) -> Result<()> {
         .for_each(|&region| heap::enlarge(region));
 
     Ok(())
-}
-
-device_probe! {
-    devtyp("memory") => probe
 }
 
 pub(super) fn get_init_regions() -> MutexGuard<'static, Vec<(VirtAddr, usize)>> {

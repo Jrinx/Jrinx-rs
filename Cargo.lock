@@ -257,6 +257,8 @@ dependencies = [
  "fdt",
  "getargs",
  "jrinx-config",
+ "jrinx-devprober",
+ "jrinx-devprober-macro",
  "jrinx-error",
  "jrinx-layout",
  "jrinx-serial-id",
@@ -273,6 +275,23 @@ dependencies = [
 [[package]]
 name = "jrinx-config"
 version = "0.1.0"
+
+[[package]]
+name = "jrinx-devprober"
+version = "0.1.0"
+dependencies = [
+ "fdt",
+ "jrinx-error",
+ "jrinx-layout",
+]
+
+[[package]]
+name = "jrinx-devprober-macro"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "jrinx-error"

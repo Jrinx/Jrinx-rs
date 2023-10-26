@@ -1,0 +1,9 @@
+[package]
+name = "jrinx-devprober"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+fdt = { version = "0.1.5", default-features = false }
+jrinx-error = { version = "0.1.0", path = "../error" }
+jrinx-layout = { version = "0.1.0", path = "../layout" }

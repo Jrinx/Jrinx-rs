@@ -1,0 +1,59 @@
+#![no_std]
+
+use fdt::{node::FdtNode, Fdt};
+use jrinx_error::Result;
+
+#[repr(C)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum DevIdent {
+    Path(&'static str),
+    DeviceType(&'static str),
+    Compatible(&'static str),
+}
+
+#[repr(C)]
+pub struct DevProber {
+    ident: DevIdent,
+    probe: fn(node: &FdtNode) -> Result<()>,
+}
+
+impl DevProber {
+    pub const fn new(ident: DevIdent, probe: fn(node: &FdtNode) -> Result<()>) -> Self {
+        Self { ident, probe }
+    }
+}
+
+pub fn probe_all_device(fdt: &Fdt) -> Result<()> {
+    for devprober in unsafe { devprober_iter() } {
+        match devprober.ident {
+            DevIdent::Path(path) => {
+                for node in fdt.find_all_nodes(path) {
+                    (devprober.probe)(&node)?;
+                }
+            }
+            DevIdent::DeviceType(device_type) => {
+                for node in fdt.all_nodes().filter(|node| {
+                    node.property("device_type")
+                        .is_some_and(|prop| prop.as_str().is_some_and(|ty| ty == device_type))
+                }) {
+                    (devprober.probe)(&node)?;
+                }
+            }
+            DevIdent::Compatible(compatible) => {
+                for node in fdt.all_nodes().filter(|node| {
+                    node.compatible()
+                        .is_some_and(|cp| cp.all().any(|c| c == compatible))
+                }) {
+                    (devprober.probe)(&node)?;
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+unsafe fn devprober_iter() -> impl Iterator<Item = &'static DevProber> {
+    (jrinx_layout::_sdev()..jrinx_layout::_edev())
+        .step_by(core::mem::size_of::<&DevProber>())
+        .map(|a| *(a as *const &DevProber))
+}

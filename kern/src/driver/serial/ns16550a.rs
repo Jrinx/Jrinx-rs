@@ -1,12 +1,8 @@
 use fdt::node::FdtNode;
+use jrinx_devprober_macro::devprober;
 use jrinx_error::Result;
 
-use crate::driver::device_probe;
-
+#[devprober(compatible = "ns16550a")]
 fn probe(_node: &FdtNode) -> Result<()> {
     Ok(())
-}
-
-device_probe! {
-    compat("ns16550a") => probe
 }
