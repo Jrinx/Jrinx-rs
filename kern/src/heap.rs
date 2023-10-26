@@ -1,9 +1,9 @@
 use buddy_system_allocator::LockedHeap;
 
-use crate::{conf, mm::virt::VirtAddr};
+use crate::mm::virt::VirtAddr;
 
 const HEAP_ORDER: usize = 32;
-const HEAP_SIZE: usize = conf::PAGE_SIZE;
+const HEAP_SIZE: usize = jrinx_config::PAGE_SIZE;
 
 #[global_allocator]
 static mut HEAP_ALLOCATOR: LockedHeap<HEAP_ORDER> = LockedHeap::new();

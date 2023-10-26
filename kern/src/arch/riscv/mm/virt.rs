@@ -3,12 +3,9 @@ use core::fmt::Display;
 use alloc::string::String;
 use bitflags::bitflags;
 
-use crate::{
-    conf,
-    mm::{
-        phys::PhysAddr,
-        virt::{PageTable, VirtAddr},
-    },
+use crate::mm::{
+    phys::PhysAddr,
+    virt::{PageTable, VirtAddr},
 };
 
 bitflags! {
@@ -60,7 +57,7 @@ impl PageTableEntry {
     }
 
     pub fn as_tuple(&self) -> (PhysAddr, PagePerm) {
-        let phys_addr = PhysAddr::new((self.bits << 2) & !(conf::PAGE_SIZE - 1));
+        let phys_addr = PhysAddr::new((self.bits << 2) & !(jrinx_config::PAGE_SIZE - 1));
         let perm = PagePerm::from_bits_truncate(self.bits);
         (phys_addr, perm)
     }
@@ -71,7 +68,7 @@ impl PageTableEntry {
 }
 
 pub fn enable_pt_mapping(page_table: &PageTable) {
-    let pt_ppn = page_table.addr().as_usize() / conf::PAGE_SIZE;
+    let pt_ppn = page_table.addr().as_usize() / jrinx_config::PAGE_SIZE;
     unsafe {
         #[cfg(feature = "pt_level_3")]
         riscv::register::satp::set(riscv::register::satp::Mode::Sv39, 0, pt_ppn);

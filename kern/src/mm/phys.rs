@@ -3,7 +3,7 @@ use fdt::node::FdtNode;
 use spin::{Mutex, MutexGuard};
 
 use crate::{
-    arch, conf,
+    arch,
     driver::device_probe,
     error::{InternalError, Result},
     heap,
@@ -57,11 +57,11 @@ impl PhysAddr {
     }
 
     pub fn align_page_down(self) -> Self {
-        Self(self.0 & !(conf::PAGE_SIZE - 1))
+        Self(self.0 & !(jrinx_config::PAGE_SIZE - 1))
     }
 
     pub fn align_page_up(self) -> Self {
-        Self((self.0 + conf::PAGE_SIZE - 1) & !(conf::PAGE_SIZE - 1))
+        Self((self.0 + jrinx_config::PAGE_SIZE - 1) & !(jrinx_config::PAGE_SIZE - 1))
     }
 
     pub fn as_usize(self) -> usize {
@@ -71,7 +71,10 @@ impl PhysAddr {
     pub fn as_array_base<T>(self) -> &'static mut [T] {
         let addr = self.align_page_down().as_usize();
         unsafe {
-            slice::from_raw_parts_mut(addr as *mut T, conf::PAGE_SIZE / core::mem::size_of::<T>())
+            slice::from_raw_parts_mut(
+                addr as *mut T,
+                jrinx_config::PAGE_SIZE / core::mem::size_of::<T>(),
+            )
         }
     }
 }
@@ -143,7 +146,7 @@ pub struct PhysFrame {
 }
 
 #[repr(C, align(4096))]
-struct PhysFrameMemory([u8; conf::PAGE_SIZE]);
+struct PhysFrameMemory([u8; jrinx_config::PAGE_SIZE]);
 
 const PHYS_FRAME_MEMORY_LAYOUT: Layout = Layout::new::<PhysFrameMemory>();
 

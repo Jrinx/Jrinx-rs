@@ -256,6 +256,8 @@ dependencies = [
  "cfg-if",
  "fdt",
  "getargs",
+ "jrinx-config",
+ "jrinx-layout",
  "jrinx-serial-id",
  "jrinx-serial-id-macro",
  "jrinx-testdef",
@@ -266,6 +268,14 @@ dependencies = [
  "sbi",
  "spin 0.9.8",
 ]
+
+[[package]]
+name = "jrinx-config"
+version = "0.1.0"
+
+[[package]]
+name = "jrinx-layout"
+version = "0.1.0"
 
 [[package]]
 name = "jrinx-serial-id"

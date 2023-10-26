@@ -10,7 +10,6 @@ use jrinx_serial_id_macro::SerialId;
 
 use crate::{
     arch::{self, mm::virt::PagePerm, task::executor::SwitchContext},
-    conf,
     error::{InternalError, Result},
     mm::{
         phys::PhysFrame,
@@ -26,10 +25,10 @@ type TaskQueue = PriorityQueueWithLock<TaskPriority, TaskId>;
 static EXECUTOR_STACK_ALLOCATOR: StackAllocator = StackAllocator::new(
     VirtAddr::new(arch::layout::EXECUTOR_STACK_LIMIT),
     arch::layout::EXECUTOR_STACK_SIZE,
-    conf::PAGE_SIZE,
+    jrinx_config::PAGE_SIZE,
     |addr, size| {
         let mut page_table = KERN_PAGE_TABLE.write();
-        for i in (0..size).step_by(conf::PAGE_SIZE) {
+        for i in (0..size).step_by(jrinx_config::PAGE_SIZE) {
             let virt_addr = addr + i;
             let phys_frame = PhysFrame::alloc()?;
             page_table.map(
@@ -42,7 +41,7 @@ static EXECUTOR_STACK_ALLOCATOR: StackAllocator = StackAllocator::new(
     },
     |addr, size| {
         let mut page_table = KERN_PAGE_TABLE.write();
-        for i in (0..size).step_by(conf::PAGE_SIZE) {
+        for i in (0..size).step_by(jrinx_config::PAGE_SIZE) {
             let virt_addr = addr + i;
             page_table.unmap(virt_addr)?;
         }

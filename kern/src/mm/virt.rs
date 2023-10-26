@@ -12,7 +12,6 @@ use crate::{
         self,
         mm::virt::{PagePerm, PageTableEntry},
     },
-    conf,
     error::{InternalError, Result},
     mm::phys,
 };
@@ -62,7 +61,7 @@ impl VirtAddr {
     }
 
     pub fn align_page_down(self) -> Self {
-        Self(self.0 & !(conf::PAGE_SIZE - 1))
+        Self(self.0 & !(jrinx_config::PAGE_SIZE - 1))
     }
 
     #[cfg(feature = "pt_level_2")]
@@ -134,7 +133,7 @@ impl PageTable {
     pub fn translate(&self, addr: VirtAddr) -> Result<(PhysAddr, PagePerm)> {
         if let Ok((phys_frame, perm)) = self.lookup(addr) {
             Ok((
-                phys_frame.addr() + (addr.as_usize() & (conf::PAGE_SIZE - 1)),
+                phys_frame.addr() + (addr.as_usize() & (jrinx_config::PAGE_SIZE - 1)),
                 perm,
             ))
         } else {
@@ -197,26 +196,26 @@ pub(super) fn init() {
     let mapping = [
         (
             ".text",
-            conf::layout::_stext(),
-            conf::layout::_etext(),
+            jrinx_layout::_stext(),
+            jrinx_layout::_etext(),
             PagePerm::G | PagePerm::X | PagePerm::R | PagePerm::V,
         ),
         (
             ".rodata",
-            conf::layout::_srodata(),
-            conf::layout::_erodata(),
+            jrinx_layout::_srodata(),
+            jrinx_layout::_erodata(),
             PagePerm::G | PagePerm::R | PagePerm::V,
         ),
         (
             ".data",
-            conf::layout::_sdata(),
-            conf::layout::_edata(),
+            jrinx_layout::_sdata(),
+            jrinx_layout::_edata(),
             PagePerm::G | PagePerm::R | PagePerm::W | PagePerm::V,
         ),
         (
             ".bss",
-            conf::layout::_sbss(),
-            conf::layout::_ebss(),
+            jrinx_layout::_sbss(),
+            jrinx_layout::_ebss(),
             PagePerm::G | PagePerm::R | PagePerm::W | PagePerm::V,
         ),
     ];
@@ -229,7 +228,7 @@ pub(super) fn init() {
             PhysAddr::new(ed).align_page_up(),
             perm
         );
-        for addr in (st..ed).step_by(conf::PAGE_SIZE) {
+        for addr in (st..ed).step_by(jrinx_config::PAGE_SIZE) {
             pt.kernel_map(VirtAddr::new(addr), perm).unwrap();
         }
     }
@@ -244,7 +243,7 @@ pub(super) fn init() {
             perm
         );
         for addr in (addr.as_usize()..(addr + size).as_usize())
-            .step_by(conf::PAGE_SIZE)
+            .step_by(jrinx_config::PAGE_SIZE)
             .map(PhysAddr::new)
         {
             pt.kernel_map(arch::mm::phys_to_virt(addr), perm).unwrap();

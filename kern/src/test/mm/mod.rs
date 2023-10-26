@@ -43,7 +43,6 @@ pub(super) mod virt {
 
     use crate::{
         arch::{self, mm::virt::PagePerm},
-        conf,
         mm::{
             phys::PhysFrame,
             virt::{VirtAddr, KERN_PAGE_TABLE},
@@ -53,8 +52,8 @@ pub(super) mod virt {
 
     #[testdef]
     fn test() {
-        let vaddr1 = VirtAddr::new(conf::PAGE_SIZE);
-        let vaddr2 = VirtAddr::new(conf::PAGE_SIZE * 2);
+        let vaddr1 = VirtAddr::new(jrinx_config::PAGE_SIZE);
+        let vaddr2 = VirtAddr::new(jrinx_config::PAGE_SIZE * 2);
 
         for _ in 0..10 {
             let mut page_table = KERN_PAGE_TABLE.write();
@@ -81,7 +80,7 @@ pub(super) mod virt {
                 paddr.as_usize() as *mut usize,
             ];
 
-            for i in 0..conf::PAGE_SIZE / mem::size_of::<usize>() {
+            for i in 0..jrinx_config::PAGE_SIZE / mem::size_of::<usize>() {
                 let src = space[i % 2];
                 let dst = space[1 - i % 2];
                 let rand = random::rand();

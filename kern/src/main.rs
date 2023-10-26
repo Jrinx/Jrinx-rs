@@ -26,7 +26,6 @@ extern crate alloc;
 extern crate log;
 
 mod arch;
-mod conf;
 mod cpudata;
 mod driver;
 mod error;
@@ -40,7 +39,7 @@ mod util;
 
 #[used(linker)]
 #[link_section = ".stack"]
-static INIT_STACK: [u8; conf::KSTACK_SIZE] = [0; conf::KSTACK_SIZE];
+static INIT_STACK: [u8; jrinx_config::KSTACK_SIZE] = [0; jrinx_config::KSTACK_SIZE];
 
 extern "C" fn cold_init(_: usize, fdtaddr: *const u8) -> ! {
     heap::init();

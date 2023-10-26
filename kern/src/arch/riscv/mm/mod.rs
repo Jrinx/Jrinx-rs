@@ -1,9 +1,6 @@
 use alloc::{vec, vec::Vec};
 
-use crate::{
-    conf,
-    mm::{phys::PhysAddr, virt::VirtAddr},
-};
+use crate::mm::{phys::PhysAddr, virt::VirtAddr};
 
 pub mod virt;
 
@@ -17,7 +14,7 @@ pub fn phys_to_virt(addr: PhysAddr) -> VirtAddr {
 
 pub fn get_protected_mem_regions() -> Vec<(VirtAddr, usize)> {
     const BASE_ADDR: usize = 0x80000000;
-    vec![(VirtAddr::new(BASE_ADDR), conf::layout::_end() - BASE_ADDR)]
+    vec![(VirtAddr::new(BASE_ADDR), jrinx_layout::_end() - BASE_ADDR)]
 }
 
 pub fn ibar() {
