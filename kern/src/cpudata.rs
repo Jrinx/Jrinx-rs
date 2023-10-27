@@ -44,60 +44,68 @@ pub fn init() {
     }
 }
 
-fn cpu_data_by_id(cpu_id: usize) -> Option<&'static CpuData> {
-    if cpu_id >= unsafe { CPU_DATA.len() } {
-        None
-    } else {
-        Some(unsafe { &CPU_DATA[cpu_id] })
+pub struct CpuDataVisitor {
+    cpu_id: usize,
+}
+
+impl CpuDataVisitor {
+    pub fn new() -> Self {
+        CpuDataVisitor {
+            cpu_id: arch::cpu::id(),
+        }
     }
-}
 
-fn cpu_data() -> Option<&'static CpuData> {
-    cpu_data_by_id(arch::cpu::id())
-}
+    pub fn id(self, cpu_id: usize) -> Self {
+        CpuDataVisitor { cpu_id }
+    }
 
-pub fn with_cpu_runtime<F, R>(f: F) -> Result<R>
-where
-    F: FnOnce(&mut Runtime) -> R,
-{
-    interrupt::with_interrupt_saved_off(|| {
-        let mut runtime = cpu_data()
-            .ok_or(InternalError::InvalidCpuId)?
-            .runtime
-            .lock();
-        Ok(f(&mut runtime))
-    })
-}
+    pub fn runtime<F, R>(self, f: F) -> Result<R>
+    where
+        F: FnOnce(&mut Runtime) -> R,
+    {
+        interrupt::with_interrupt_saved_off(|| {
+            let mut runtime = self
+                .cpu_data()
+                .ok_or(InternalError::InvalidCpuId)?
+                .runtime
+                .lock();
+            Ok(f(&mut runtime))
+        })
+    }
 
-pub fn with_cpu_inspector<F, R>(f: F) -> Result<R>
-where
-    F: FnOnce(&mut Inspector) -> R,
-{
-    with_cpu_runtime(|rt| rt.with_current_inspector(f))?
-}
+    pub fn inspector<F, R>(self, f: F) -> Result<R>
+    where
+        F: FnOnce(&mut Inspector) -> R,
+    {
+        self.runtime(|rt| rt.with_current_inspector(f))?
+    }
 
-pub fn with_cpu_executor<F, R>(f: F) -> Result<R>
-where
-    F: FnOnce(&mut Pin<Box<Executor>>) -> R,
-{
-    with_cpu_inspector(|inspector| inspector.with_current_executor(f))?
-}
+    pub fn executor<F, R>(self, f: F) -> Result<R>
+    where
+        F: FnOnce(&mut Pin<Box<Executor>>) -> R,
+    {
+        self.inspector(|inspector| inspector.with_current_executor(f))?
+    }
 
-pub fn with_timed_event_queue<F, R>(cpu_id: usize, f: F) -> Result<R>
-where
-    F: FnOnce(&mut TimedEventQueue) -> R,
-{
-    interrupt::with_interrupt_saved_off(|| {
-        Ok(f(&mut cpu_data_by_id(cpu_id)
-            .ok_or(InternalError::InvalidCpuId)?
-            .timed_event_queue
-            .lock()))
-    })
-}
+    pub fn timed_event_queue<F, R>(self, f: F) -> Result<R>
+    where
+        F: FnOnce(&mut TimedEventQueue) -> R,
+    {
+        interrupt::with_interrupt_saved_off(|| {
+            Ok(f(&mut self
+                .cpu_data()
+                .ok_or(InternalError::InvalidCpuId)?
+                .timed_event_queue
+                .lock()))
+        })
+    }
 
-pub fn with_cpu_timed_event_queue<F, R>(f: F) -> Result<R>
-where
-    F: FnOnce(&mut TimedEventQueue) -> R,
-{
-    with_timed_event_queue(arch::cpu::id(), f)
+    fn cpu_data(&self) -> Option<&'static CpuData> {
+        let cpu_id = self.cpu_id;
+        if cpu_id >= unsafe { CPU_DATA.len() } {
+            None
+        } else {
+            Some(unsafe { &CPU_DATA[cpu_id] })
+        }
+    }
 }

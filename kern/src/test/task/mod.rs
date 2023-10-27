@@ -47,7 +47,7 @@ pub(super) mod inspector {
     use spin::Mutex;
 
     use crate::{
-        cpudata,
+        cpudata::CpuDataVisitor,
         task::{
             executor::{Executor, ExecutorPriority},
             runtime, Task, TaskPriority,
@@ -93,7 +93,8 @@ pub(super) mod inspector {
                     .unwrap();
             }
 
-            cpudata::with_cpu_inspector(|inspector| inspector.register_executor(executor).unwrap())
+            CpuDataVisitor::new()
+                .inspector(|inspector| inspector.register_executor(executor).unwrap())
                 .unwrap();
         }
 
@@ -119,7 +120,7 @@ pub(super) mod runtime {
     use spin::Mutex;
 
     use crate::{
-        cpudata,
+        cpudata::CpuDataVisitor,
         task::{
             executor::{Executor, ExecutorPriority},
             runtime::{
@@ -173,10 +174,14 @@ pub(super) mod runtime {
                     .unwrap();
             }
 
-            cpudata::with_cpu_runtime(|rt| rt.register_inspector(inspector).unwrap()).unwrap();
+            CpuDataVisitor::new()
+                .runtime(|rt| rt.register_inspector(inspector).unwrap())
+                .unwrap();
         }
 
-        cpudata::with_cpu_runtime(|rt| rt.set_inspector_switch_pending()).unwrap();
+        CpuDataVisitor::new()
+            .runtime(|rt| rt.set_inspector_switch_pending())
+            .unwrap();
         runtime::switch_yield();
 
         assert!(!ORDER.is_locked());

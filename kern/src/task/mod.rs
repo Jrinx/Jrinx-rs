@@ -11,7 +11,7 @@ use alloc::boxed::Box;
 use jrinx_serial_id::SerialIdGenerator;
 use jrinx_serial_id_macro::SerialId;
 
-use crate::cpudata;
+use crate::cpudata::CpuDataVisitor;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, SerialId)]
 pub struct TaskId(u64);
@@ -52,10 +52,11 @@ impl Task {
 }
 
 pub fn do_spawn(future: impl Future<Output = ()> + 'static, priority: TaskPriority) {
-    cpudata::with_cpu_executor(|executor| {
-        executor.spawn(Task::new(future, priority)).unwrap();
-    })
-    .unwrap();
+    CpuDataVisitor::new()
+        .executor(|executor| {
+            executor.spawn(Task::new(future, priority)).unwrap();
+        })
+        .unwrap();
 }
 
 macro_rules! spawn {

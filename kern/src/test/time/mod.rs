@@ -5,7 +5,8 @@ pub(super) mod status {
     use spin::Mutex;
 
     use crate::{
-        arch, cpudata,
+        arch,
+        cpudata::CpuDataVisitor,
         time::{TimedEvent, TimedEventHandler, TimedEventStatus},
     };
 
@@ -43,11 +44,10 @@ pub(super) mod status {
         tracker.cancel().unwrap();
 
         assert_eq!(*DATA.lock(), Some(TimedEventStatus::Cancelled));
-        assert!(
-            cpudata::with_cpu_timed_event_queue(|queue| queue.peek_outdated())
-                .unwrap()
-                .is_none()
-        );
+        assert!(CpuDataVisitor::new()
+            .timed_event_queue(|queue| queue.peek_outdated())
+            .unwrap()
+            .is_none());
     }
 }
 

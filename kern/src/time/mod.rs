@@ -10,7 +10,7 @@ use jrinx_serial_id::SerialIdGenerator;
 use jrinx_serial_id_macro::SerialId;
 use spin::Mutex;
 
-use crate::{arch, cpudata};
+use crate::{arch, cpudata::CpuDataVisitor};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, SerialId)]
 struct TimedEventId(u64);
@@ -53,7 +53,9 @@ impl TimedEvent {
             status: TimedEventStatus::Pending,
             handler: Some(handler),
         })));
-        cpudata::with_cpu_timed_event_queue(|queue| queue.add(tracker.clone())).unwrap();
+        CpuDataVisitor::new()
+            .timed_event_queue(|queue| queue.add(tracker.clone()))
+            .unwrap();
         tracker
     }
 
@@ -81,12 +83,16 @@ pub struct TimedEventTracker(Arc<Mutex<TimedEvent>>);
 
 impl TimedEventTracker {
     pub fn timeout(&self) -> Result<()> {
-        cpudata::with_timed_event_queue(self.cpu_id(), |queue| queue.remove(self.clone()))??;
+        CpuDataVisitor::new()
+            .id(self.cpu_id())
+            .timed_event_queue(|queue| queue.remove(self.clone()))??;
         self.0.lock().invoke(TimedEventStatus::Timeout)
     }
 
     pub fn cancel(&self) -> Result<()> {
-        cpudata::with_timed_event_queue(self.cpu_id(), |queue| queue.remove(self.clone()))??;
+        CpuDataVisitor::new()
+            .id(self.cpu_id())
+            .timed_event_queue(|queue| queue.remove(self.clone()))??;
         self.0.lock().invoke(TimedEventStatus::Cancelled)
     }
 
