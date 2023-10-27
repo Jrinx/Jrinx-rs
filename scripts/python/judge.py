@@ -131,6 +131,23 @@ class UnorderedPattern(Pattern):
 class Test:
     TIMEOUT = 180
 
+    def load_from_file(file: pathlib.Path, include_dirs: list[pathlib.Path]) -> Test:
+        with file.open('r', encoding='utf-8') as f:
+            conf = yaml.load(f, Loader=Loader)
+        if (parts := list(file.relative_to(TESTS_DIR).parts))[0] == 'kern':
+            parts[-1] = pathlib.Path(parts[-1]).stem
+            test_name = 'jrinx::test::' + '::'.join(parts[1:])
+            conf = test_expand.expand(
+                conf,
+                extra_envs={
+                    'TEST_NAME': test_name,
+                },
+                inc_dirs=[dir for dir in include_dirs if dir.is_dir()],
+            )
+            return Test(conf, f'-t {test_name}')
+        else:
+            raise NotImplementedError()
+
     def __init__(self, conf: dict, bootargs: str | None):
         self.conf = conf
         self.bootargs = bootargs
@@ -194,24 +211,6 @@ class Test:
             eliminate_child(proc, timeout=Test.TIMEOUT, verbose=verbose)
 
 
-def load_test(file: pathlib.Path, include_dirs: list[pathlib.Path]) -> Test:
-    with file.open('r', encoding='utf-8') as f:
-        conf = yaml.load(f, Loader=Loader)
-    if (parts := list(file.relative_to(TESTS_DIR).parts))[0] == 'kern':
-        parts[-1] = pathlib.Path(parts[-1]).stem
-        test_name = '::'.join(parts[1:])
-        conf = test_expand.expand(
-            conf,
-            extra_envs={
-                'TEST_NAME': test_name,
-            },
-            inc_dirs=[dir for dir in include_dirs if dir.is_dir()],
-        )
-        return Test(conf, f'-t {test_name}')
-    else:
-        raise NotImplementedError()
-
-
 def judge(file: pathlib.Path,
           include_dirs: list[pathlib.Path],
           /, *,
@@ -223,7 +222,7 @@ def judge(file: pathlib.Path,
                                   os.environ,
                                   VERBOSE='true' if verbose else 'false',
         ))
-    test = load_test(file, include_dirs)
+    test = Test.load_from_file(file, include_dirs)
     try:
         test(verbose=verbose)
     except RuntimeError:
