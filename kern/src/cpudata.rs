@@ -1,6 +1,5 @@
-use core::pin::Pin;
-
 use alloc::{boxed::Box, vec::Vec};
+use core::pin::Pin;
 use jrinx_error::{InternalError, Result};
 use spin::Mutex;
 
@@ -16,6 +15,7 @@ use crate::{
     },
     time::TimedEventQueue,
     trap::interrupt,
+    util::once_lock::OnceLock,
 };
 
 #[repr(align(4096))]
@@ -24,24 +24,28 @@ struct CpuData {
     timed_event_queue: Mutex<TimedEventQueue>,
 }
 
-static mut CPU_DATA: Vec<CpuData> = Vec::new();
+unsafe impl Send for CpuData {}
+unsafe impl Sync for CpuData {}
+
+static CPU_DATA: OnceLock<Vec<CpuData>> = OnceLock::new();
 
 pub fn init() {
-    let nproc = arch::cpus::nproc().unwrap();
-    for _ in 0..nproc {
-        unsafe {
-            CPU_DATA.push(CpuData {
-                runtime: Mutex::new(Runtime::new(Inspector::new(
-                    InspectorMode::Bootstrap,
-                    Executor::new(
-                        ExecutorPriority::default(),
-                        Task::new(super::master_init(), TaskPriority::default()),
-                    ),
-                ))),
-                timed_event_queue: Mutex::new(TimedEventQueue::new()),
-            });
-        }
-    }
+    CPU_DATA
+        .init(
+            (0..arch::cpus::nproc().unwrap())
+                .map(|_| CpuData {
+                    runtime: Mutex::new(Runtime::new(Inspector::new(
+                        InspectorMode::Bootstrap,
+                        Executor::new(
+                            ExecutorPriority::default(),
+                            Task::new(super::master_init(), TaskPriority::default()),
+                        ),
+                    ))),
+                    timed_event_queue: Mutex::new(TimedEventQueue::new()),
+                })
+                .collect::<Vec<_>>(),
+        )
+        .unwrap();
 }
 
 pub struct CpuDataVisitor {
@@ -102,10 +106,10 @@ impl CpuDataVisitor {
 
     fn cpu_data(&self) -> Option<&'static CpuData> {
         let cpu_id = self.cpu_id;
-        if cpu_id >= unsafe { CPU_DATA.len() } {
+        if cpu_id >= CPU_DATA.get().map(|v| v.len()).unwrap_or(0) {
             None
         } else {
-            Some(unsafe { &CPU_DATA[cpu_id] })
+            Some(&CPU_DATA.get().unwrap()[cpu_id])
         }
     }
 }

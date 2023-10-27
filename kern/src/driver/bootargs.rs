@@ -1,18 +1,16 @@
 use alloc::{borrow::ToOwned, string::String, vec::Vec};
 use getargs::{Opt, Options};
 
-use crate::task;
+use crate::{task, util::once_lock::OnceLock};
 
-static mut BOOTARGS: Option<String> = None;
+static BOOTARGS: OnceLock<String> = OnceLock::new();
 
 pub(super) fn set(bootargs: &str) {
-    unsafe {
-        BOOTARGS = Some(bootargs.to_owned());
-    }
+    BOOTARGS.init(bootargs.to_owned()).unwrap();
 }
 
 pub async fn execute() {
-    if let Some(bootargs) = unsafe { &mut BOOTARGS } {
+    if let Some(bootargs) = BOOTARGS.get() {
         let args = bootargs
             .split_whitespace()
             .map(|s| s.to_owned())

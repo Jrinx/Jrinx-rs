@@ -2,6 +2,7 @@
 
 #[derive(Debug)]
 pub enum InternalError {
+    RepeatInitialization,
     DevProbeError,
     NotEnoughMem,
     InvalidCpuId,
