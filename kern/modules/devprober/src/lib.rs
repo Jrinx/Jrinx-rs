@@ -24,7 +24,7 @@ impl DevProber {
 }
 
 pub fn probe_all_device(fdt: &Fdt) -> Result<()> {
-    for devprober in unsafe { devprober_iter() } {
+    for devprober in devprober_iter() {
         match devprober.ident {
             DevIdent::Path(path) => {
                 for node in fdt.find_all_nodes(path) {
@@ -52,8 +52,8 @@ pub fn probe_all_device(fdt: &Fdt) -> Result<()> {
     Ok(())
 }
 
-unsafe fn devprober_iter() -> impl Iterator<Item = &'static DevProber> {
+fn devprober_iter() -> impl Iterator<Item = &'static DevProber> {
     (jrinx_layout::_sdev()..jrinx_layout::_edev())
         .step_by(core::mem::size_of::<&DevProber>())
-        .map(|a| *(a as *const &DevProber))
+        .map(|a| unsafe { *(a as *const &DevProber) })
 }
