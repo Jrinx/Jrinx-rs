@@ -12,10 +12,7 @@ use crate::{
     arch::{self, task::executor::SwitchContext},
     cpudata::CpuDataVisitor,
     mm::virt::VirtAddr,
-    task::{
-        executor::ExecutorStatus,
-        runtime::inspector::{InspectorMode, InspectorStatus},
-    },
+    task::runtime::inspector::InspectorStatus,
 };
 
 use self::inspector::{Inspector, InspectorId};
@@ -145,82 +142,7 @@ pub fn start() -> ! {
             .runtime(|rt| rt.set_current_inspector(Some(inspector_id)))
             .unwrap();
 
-        loop {
-            if CpuDataVisitor::new()
-                .runtime(|rt| rt.inspector_switch_pending)
-                .unwrap()
-                || CpuDataVisitor::new()
-                    .inspector(|inspector| inspector.status() == InspectorStatus::Finished)
-                    .unwrap()
-            {
-                break;
-            }
-
-            let Some(executor_id) = CpuDataVisitor::new()
-                .inspector(|inspector| inspector.pop_executor())
-                .unwrap()
-            else {
-                arch::wait_for_interrupt();
-                continue;
-            };
-            trace!("switch to executor {:?}", executor_id);
-
-            CpuDataVisitor::new()
-                .inspector(|inspector| {
-                    inspector.set_current_executor(Some(executor_id));
-                })
-                .unwrap();
-
-            let executor_switch_ctx = CpuDataVisitor::new()
-                .executor(|executor| executor.switch_context_addr())
-                .unwrap();
-
-            unsafe {
-                arch::task::executor::switch(
-                    runtime_switch_ctx.as_usize(),
-                    executor_switch_ctx.as_usize(),
-                );
-            }
-            CpuDataVisitor::new()
-                .inspector(|inspector| inspector.set_current_executor(None))
-                .unwrap();
-
-            trace!("switch back from executor {:?}", executor_id);
-
-            if CpuDataVisitor::new()
-                .inspector(|inspector| {
-                    inspector
-                        .with_executor(executor_id, |executor| {
-                            executor.status() == ExecutorStatus::Finished
-                        })
-                        .unwrap()
-                })
-                .unwrap()
-            {
-                CpuDataVisitor::new()
-                    .inspector(|inspector| {
-                        inspector.unregister_executor(executor_id).unwrap();
-                    })
-                    .unwrap();
-            } else {
-                CpuDataVisitor::new()
-                    .inspector(|inspector| {
-                        inspector.push_executor(executor_id).unwrap();
-                    })
-                    .unwrap();
-            }
-
-            if CpuDataVisitor::new()
-                .inspector(|inspector| {
-                    inspector.is_empty() && inspector.mode() == InspectorMode::Bootstrap
-                })
-                .unwrap()
-            {
-                CpuDataVisitor::new()
-                    .inspector(|inspector| inspector.mark_finished())
-                    .unwrap();
-            }
-        }
+        inspector::run(runtime_switch_ctx);
 
         CpuDataVisitor::new()
             .runtime(|rt| rt.clr_inspector_switch_pending())
