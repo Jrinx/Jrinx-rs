@@ -14,25 +14,18 @@ pub fn testdef(_: TokenStream, func: TokenStream) -> TokenStream {
 
     let caller = quote! {
         #func_vis fn #func_name #func_generics(#func_inputs) #func_output {
+            #[cfg_attr(feature = "no_test", used)]
+            #[cfg_attr(
+                not(feature = "no_test"),
+                used(linker),
+                link_section = concat!(".test.", module_path!()),
+            )]
+            static __TEST_DEF: &jrinx_testdef::TestDef = &jrinx_testdef::TestDef::new(
+                module_path!(),
+                #func_name,
+            );
+
             #func_block
-
-            #[cfg(feature = "no_test")] {
-                #[used]
-                #[link_section = concat!(".test.", module_path!())]
-                static __TEST_DEF: &jrinx_testdef::TestDef = &jrinx_testdef::TestDef::new(
-                    module_path!(),
-                    #func_name,
-                );
-            }
-
-            #[cfg(not(feature = "no_test"))] {
-                #[used(linker)]
-                #[link_section = concat!(".test.", module_path!())]
-                static __TEST_DEF: &jrinx_testdef::TestDef = &jrinx_testdef::TestDef::new(
-                    module_path!(),
-                    #func_name,
-                );
-            }
         }
     };
 
