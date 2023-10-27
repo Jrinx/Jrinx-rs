@@ -16,8 +16,13 @@ pub fn all() -> impl Iterator<Item = &'static str> {
     testdef_iter().map(|test_def| test_def.name)
 }
 
-pub fn find(name: &str) -> Option<fn()> {
-    testdef_iter().find_map(|test_def| test_def.name.contains(name).then_some(test_def.test))
+pub fn find(name: &str) -> Option<(&'static str, fn())> {
+    testdef_iter().find_map(|test_def| {
+        test_def
+            .name
+            .contains(name)
+            .then_some((test_def.name, test_def.test))
+    })
 }
 
 fn testdef_iter() -> impl Iterator<Item = &'static TestDef> {

@@ -41,14 +41,14 @@ pub async fn execute() {
                         all_tests.iter().for_each(|test| info!("- {test}"));
                     } else {
                         let test = arg;
-                        let func = jrinx_testdef::find(test)
+                        let (name, func) = jrinx_testdef::find(test)
                             .unwrap_or_else(|| panic!("unrecognized test case: {}", test));
-                        info!("test case {} begin", test);
+                        info!("test case {} begin", name);
                         task::spawn!(async move {
                             func();
                         });
                         task::yield_now!();
-                        info!("test case {} end", test);
+                        info!("test case {} end", name);
                     }
                 }
 
