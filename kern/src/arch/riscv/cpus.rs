@@ -1,8 +1,7 @@
 use fdt::node::FdtNode;
 use jrinx_devprober_macro::devprober;
 use jrinx_error::{InternalError, Result};
-
-use crate::util::once_lock::OnceLock;
+use spin::Once;
 
 #[devprober(path = "/cpus")]
 fn probe(node: &FdtNode) -> Result<()> {
@@ -13,7 +12,9 @@ fn probe(node: &FdtNode) -> Result<()> {
         .ok_or(InternalError::DevProbeError)?;
 
     debug!("cpus timebase-frequency: {} Hz", timebase_freq);
-    TIMEBASE_FREQ.init(timebase_freq)?;
+    TIMEBASE_FREQ
+        .try_call_once::<_, ()>(|| Ok(timebase_freq))
+        .unwrap();
 
     let nproc = node
         .children()
@@ -23,18 +24,18 @@ fn probe(node: &FdtNode) -> Result<()> {
         })
         .count();
     debug!("cpus nproc: {}", nproc);
-    NPROC.init(nproc)?;
+    NPROC.try_call_once::<_, ()>(|| Ok(nproc)).unwrap();
 
     Ok(())
 }
 
-static TIMEBASE_FREQ: OnceLock<usize> = OnceLock::new();
+static TIMEBASE_FREQ: Once<usize> = Once::new();
 
 pub fn timebase_freq() -> Option<usize> {
     TIMEBASE_FREQ.get().copied()
 }
 
-static NPROC: OnceLock<usize> = OnceLock::new();
+static NPROC: Once<usize> = Once::new();
 
 pub fn nproc() -> Option<usize> {
     NPROC.get().copied()

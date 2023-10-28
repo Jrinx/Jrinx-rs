@@ -1,12 +1,15 @@
 use alloc::{borrow::ToOwned, string::String, vec::Vec};
 use getargs::{Opt, Options};
+use spin::Once;
 
-use crate::{task, util::once_lock::OnceLock};
+use crate::task;
 
-static BOOTARGS: OnceLock<String> = OnceLock::new();
+static BOOTARGS: Once<String> = Once::new();
 
 pub(super) fn set(bootargs: &str) {
-    BOOTARGS.init(bootargs.to_owned()).unwrap();
+    BOOTARGS
+        .try_call_once::<_, ()>(|| Ok(bootargs.to_owned()))
+        .unwrap();
 }
 
 pub async fn execute() {

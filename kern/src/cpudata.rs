@@ -1,7 +1,7 @@
 use alloc::{boxed::Box, vec::Vec};
 use core::pin::Pin;
 use jrinx_error::{InternalError, Result};
-use spin::Mutex;
+use spin::{Mutex, Once};
 
 use crate::{
     arch,
@@ -15,7 +15,6 @@ use crate::{
     },
     time::TimedEventQueue,
     trap::interrupt,
-    util::once_lock::OnceLock,
 };
 
 #[repr(align(4096))]
@@ -27,12 +26,12 @@ struct CpuData {
 unsafe impl Send for CpuData {}
 unsafe impl Sync for CpuData {}
 
-static CPU_DATA: OnceLock<Vec<CpuData>> = OnceLock::new();
+static CPU_DATA: Once<Vec<CpuData>> = Once::new();
 
 pub fn init() {
     CPU_DATA
-        .init(
-            (0..arch::cpus::nproc().unwrap())
+        .try_call_once::<_, ()>(|| {
+            Ok((0..arch::cpus::nproc().unwrap())
                 .map(|_| CpuData {
                     runtime: Mutex::new(Runtime::new(Inspector::new(
                         InspectorMode::Bootstrap,
@@ -43,8 +42,8 @@ pub fn init() {
                     ))),
                     timed_event_queue: Mutex::new(TimedEventQueue::new()),
                 })
-                .collect::<Vec<_>>(),
-        )
+                .collect::<Vec<_>>())
+        })
         .unwrap();
 }
 
