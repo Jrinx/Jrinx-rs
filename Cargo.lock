@@ -267,6 +267,7 @@ dependencies = [
  "jrinx-testdef-macro",
  "lazy_static",
  "log",
+ "rand",
  "riscv",
  "sbi",
  "spin 0.9.8",

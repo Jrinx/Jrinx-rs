@@ -15,10 +15,7 @@
 #![no_std]
 #![no_main]
 
-use crate::{
-    task::runtime,
-    util::{logging, random},
-};
+use crate::{task::runtime, util::logging};
 
 extern crate alloc;
 
@@ -43,7 +40,6 @@ static INIT_STACK: [u8; jrinx_config::KSTACK_SIZE] = [0; jrinx_config::KSTACK_SI
 extern "C" fn cold_init(_: usize, fdtaddr: *const u8) -> ! {
     heap::init();
     logging::init();
-    random::init();
 
     let arch = core::option_env!("ARCH").unwrap_or("unknown");
     let build_time = core::option_env!("BUILD_TIME").unwrap_or("unknown");

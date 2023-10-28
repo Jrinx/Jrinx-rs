@@ -38,6 +38,7 @@ pub(super) mod virt {
     use core::mem;
 
     use jrinx_testdef_macro::testdef;
+    use rand::{rngs::SmallRng, RngCore, SeedableRng};
 
     use crate::{
         arch::{self, mm::virt::PagePerm},
@@ -45,11 +46,13 @@ pub(super) mod virt {
             phys::PhysFrame,
             virt::{VirtAddr, KERN_PAGE_TABLE},
         },
-        util::random,
     };
 
     #[testdef]
     fn test() {
+        let mut rng =
+            SmallRng::seed_from_u64(option_env!("RAND_SEED").unwrap_or("0").parse().unwrap());
+
         let vaddr1 = VirtAddr::new(jrinx_config::PAGE_SIZE);
         let vaddr2 = VirtAddr::new(jrinx_config::PAGE_SIZE * 2);
 
@@ -73,15 +76,12 @@ pub(super) mod virt {
             arch::mm::virt::sync(vaddr1);
             arch::mm::virt::sync(vaddr2);
 
-            let space = [
-                vaddr1.as_usize() as *mut usize,
-                paddr.as_usize() as *mut usize,
-            ];
+            let space = [vaddr1.as_usize() as *mut u64, paddr.as_usize() as *mut u64];
 
             for i in 0..jrinx_config::PAGE_SIZE / mem::size_of::<usize>() {
                 let src = space[i % 2];
                 let dst = space[1 - i % 2];
-                let rand = random::rand();
+                let rand = rng.next_u64();
                 write(src, rand);
                 assert_eq!(read(dst), rand);
                 write(src, !read(dst));
