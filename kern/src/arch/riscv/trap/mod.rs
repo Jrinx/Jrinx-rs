@@ -1,15 +1,13 @@
 mod entry;
 
+use jrinx_addr::VirtAddr;
 use riscv::register::{
     scause::Exception,
     sstatus::{FS, SPP},
     utvec::TrapMode,
 };
 
-use crate::{
-    mm::virt::VirtAddr,
-    trap::{breakpoint, timer_int, TrapReason},
-};
+use crate::trap::{breakpoint, timer_int, TrapReason};
 
 use super::mm::virt::PagePerm;
 

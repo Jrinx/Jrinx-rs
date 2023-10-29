@@ -2,11 +2,9 @@ use core::fmt::Display;
 
 use alloc::string::String;
 use bitflags::bitflags;
+use jrinx_addr::{PhysAddr, VirtAddr};
 
-use crate::mm::{
-    phys::PhysAddr,
-    virt::{PageTable, VirtAddr},
-};
+use crate::mm::virt::PageTable;
 
 bitflags! {
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -70,10 +68,10 @@ impl PageTableEntry {
 pub fn enable_pt_mapping(page_table: &PageTable) {
     let pt_ppn = page_table.addr().as_usize() / jrinx_config::PAGE_SIZE;
     unsafe {
-        #[cfg(feature = "pt_level_3")]
+        #[cfg(target_arch = "riscv64")]
         riscv::register::satp::set(riscv::register::satp::Mode::Sv39, 0, pt_ppn);
 
-        #[cfg(feature = "pt_level_2")]
+        #[cfg(target_arch = "riscv32")]
         riscv::register::satp::set(riscv::register::satp::Mode::Sv32, 0, pt_ppn);
 
         riscv::asm::sfence_vma_all();

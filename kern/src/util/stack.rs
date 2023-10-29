@@ -1,10 +1,9 @@
 use core::sync::atomic::{AtomicUsize, Ordering};
 
 use alloc::collections::{BTreeSet, VecDeque};
+use jrinx_addr::VirtAddr;
 use jrinx_error::{InternalError, Result};
 use spin::Mutex;
-
-use crate::mm::virt::VirtAddr;
 
 pub struct StackAllocator {
     stack_size: usize,

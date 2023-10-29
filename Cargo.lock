@@ -256,6 +256,8 @@ dependencies = [
  "cfg-if",
  "fdt",
  "getargs",
+ "jrinx-addr",
+ "jrinx-addr-macro",
  "jrinx-config",
  "jrinx-devprober",
  "jrinx-devprober-macro",
@@ -272,6 +274,22 @@ dependencies = [
  "riscv",
  "sbi",
  "spin 0.9.8",
+]
+
+[[package]]
+name = "jrinx-addr"
+version = "0.1.0"
+dependencies = [
+ "jrinx-addr-macro",
+ "jrinx-config",
+]
+
+[[package]]
+name = "jrinx-addr-macro"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
 ]
 
 [[package]]

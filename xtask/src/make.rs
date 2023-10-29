@@ -8,7 +8,7 @@ use std::{
 use clap::Args;
 use rand::Rng;
 
-use crate::arch::{Arch, ArchArg};
+use crate::arch::ArchArg;
 
 #[derive(Debug, Args, Clone)]
 pub struct MakeArg {
@@ -30,11 +30,6 @@ pub struct MakeArg {
     #[clap(long, short = 'B')]
     pub always_make: bool,
 }
-
-static ARCH_DEFAULT_FEATURES: &[(Arch, &[&str])] = &[
-    (Arch::RISCV32, &["pt_level_2"]),
-    (Arch::RISCV64, &["pt_level_3"]),
-];
 
 static DEFAULT_FEATURES: &[&str] = &["colorful"];
 
@@ -82,15 +77,6 @@ fn construct_cmd(arg: &MakeArg, cmd: &mut Command) {
             "--features",
             feat.iter()
                 .map(|f| f.as_str())
-                .chain(
-                    ARCH_DEFAULT_FEATURES
-                        .iter()
-                        .find(|&&(a, &_)| a == arch)
-                        .unwrap()
-                        .1
-                        .iter()
-                        .copied(),
-                )
                 .chain(
                     if no_default_feat {
                         [].iter()

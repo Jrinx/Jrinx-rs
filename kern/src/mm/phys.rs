@@ -1,79 +1,16 @@
 use alloc::{alloc::Global, sync::Arc, vec, vec::Vec};
 use fdt::node::FdtNode;
+use jrinx_addr::{PhysAddr, VirtAddr};
 use jrinx_devprober_macro::devprober;
 use jrinx_error::{InternalError, Result};
 use spin::{Mutex, MutexGuard};
 
-use crate::{arch, heap, mm::virt::VirtAddr};
+use crate::{arch, heap};
 
 use core::{
     alloc::{Allocator, Layout},
-    fmt::Display,
-    ops::{Add, Sub},
     ptr::NonNull,
-    slice,
 };
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct PhysAddr(usize);
-
-impl Add<usize> for PhysAddr {
-    type Output = Self;
-
-    fn add(self, rhs: usize) -> Self::Output {
-        Self(self.0 + rhs)
-    }
-}
-
-impl Sub<usize> for PhysAddr {
-    type Output = Self;
-
-    fn sub(self, rhs: usize) -> Self::Output {
-        Self(self.0 - rhs)
-    }
-}
-
-impl Sub<PhysAddr> for PhysAddr {
-    type Output = usize;
-
-    fn sub(self, rhs: PhysAddr) -> Self::Output {
-        self.0 - rhs.0
-    }
-}
-
-impl Display for PhysAddr {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "0x{:x}", self.0)
-    }
-}
-
-impl PhysAddr {
-    pub fn new(addr: usize) -> Self {
-        Self(addr)
-    }
-
-    pub fn align_page_down(self) -> Self {
-        Self(self.0 & !(jrinx_config::PAGE_SIZE - 1))
-    }
-
-    pub fn align_page_up(self) -> Self {
-        Self((self.0 + jrinx_config::PAGE_SIZE - 1) & !(jrinx_config::PAGE_SIZE - 1))
-    }
-
-    pub fn as_usize(self) -> usize {
-        self.0
-    }
-
-    pub fn as_array_base<T>(self) -> &'static mut [T] {
-        let addr = self.align_page_down().as_usize();
-        unsafe {
-            slice::from_raw_parts_mut(
-                addr as *mut T,
-                jrinx_config::PAGE_SIZE / core::mem::size_of::<T>(),
-            )
-        }
-    }
-}
 
 static INIT_MEM_REGIONS: Mutex<Vec<(VirtAddr, usize)>> = Mutex::new(Vec::new());
 

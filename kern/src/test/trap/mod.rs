@@ -15,14 +15,12 @@ pub(super) mod breakpoint {
 
 pub(super) mod page_fault {
     use cfg_if::cfg_if;
+    use jrinx_addr::VirtAddr;
     use jrinx_testdef_macro::testdef;
 
     use crate::{
         arch::{self, mm::virt::PagePerm},
-        mm::{
-            phys,
-            virt::{VirtAddr, KERN_PAGE_TABLE},
-        },
+        mm::{phys, virt::KERN_PAGE_TABLE},
         trap::TrapReason,
     };
 
@@ -110,14 +108,12 @@ pub(super) mod page_fault {
 }
 
 pub(super) mod syscall {
+    use jrinx_addr::VirtAddr;
     use jrinx_testdef_macro::testdef;
 
     use crate::{
         arch::{self, mm::virt::PagePerm},
-        mm::{
-            phys,
-            virt::{VirtAddr, KERN_PAGE_TABLE},
-        },
+        mm::{phys, virt::KERN_PAGE_TABLE},
         trap::TrapReason,
     };
 

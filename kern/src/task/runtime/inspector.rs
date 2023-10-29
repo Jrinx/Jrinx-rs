@@ -1,6 +1,7 @@
 use core::{fmt::Display, pin::Pin};
 
 use alloc::{boxed::Box, collections::BTreeMap};
+use jrinx_addr::VirtAddr;
 use jrinx_error::{InternalError, Result};
 use jrinx_serial_id::SerialIdGenerator;
 use jrinx_serial_id_macro::SerialId;
@@ -9,7 +10,6 @@ use jrinx_util::fastpq::FastPriorityQueueWithLock;
 use crate::{
     arch,
     cpudata::CpuDataVisitor,
-    mm::virt::VirtAddr,
     task::executor::{Executor, ExecutorId, ExecutorPriority, ExecutorStatus},
 };
 

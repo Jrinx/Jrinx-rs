@@ -2,10 +2,11 @@ pub(super) mod phys {
     use core::mem::forget;
 
     use alloc::sync::Arc;
+    use jrinx_addr::PhysAddr;
     use jrinx_error::Result;
     use jrinx_testdef_macro::testdef;
 
-    use crate::mm::phys::{PhysAddr, PhysFrame};
+    use crate::mm::phys::PhysFrame;
 
     #[testdef]
     fn test() {
@@ -37,15 +38,13 @@ pub(super) mod phys {
 pub(super) mod virt {
     use core::mem;
 
+    use jrinx_addr::VirtAddr;
     use jrinx_testdef_macro::testdef;
     use rand::{rngs::SmallRng, RngCore, SeedableRng};
 
     use crate::{
         arch::{self, mm::virt::PagePerm},
-        mm::{
-            phys::PhysFrame,
-            virt::{VirtAddr, KERN_PAGE_TABLE},
-        },
+        mm::{phys::PhysFrame, virt::KERN_PAGE_TABLE},
     };
 
     #[testdef]

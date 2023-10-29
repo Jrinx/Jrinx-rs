@@ -1,6 +1,6 @@
 use core::mem::offset_of;
 
-use crate::mm::virt::VirtAddr;
+use jrinx_addr::VirtAddr;
 
 #[derive(Debug, Default, Clone, Copy)]
 #[repr(C)]

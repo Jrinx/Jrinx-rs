@@ -1,0 +1,12 @@
+[package]
+name = "jrinx-addr"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+pt_level_2 = []
+pt_level_3 = []
+
+[dependencies]
+jrinx-addr-macro = { version = "0.1.0", path = "../addr-macro" }
+jrinx-config = { version = "0.1.0", path = "../config" }

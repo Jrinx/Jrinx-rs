@@ -6,8 +6,6 @@ build = "build.rs"
 
 [features]
 no_test = []
-pt_level_2 = []
-pt_level_3 = []
 colorful = []
 
 [dependencies]
@@ -16,6 +14,7 @@ buddy_system_allocator = { version = "0.9.0", features = ["const_fn"] }
 cfg-if = "1.0.0"
 fdt = "0.1.5"
 getargs = { version = "0.5.0", default-features = false }
+jrinx-addr-macro = { version = "0.1.0", path = "modules/addr-macro" }
 jrinx-config = { version = "0.1.0", path = "modules/config" }
 jrinx-devprober = { version = "0.1.0", path = "modules/devprober" }
 jrinx-devprober-macro = { version = "0.1.0", path = "modules/devprober-macro" }
@@ -34,3 +33,9 @@ spin = "0.9.8"
 [target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]
 riscv = "0.10.1"
 sbi = "0.2.0"
+
+[target.'cfg(target_arch = "riscv32")'.dependencies]
+jrinx-addr = { version = "0.1.0", path = "modules/addr", features = ["pt_level_2"] }
+
+[target.'cfg(target_arch = "riscv64")'.dependencies]
+jrinx-addr = { version = "0.1.0", path = "modules/addr", features = ["pt_level_3"] }

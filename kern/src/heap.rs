@@ -1,6 +1,5 @@
 use buddy_system_allocator::LockedHeap;
-
-use crate::mm::virt::VirtAddr;
+use jrinx_addr::VirtAddr;
 
 const HEAP_ORDER: usize = 32;
 const HEAP_SIZE: usize = jrinx_config::PAGE_SIZE;

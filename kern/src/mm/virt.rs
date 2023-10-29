@@ -1,9 +1,5 @@
-use core::{
-    fmt::Display,
-    ops::{Add, Sub},
-};
-
 use alloc::{collections::BTreeMap, sync::Arc};
+use jrinx_addr::{PhysAddr, VirtAddr};
 use jrinx_error::{InternalError, Result};
 use lazy_static::lazy_static;
 use spin::RwLock;
@@ -16,68 +12,7 @@ use crate::{
     mm::phys,
 };
 
-use super::phys::{PhysAddr, PhysFrame};
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct VirtAddr(usize);
-
-impl Add<usize> for VirtAddr {
-    type Output = Self;
-
-    fn add(self, rhs: usize) -> Self::Output {
-        Self(self.0 + rhs)
-    }
-}
-
-impl Sub<usize> for VirtAddr {
-    type Output = Self;
-
-    fn sub(self, rhs: usize) -> Self::Output {
-        Self(self.0 - rhs)
-    }
-}
-
-impl Sub<VirtAddr> for VirtAddr {
-    type Output = usize;
-
-    fn sub(self, rhs: VirtAddr) -> Self::Output {
-        self.0 - rhs.0
-    }
-}
-
-impl Display for VirtAddr {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "0x{:x}", self.0)
-    }
-}
-
-impl VirtAddr {
-    pub const fn new(addr: usize) -> Self {
-        Self(addr)
-    }
-
-    pub const fn as_usize(self) -> usize {
-        self.0
-    }
-
-    pub fn align_page_down(self) -> Self {
-        Self(self.0 & !(jrinx_config::PAGE_SIZE - 1))
-    }
-
-    #[cfg(feature = "pt_level_2")]
-    pub fn indexes(self) -> [usize; 2] {
-        [self.0 >> 22 & 0x3ff, self.0 >> 12 & 0x3ff]
-    }
-
-    #[cfg(feature = "pt_level_3")]
-    pub fn indexes(self) -> [usize; 3] {
-        [
-            self.0 >> 30 & 0o777,
-            self.0 >> 21 & 0o777,
-            self.0 >> 12 & 0o777,
-        ]
-    }
-}
+use super::phys::PhysFrame;
 
 pub struct PageTable {
     root: PhysAddr,
@@ -97,7 +32,7 @@ impl PageTable {
         let indexes = addr.indexes();
         let mut pa = self.root;
         for i in 0..indexes.len() {
-            let pte = &mut pa.as_array_base::<PageTableEntry>()[indexes[i]];
+            let pte = &mut arch::mm::phys_to_virt(pa).as_array_base::<PageTableEntry>()[indexes[i]];
             if i == indexes.len() - 1 {
                 return Ok(pte);
             } else if !pte.is_valid() {
@@ -112,7 +47,7 @@ impl PageTable {
         let indexes = addr.indexes();
         let mut pa = self.root;
         for i in 0..indexes.len() {
-            let pte = &mut pa.as_array_base::<PageTableEntry>()[indexes[i]];
+            let pte = &mut arch::mm::phys_to_virt(pa).as_array_base::<PageTableEntry>()[indexes[i]];
             if i == indexes.len() - 1 {
                 return Ok(pte);
             } else if !pte.is_valid() {

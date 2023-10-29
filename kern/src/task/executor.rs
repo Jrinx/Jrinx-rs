@@ -5,6 +5,7 @@ use core::{
 };
 
 use alloc::{boxed::Box, collections::BTreeMap, sync::Arc, task::Wake};
+use jrinx_addr::VirtAddr;
 use jrinx_error::{InternalError, Result};
 use jrinx_serial_id::SerialIdGenerator;
 use jrinx_serial_id_macro::SerialId;
@@ -12,10 +13,7 @@ use jrinx_util::fastpq::{FastPriority, FastPriorityQueueWithLock};
 
 use crate::{
     arch::{self, mm::virt::PagePerm, task::executor::SwitchContext},
-    mm::{
-        phys::PhysFrame,
-        virt::{VirtAddr, KERN_PAGE_TABLE},
-    },
+    mm::{phys::PhysFrame, virt::KERN_PAGE_TABLE},
     util::stack::StackAllocator,
 };
 

@@ -1,6 +1,5 @@
 use alloc::{vec, vec::Vec};
-
-use crate::mm::{phys::PhysAddr, virt::VirtAddr};
+use jrinx_addr::{PhysAddr, VirtAddr};
 
 pub mod virt;
 

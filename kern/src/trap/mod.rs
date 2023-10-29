@@ -1,8 +1,10 @@
-use crate::{arch::mm::virt::PagePerm, mm::virt::VirtAddr};
-
 pub mod breakpoint;
 pub mod interrupt;
 pub mod timer_int;
+
+use jrinx_addr::VirtAddr;
+
+use crate::arch::mm::virt::PagePerm;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TrapReason {

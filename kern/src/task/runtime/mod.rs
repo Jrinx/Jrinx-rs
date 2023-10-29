@@ -6,12 +6,12 @@ use alloc::{
     boxed::Box,
     collections::{BTreeMap, VecDeque},
 };
+use jrinx_addr::VirtAddr;
 use jrinx_error::{HaltReason, InternalError, Result};
 
 use crate::{
     arch::{self, task::executor::SwitchContext},
     cpudata::CpuDataVisitor,
-    mm::virt::VirtAddr,
     task::runtime::inspector::InspectorStatus,
 };
 
