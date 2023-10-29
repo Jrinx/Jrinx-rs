@@ -265,6 +265,7 @@ dependencies = [
  "jrinx-serial-id-macro",
  "jrinx-testdef",
  "jrinx-testdef-macro",
+ "jrinx-util",
  "lazy_static",
  "log",
  "rand",
@@ -327,6 +328,13 @@ version = "0.1.0"
 dependencies = [
  "quote",
  "syn",
+]
+
+[[package]]
+name = "jrinx-util"
+version = "0.1.0"
+dependencies = [
+ "spin 0.9.8",
 ]
 
 [[package]]

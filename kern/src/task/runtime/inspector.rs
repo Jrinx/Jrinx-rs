@@ -4,16 +4,16 @@ use alloc::{boxed::Box, collections::BTreeMap};
 use jrinx_error::{InternalError, Result};
 use jrinx_serial_id::SerialIdGenerator;
 use jrinx_serial_id_macro::SerialId;
+use jrinx_util::fastpq::FastPriorityQueueWithLock;
 
 use crate::{
     arch,
     cpudata::CpuDataVisitor,
     mm::virt::VirtAddr,
     task::executor::{Executor, ExecutorId, ExecutorPriority, ExecutorStatus},
-    util::priority::PriorityQueueWithLock,
 };
 
-type ExecutorQueue = PriorityQueueWithLock<ExecutorPriority, ExecutorId>;
+type ExecutorQueue = FastPriorityQueueWithLock<ExecutorPriority, ExecutorId>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, SerialId)]
 pub struct InspectorId(u64);
@@ -81,7 +81,7 @@ impl Inspector {
         self.executor_registry
             .try_insert(id, executor)
             .map_err(|_| InternalError::DuplicateExecutorId)?;
-        self.executor_queue.add(id, priority);
+        self.executor_queue.enqueue(priority, id);
         Ok(())
     }
 
@@ -118,14 +118,14 @@ impl Inspector {
     }
 
     pub(super) fn pop_executor(&mut self) -> Option<ExecutorId> {
-        self.executor_queue.pop()
+        self.executor_queue.dequeue().map(|(_, id)| id)
     }
 
     pub(super) fn push_executor(&mut self, id: ExecutorId) -> Result<()> {
         let Some(executor) = self.executor_registry.get(&id) else {
             return Err(InternalError::InvalidExecutorId);
         };
-        self.executor_queue.add(id, executor.priority());
+        self.executor_queue.enqueue(executor.priority(), id);
         Ok(())
     }
 

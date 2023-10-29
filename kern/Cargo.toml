@@ -25,6 +25,7 @@ jrinx-serial-id = { version = "0.1.0", path = "modules/serial-id" }
 jrinx-serial-id-macro = { version = "0.1.0", path = "modules/serial-id-macro" }
 jrinx-testdef = { version = "0.1.0", path = "modules/testdef" }
 jrinx-testdef-macro = { version = "0.1.0", path = "modules/testdef-macro" }
+jrinx-util = { version = "0.1.0", path = "modules/util" }
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
 log = { version = "0.4.20", default-features = false }
 rand = { version = "0.8.5", default-features = false, features = ["small_rng"] }

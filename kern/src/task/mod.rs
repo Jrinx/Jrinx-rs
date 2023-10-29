@@ -10,6 +10,7 @@ use core::{
 use alloc::boxed::Box;
 use jrinx_serial_id::SerialIdGenerator;
 use jrinx_serial_id_macro::SerialId;
+use jrinx_util::fastpq::FastPriority;
 
 use crate::cpudata::CpuDataVisitor;
 
@@ -17,16 +18,25 @@ use crate::cpudata::CpuDataVisitor;
 pub struct TaskId(u64);
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct TaskPriority(u16);
+pub struct TaskPriority(FastPriority);
 
 impl TaskPriority {
-    pub const fn new(priority: u16) -> Self {
-        Self(priority)
+    pub const NUM: usize = FastPriority::NUM;
+    pub const MAX: u8 = (Self::NUM - 1) as u8;
+
+    pub const fn new(priority: u8) -> Self {
+        Self(FastPriority::new(priority))
     }
 }
 
-impl From<u16> for TaskPriority {
-    fn from(value: u16) -> Self {
+impl From<TaskPriority> for FastPriority {
+    fn from(value: TaskPriority) -> Self {
+        value.0
+    }
+}
+
+impl From<u8> for TaskPriority {
+    fn from(value: u8) -> Self {
         Self::new(value)
     }
 }

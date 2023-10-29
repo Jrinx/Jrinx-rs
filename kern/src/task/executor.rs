@@ -8,6 +8,7 @@ use alloc::{boxed::Box, collections::BTreeMap, sync::Arc, task::Wake};
 use jrinx_error::{InternalError, Result};
 use jrinx_serial_id::SerialIdGenerator;
 use jrinx_serial_id_macro::SerialId;
+use jrinx_util::fastpq::{FastPriority, FastPriorityQueueWithLock};
 
 use crate::{
     arch::{self, mm::virt::PagePerm, task::executor::SwitchContext},
@@ -15,12 +16,12 @@ use crate::{
         phys::PhysFrame,
         virt::{VirtAddr, KERN_PAGE_TABLE},
     },
-    util::{priority::PriorityQueueWithLock, stack::StackAllocator},
+    util::stack::StackAllocator,
 };
 
 use super::{runtime, Task, TaskId, TaskPriority};
 
-type TaskQueue = PriorityQueueWithLock<TaskPriority, TaskId>;
+type TaskQueue = FastPriorityQueueWithLock<TaskPriority, TaskId>;
 
 static EXECUTOR_STACK_ALLOCATOR: StackAllocator = StackAllocator::new(
     VirtAddr::new(arch::layout::EXECUTOR_STACK_LIMIT),
@@ -59,11 +60,17 @@ impl Display for ExecutorId {
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct ExecutorPriority(u16);
+pub struct ExecutorPriority(FastPriority);
 
 impl ExecutorPriority {
-    pub const fn new(priority: u16) -> Self {
-        Self(priority)
+    pub const fn new(priority: u8) -> Self {
+        Self(FastPriority::new(priority))
+    }
+}
+
+impl From<ExecutorPriority> for FastPriority {
+    fn from(value: ExecutorPriority) -> Self {
+        value.0
     }
 }
 
@@ -129,7 +136,7 @@ impl Executor {
 
     pub fn spawn(&mut self, task: Task) -> Result<&mut Self> {
         let id = task.id;
-        self.task_queue.add(id, task.priority);
+        self.task_queue.enqueue(task.priority, id);
         self.task_registry
             .try_insert(id, task)
             .map_err(|_| InternalError::DuplicateTaskId)?;
@@ -144,7 +151,7 @@ impl Executor {
             ..
         } = self;
 
-        while let Some(task_id) = task_queue.pop() {
+        while let Some((_, task_id)) = task_queue.dequeue() {
             let task = match task_registry.get_mut(&task_id) {
                 Some(task) => task,
                 None => continue,
@@ -208,6 +215,6 @@ impl TaskWaker {
     }
 
     fn wake_task(&self) {
-        self.task_queue.add(self.task_id, self.task_priority);
+        self.task_queue.enqueue(self.task_priority, self.task_id);
     }
 }

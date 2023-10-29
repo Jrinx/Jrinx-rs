@@ -3,7 +3,7 @@ pub(super) mod executor {
     use jrinx_testdef_macro::testdef;
     use spin::RwLock;
 
-    use crate::task;
+    use crate::task::{self, TaskPriority};
 
     static QUEUE: RwLock<Vec<i32>> = RwLock::new(Vec::new());
 
@@ -18,9 +18,9 @@ pub(super) mod executor {
     #[testdef]
     fn test() {
         task::spawn!(
-            pri := 127 => async {
+            pri := TaskPriority::MAX / 3 => async {
             for i in 0..10 {
-                let priority = i + 128;
+                let priority = TaskPriority::new(i + TaskPriority::MAX / 2);
                 let this_value = i as i32 * i as i32;
                 let prev_value = if i < 9 {
                     Some((i + 1) as i32 * (i + 1) as i32)
@@ -56,14 +56,14 @@ pub(super) mod inspector {
 
     #[testdef]
     fn test() {
-        static ORDER: Mutex<Vec<(u16, u16)>> = Mutex::new(Vec::new());
+        static ORDER: Mutex<Vec<(u8, u8)>> = Mutex::new(Vec::new());
 
-        fn order_push(executor_order: u16, task_order: u16) {
+        fn order_push(executor_order: u8, task_order: u8) {
             ORDER.lock().push((executor_order, task_order));
         }
 
-        const EXECUTOR_MAX: u16 = 4;
-        const TASK_MAX: u16 = 5;
+        const EXECUTOR_MAX: u8 = 4;
+        const TASK_MAX: u8 = 5;
 
         for i in 1..=EXECUTOR_MAX {
             let mut executor = Executor::new(
@@ -133,14 +133,14 @@ pub(super) mod runtime {
 
     #[testdef]
     fn test() {
-        static ORDER: Mutex<Vec<(u16, u16)>> = Mutex::new(Vec::new());
+        static ORDER: Mutex<Vec<(u8, u8)>> = Mutex::new(Vec::new());
 
-        fn order_push(inspector_order: u16, executor_order: u16) {
+        fn order_push(inspector_order: u8, executor_order: u8) {
             ORDER.lock().push((inspector_order, executor_order));
         }
 
-        const INSPECTOR_MAX: u16 = 3;
-        const EXECUTOR_MAX: u16 = 4;
+        const INSPECTOR_MAX: u8 = 3;
+        const EXECUTOR_MAX: u8 = 4;
 
         for i in 1..=INSPECTOR_MAX {
             let mut inspector = Inspector::new(
