@@ -3,7 +3,6 @@ use core::{fmt::Display, pin::Pin};
 use alloc::{boxed::Box, collections::BTreeMap};
 use jrinx_addr::VirtAddr;
 use jrinx_error::{InternalError, Result};
-use jrinx_serial_id::SerialIdGenerator;
 use jrinx_serial_id_macro::SerialId;
 use jrinx_util::fastpq::FastPriorityQueueWithLock;
 
@@ -47,7 +46,7 @@ pub struct Inspector {
 impl Inspector {
     pub fn new(mode: InspectorMode, root_executor: Pin<Box<Executor>>) -> Self {
         let mut inspector = Self {
-            id: InspectorId::generate(),
+            id: InspectorId::new(),
             mode,
             status: InspectorStatus::Idle,
             executor_registry: BTreeMap::new(),

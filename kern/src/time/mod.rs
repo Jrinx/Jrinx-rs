@@ -6,7 +6,6 @@ use alloc::{
     sync::Arc,
 };
 use jrinx_error::{InternalError, Result};
-use jrinx_serial_id::SerialIdGenerator;
 use jrinx_serial_id_macro::SerialId;
 use spin::Mutex;
 
@@ -47,7 +46,7 @@ pub struct TimedEvent {
 impl TimedEvent {
     pub fn create(time: Duration, handler: TimedEventHandler) -> TimedEventTracker {
         let tracker = TimedEventTracker(Arc::new(Mutex::new(Self {
-            id: TimedEventId::generate(),
+            id: TimedEventId::new(),
             cpu_id: arch::cpu::id(),
             time,
             status: TimedEventStatus::Pending,

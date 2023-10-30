@@ -16,8 +16,8 @@ pub fn serial_id(item: TokenStream) -> TokenStream {
         }) if f.unnamed.len() == 1 => {
             let ty = &f.unnamed.first().unwrap().ty;
             Ok(quote! {
-                impl jrinx_serial_id::SerialIdGenerator for #name {
-                    fn generate() -> Self {
+                impl #name {
+                    fn new() -> Self {
                         static ID_GENERATOR: spin::Mutex<#ty> = spin::Mutex::new(0);
 
                         let mut id = ID_GENERATOR.lock();

@@ -8,7 +8,6 @@ use core::{
 };
 
 use alloc::boxed::Box;
-use jrinx_serial_id::SerialIdGenerator;
 use jrinx_serial_id_macro::SerialId;
 use jrinx_util::fastpq::FastPriority;
 
@@ -50,7 +49,7 @@ pub struct Task {
 impl Task {
     pub fn new(future: impl Future<Output = ()> + 'static, priority: TaskPriority) -> Self {
         Self {
-            id: TaskId::generate(),
+            id: TaskId::new(),
             priority,
             future: Box::pin(future),
         }

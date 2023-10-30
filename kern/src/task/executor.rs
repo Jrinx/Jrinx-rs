@@ -7,7 +7,6 @@ use core::{
 use alloc::{boxed::Box, collections::BTreeMap, sync::Arc, task::Wake};
 use jrinx_addr::VirtAddr;
 use jrinx_error::{InternalError, Result};
-use jrinx_serial_id::SerialIdGenerator;
 use jrinx_serial_id_macro::SerialId;
 use jrinx_util::fastpq::{FastPriority, FastPriorityQueueWithLock};
 
@@ -95,7 +94,7 @@ impl Executor {
         let stack_top = EXECUTOR_STACK_ALLOCATOR.alloc().unwrap();
 
         let mut executor = Box::pin(Self {
-            id: ExecutorId::generate(),
+            id: ExecutorId::new(),
             priority,
             status: ExecutorStatus::Runnable,
             stack_top,
