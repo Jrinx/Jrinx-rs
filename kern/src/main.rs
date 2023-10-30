@@ -20,7 +20,6 @@ extern crate log;
 mod arch;
 mod cpudata;
 mod driver;
-mod heap;
 mod mm;
 mod task;
 mod test;
@@ -33,7 +32,7 @@ mod util;
 static INIT_STACK: [u8; jrinx_config::KSTACK_SIZE] = [0; jrinx_config::KSTACK_SIZE];
 
 extern "C" fn cold_init(_: usize, fdtaddr: *const u8) -> ! {
-    heap::init();
+    jrinx_heap::init();
     logging::init();
 
     let arch = core::option_env!("ARCH").unwrap_or("unknown");

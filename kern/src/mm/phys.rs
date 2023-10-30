@@ -5,7 +5,7 @@ use jrinx_devprober_macro::devprober;
 use jrinx_error::{InternalError, Result};
 use spin::{Mutex, MutexGuard};
 
-use crate::{arch, heap};
+use crate::arch;
 
 use core::{
     alloc::{Allocator, Layout},
@@ -61,7 +61,7 @@ fn probe(node: &FdtNode) -> Result<()> {
 
     init_mem_regions
         .iter()
-        .for_each(|&region| heap::enlarge(region));
+        .for_each(|&region| jrinx_heap::enlarge(region));
 
     Ok(())
 }

@@ -262,6 +262,7 @@ dependencies = [
  "jrinx-devprober",
  "jrinx-devprober-macro",
  "jrinx-error",
+ "jrinx-heap",
  "jrinx-layout",
  "jrinx-serial-id",
  "jrinx-serial-id-macro",
@@ -316,6 +317,15 @@ dependencies = [
 [[package]]
 name = "jrinx-error"
 version = "0.1.0"
+
+[[package]]
+name = "jrinx-heap"
+version = "0.1.0"
+dependencies = [
+ "buddy_system_allocator",
+ "jrinx-addr",
+ "jrinx-config",
+]
 
 [[package]]
 name = "jrinx-layout"
