@@ -21,6 +21,7 @@ jrinx-devprober-macro = { version = "0.1.0", path = "modules/devprober-macro" }
 jrinx-error = { version = "0.1.0", path = "modules/error" }
 jrinx-heap = { version = "0.1.0", path = "modules/heap" }
 jrinx-layout = { version = "0.1.0", path = "modules/layout" }
+jrinx-linear-alloc = { version = "0.1.0", path = "modules/linear-alloc" }
 jrinx-serial-id-macro = { version = "0.1.0", path = "modules/serial-id-macro" }
 jrinx-testdef = { version = "0.1.0", path = "modules/testdef" }
 jrinx-testdef-macro = { version = "0.1.0", path = "modules/testdef-macro" }

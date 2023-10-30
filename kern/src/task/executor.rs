@@ -7,21 +7,24 @@ use core::{
 use alloc::{boxed::Box, collections::BTreeMap, sync::Arc, task::Wake};
 use jrinx_addr::VirtAddr;
 use jrinx_error::{InternalError, Result};
+use jrinx_linear_alloc::LinearAllocator;
 use jrinx_serial_id_macro::SerialId;
 use jrinx_util::fastpq::{FastPriority, FastPriorityQueueWithLock};
 
 use crate::{
     arch::{self, mm::virt::PagePerm, task::executor::SwitchContext},
     mm::{phys::PhysFrame, virt::KERN_PAGE_TABLE},
-    util::stack::StackAllocator,
 };
 
 use super::{runtime, Task, TaskId, TaskPriority};
 
 type TaskQueue = FastPriorityQueueWithLock<TaskPriority, TaskId>;
 
-static EXECUTOR_STACK_ALLOCATOR: StackAllocator = StackAllocator::new(
-    VirtAddr::new(arch::layout::EXECUTOR_STACK_LIMIT),
+static EXECUTOR_STACK_ALLOCATOR: LinearAllocator = LinearAllocator::new(
+    (
+        VirtAddr::new(arch::layout::EXECUTOR_STACK_BOTTOM),
+        arch::layout::EXECUTOR_STACK_LIMIT - arch::layout::EXECUTOR_STACK_BOTTOM,
+    ),
     arch::layout::EXECUTOR_STACK_SIZE,
     jrinx_config::PAGE_SIZE,
     |addr, size| {
@@ -91,7 +94,8 @@ pub struct Executor {
 impl Executor {
     pub fn new(priority: ExecutorPriority, root_task: Task) -> Pin<Box<Self>> {
         let entry = VirtAddr::new(arch::task::executor::launch as usize);
-        let stack_top = EXECUTOR_STACK_ALLOCATOR.alloc().unwrap();
+        let stack_top =
+            EXECUTOR_STACK_ALLOCATOR.allocate().unwrap() + arch::layout::EXECUTOR_STACK_SIZE;
 
         let mut executor = Box::pin(Self {
             id: ExecutorId::new(),
@@ -174,7 +178,9 @@ impl Executor {
 
 impl Drop for Executor {
     fn drop(&mut self) {
-        EXECUTOR_STACK_ALLOCATOR.dealloc(self.stack_top).unwrap();
+        EXECUTOR_STACK_ALLOCATOR
+            .deallocate(self.stack_top - arch::layout::EXECUTOR_STACK_SIZE)
+            .unwrap();
     }
 }
 

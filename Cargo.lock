@@ -264,6 +264,7 @@ dependencies = [
  "jrinx-error",
  "jrinx-heap",
  "jrinx-layout",
+ "jrinx-linear-alloc",
  "jrinx-serial-id-macro",
  "jrinx-testdef",
  "jrinx-testdef-macro",
@@ -329,6 +330,15 @@ dependencies = [
 [[package]]
 name = "jrinx-layout"
 version = "0.1.0"
+
+[[package]]
+name = "jrinx-linear-alloc"
+version = "0.1.0"
+dependencies = [
+ "jrinx-addr",
+ "jrinx-error",
+ "spin 0.9.8",
+]
 
 [[package]]
 name = "jrinx-serial-id-macro"
