@@ -22,10 +22,10 @@ type TaskQueue = FastPriorityQueueWithLock<TaskPriority, TaskId>;
 
 static EXECUTOR_STACK_ALLOCATOR: LinearAllocator = LinearAllocator::new(
     (
-        VirtAddr::new(arch::layout::EXECUTOR_STACK_BOTTOM),
-        arch::layout::EXECUTOR_STACK_LIMIT - arch::layout::EXECUTOR_STACK_BOTTOM,
+        VirtAddr::new(jrinx_config::EXECUTOR_STACK_RANGE.0),
+        jrinx_config::EXECUTOR_STACK_RANGE.1 - jrinx_config::EXECUTOR_STACK_RANGE.0,
     ),
-    arch::layout::EXECUTOR_STACK_SIZE,
+    jrinx_config::EXECUTOR_STACK_SIZE,
     jrinx_config::PAGE_SIZE,
     |addr, size| {
         let mut page_table = KERN_PAGE_TABLE.write();
@@ -95,7 +95,7 @@ impl Executor {
     pub fn new(priority: ExecutorPriority, root_task: Task) -> Pin<Box<Self>> {
         let entry = VirtAddr::new(arch::task::executor::launch as usize);
         let stack_top =
-            EXECUTOR_STACK_ALLOCATOR.allocate().unwrap() + arch::layout::EXECUTOR_STACK_SIZE;
+            EXECUTOR_STACK_ALLOCATOR.allocate().unwrap() + jrinx_config::EXECUTOR_STACK_SIZE;
 
         let mut executor = Box::pin(Self {
             id: ExecutorId::new(),
@@ -179,7 +179,7 @@ impl Executor {
 impl Drop for Executor {
     fn drop(&mut self) {
         EXECUTOR_STACK_ALLOCATOR
-            .deallocate(self.stack_top - arch::layout::EXECUTOR_STACK_SIZE)
+            .deallocate(self.stack_top - jrinx_config::EXECUTOR_STACK_SIZE)
             .unwrap();
     }
 }

@@ -1,17 +1,4 @@
-use cfg_if::cfg_if;
 use jrinx_error::HaltReason;
-
-cfg_if! {
-    if #[cfg(target_arch = "riscv32")] {
-        #[path = "riscv32/mod.rs"]
-        mod riscv32;
-        pub use riscv32::*;
-    } else if #[cfg(target_arch = "riscv64")] {
-        #[path = "riscv64/mod.rs"]
-        mod riscv64;
-        pub use riscv64::*;
-    }
-}
 
 pub mod cpu;
 pub mod cpus;
