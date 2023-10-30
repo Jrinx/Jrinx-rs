@@ -93,10 +93,10 @@ impl Drop for PhysFrame {
 
 impl PhysFrame {
     pub fn alloc() -> Result<Arc<Self>> {
-        let addr: NonNull<u8> = Global
-            .allocate_zeroed(PHYS_FRAME_MEMORY_LAYOUT)
-            .map_err(|_| InternalError::NotEnoughMem)?
-            .cast();
+        let addr: NonNull<u8> =
+            core::hint::black_box(Global.allocate_zeroed(PHYS_FRAME_MEMORY_LAYOUT))
+                .map_err(|_| InternalError::NotEnoughMem)?
+                .cast();
         let addr = addr.as_ptr() as usize;
         let addr = arch::mm::virt_to_phys(VirtAddr::new(addr));
         Ok(Arc::new(Self { addr }))
