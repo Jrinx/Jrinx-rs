@@ -13,7 +13,6 @@ pub fn devprober(attr: TokenStream, func: TokenStream) -> TokenStream {
     let attr_type = attr.0.iter().map(|(i, _)| match i.to_string().as_str() {
         "compatible" => Ident::new("Compatible", i.span()),
         "device_type" => Ident::new("DeviceType", i.span()),
-        "path" => Ident::new("Path", i.span()),
         _ => panic!("invalid attribute"),
     });
     let prober_ident = (0..attr.0.len())

@@ -6,7 +6,6 @@ use jrinx_error::Result;
 #[repr(C)]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum DevIdent {
-    Path(&'static str),
     DeviceType(&'static str),
     Compatible(&'static str),
 }
@@ -26,11 +25,6 @@ impl DevProber {
 pub fn probe_all_device(fdt: &Fdt) -> Result<()> {
     for devprober in devprober_iter() {
         match devprober.ident {
-            DevIdent::Path(path) => {
-                for node in fdt.find_all_nodes(path) {
-                    (devprober.probe)(&node)?;
-                }
-            }
             DevIdent::DeviceType(device_type) => {
                 for node in fdt.all_nodes().filter(|node| {
                     node.property("device_type")

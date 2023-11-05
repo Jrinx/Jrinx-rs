@@ -26,7 +26,6 @@ SECTIONS {
 
         . = ALIGN(8);
         PROVIDE(_sdev = .);
-        *(.dev.path*)
         *(.dev.device_type*)
         *(.dev.compatible*)
         *(.dev*)
