@@ -112,9 +112,6 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
 
-      - name: Set Up Cargo Dependencies
-        run: cargo install cargo-binutils
-
       - name: Lint Xtask Code
         run: cargo clippy --release -- -Dwarnings
 
