@@ -3,7 +3,7 @@ use std::{
     process::{Command, ExitStatus},
 };
 
-use super::{construct_cmd, setup_envs, MakeArg};
+use super::{construct_build_cmd, setup_envs, MakeArg};
 
 pub fn run(arg: &MakeArg) -> Option<ExitStatus> {
     setup_envs(arg);
@@ -14,7 +14,7 @@ pub fn run(arg: &MakeArg) -> Option<ExitStatus> {
 
     cmd.current_dir(kern_path).arg("clippy");
 
-    construct_cmd(arg, cmd);
+    construct_build_cmd(arg, cmd);
 
     cmd.args(["--", "-Dwarnings"]);
     cmd.status().ok()

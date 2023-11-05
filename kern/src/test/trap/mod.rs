@@ -32,7 +32,7 @@ pub(super) mod page_fault {
                         unsafe {
                             *($addr.as_usize() as *mut u32) = *(check_addr_protection as usize as *const u32);
                         }
-                        arch::mm::ibar();
+                        arch::inst_barrier();
                         #[naked]
                         unsafe extern "C" fn check_addr_protection() -> ! {
                             core::arch::asm!("lw zero, 0(zero)", options(noreturn));
@@ -47,7 +47,7 @@ pub(super) mod page_fault {
                         unsafe {
                             *($addr.as_usize() as *mut u32) = *(check_addr_protection as usize as *const u32);
                         }
-                        arch::mm::ibar();
+                        arch::inst_barrier();
                         #[naked]
                         unsafe extern "C" fn check_addr_protection() -> ! {
                             core::arch::asm!("sw zero, 0(zero)", options(noreturn));
@@ -83,9 +83,9 @@ pub(super) mod page_fault {
                 PagePerm::U | PagePerm::R | PagePerm::X,
             )
             .unwrap();
-        arch::mm::virt::sync(VirtAddr::new(USER_TEXT));
+        arch::vm_barrier(VirtAddr::new(USER_TEXT));
 
-        code_read_zero!(arch::mm::phys_to_virt(addr));
+        code_read_zero!(addr.to_virt());
         ctx.run();
         assert_eq!(
             ctx.trap_reason(),
@@ -95,7 +95,7 @@ pub(super) mod page_fault {
             }
         );
 
-        code_write_zero!(arch::mm::phys_to_virt(addr));
+        code_write_zero!(addr.to_virt());
         ctx.run();
         assert_eq!(
             ctx.trap_reason(),
@@ -124,7 +124,7 @@ pub(super) mod syscall {
                 unsafe {
                     *($addr.as_usize() as *mut u64) = *(syscall_with_num as *const u64);
                 }
-                arch::mm::ibar();
+                arch::inst_barrier();
                 #[naked]
                 unsafe extern "C" fn syscall_with_num() -> ! {
                     core::arch::asm!("ori a7, zero, {}", "ecall", const $num, options(noreturn));
@@ -149,15 +149,15 @@ pub(super) mod syscall {
                 PagePerm::U | PagePerm::R | PagePerm::X,
             )
             .unwrap();
-        arch::mm::virt::sync(VirtAddr::new(USER_TEXT));
+        arch::vm_barrier(VirtAddr::new(USER_TEXT));
 
-        code_syscall_with_num!(arch::mm::phys_to_virt(addr), 32);
+        code_syscall_with_num!(addr.to_virt(), 32);
         ctx.setup_user(USER_TEXT, 0);
         ctx.run();
         assert_eq!(ctx.trap_reason(), TrapReason::SystemCall);
         assert_eq!(ctx.get_syscall_num(), 32);
 
-        code_syscall_with_num!(arch::mm::phys_to_virt(addr), 64);
+        code_syscall_with_num!(addr.to_virt(), 64);
         ctx.setup_user(USER_TEXT, 0);
         ctx.run();
         assert_eq!(ctx.trap_reason(), TrapReason::SystemCall);

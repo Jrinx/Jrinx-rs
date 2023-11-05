@@ -37,11 +37,15 @@ static DEFAULT_FEATURES: &[&str] = &["colorful"];
 pub fn run(arg: &MakeArg) -> Option<ExitStatus> {
     setup_envs(arg);
 
-    let MakeArg { always_make, .. } = arg.clone();
+    let MakeArg {
+        always_make, arch, ..
+    } = arg.clone();
 
-    let cmd = &mut Command::new(env!("CARGO"));
+    let ArchArg { arch, .. } = arch;
 
     let kern_path = &fs::canonicalize("kern").unwrap();
+
+    let cmd = &mut Command::new(env!("CARGO"));
 
     if always_make
         && !Command::new(env!("CARGO"))
@@ -56,12 +60,29 @@ pub fn run(arg: &MakeArg) -> Option<ExitStatus> {
 
     cmd.current_dir(kern_path).arg("build");
 
-    construct_cmd(arg, cmd);
+    construct_build_cmd(arg, cmd);
 
-    cmd.status().ok()
+    cmd.status().ok()?;
+
+    let cmd = &mut Command::new("rust-objcopy");
+
+    cmd.args(["-O", "binary"])
+        .arg(format!("--binary-architecture={}", arch))
+        .arg(format!(
+            "target/{}/{}/jrinx",
+            arch,
+            std::env::var_os("BUILD_MODE").unwrap().to_str().unwrap()
+        ))
+        .arg(format!(
+            "target/{}/{}/jrinx.bin",
+            arch,
+            std::env::var_os("BUILD_MODE").unwrap().to_str().unwrap()
+        ))
+        .status()
+        .ok()
 }
 
-fn construct_cmd(arg: &MakeArg, cmd: &mut Command) {
+fn construct_build_cmd(arg: &MakeArg, cmd: &mut Command) {
     let MakeArg {
         arch,
         log_level,

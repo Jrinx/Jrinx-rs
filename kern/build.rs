@@ -34,8 +34,8 @@ fn find_lds(arch: &str) -> Option<String> {
 
 fn base_addr_of(arch: &str) -> usize {
     match arch {
-        "riscv32" => 0x80400000,
-        "riscv64" => 0x80200000,
+        "riscv32" => 0x8040_0000,
+        "riscv64" => 0xFFFF_FFC0_8020_0000,
         _ => panic!("Unsupported arch: {}", arch),
     }
 }

@@ -10,16 +10,18 @@
 #![no_std]
 #![no_main]
 
+use arch::BootInfo;
+
 use crate::{task::runtime, util::logging};
 
 extern crate alloc;
-
+extern crate jrinx_driver as _;
 #[macro_use]
 extern crate log;
 
 mod arch;
+mod bootargs;
 mod cpudata;
-mod driver;
 mod mm;
 mod task;
 mod test;
@@ -27,11 +29,7 @@ mod time;
 mod trap;
 mod util;
 
-#[used(linker)]
-#[link_section = ".stack"]
-static INIT_STACK: [u8; jrinx_config::KSTACK_SIZE] = [0; jrinx_config::KSTACK_SIZE];
-
-extern "C" fn cold_init(_: usize, fdtaddr: *const u8) -> ! {
+fn cold_init(boot_info: BootInfo) -> ! {
     jrinx_heap::init();
     logging::init();
 
@@ -43,15 +41,17 @@ extern "C" fn cold_init(_: usize, fdtaddr: *const u8) -> ! {
         arch, build_time, build_mode,
     );
 
-    arch::init();
-    driver::init(fdtaddr);
+    jrinx_driver::probe_all(&boot_info.fdt());
+
+    if let Some(bootargs) = boot_info.fdt().chosen().bootargs() {
+        bootargs::set(bootargs);
+    }
 
     mm::init();
     cpudata::init();
-
     runtime::start();
 }
 
 async fn master_init() {
-    driver::bootargs::execute().await;
+    bootargs::execute().await;
 }

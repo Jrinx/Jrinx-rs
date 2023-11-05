@@ -22,8 +22,8 @@ type TaskQueue = FastPriorityQueueWithLock<TaskPriority, TaskId>;
 
 static EXECUTOR_STACK_ALLOCATOR: LinearAllocator = LinearAllocator::new(
     (
-        VirtAddr::new(jrinx_config::EXECUTOR_STACK_RANGE.0),
-        jrinx_config::EXECUTOR_STACK_RANGE.1 - jrinx_config::EXECUTOR_STACK_RANGE.0,
+        VirtAddr::new(jrinx_config::EXECUTOR_STACK_REGION.addr),
+        jrinx_config::EXECUTOR_STACK_REGION.len,
     ),
     jrinx_config::EXECUTOR_STACK_SIZE,
     jrinx_config::PAGE_SIZE,

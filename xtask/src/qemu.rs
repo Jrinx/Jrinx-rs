@@ -56,7 +56,7 @@ pub fn run(arg: &QemuArg) -> Option<ExitStatus> {
         .args([
             "-kernel",
             format!(
-                "target/{}/{}/jrinx",
+                "target/{}/{}/jrinx.bin",
                 arch,
                 std::env::var_os("BUILD_MODE").unwrap().to_str().unwrap(),
             )

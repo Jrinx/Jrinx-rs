@@ -1,17 +1,19 @@
-use fdt::node::FdtNode;
-use jrinx_devprober_macro::devprober;
+use fdt::Fdt;
 use jrinx_error::{InternalError, Result};
 use spin::Once;
 
-#[devprober(path = "/cpus")]
-fn probe(node: &FdtNode) -> Result<()> {
+pub(in crate::arch) fn init(fdt: &Fdt<'_>) -> Result<()> {
+    let node = fdt
+        .find_all_nodes("/cpus")
+        .next()
+        .ok_or(InternalError::DevProbeError)?;
+
     let timebase_freq = node
         .property("timebase-frequency")
         .ok_or(InternalError::DevProbeError)?
         .as_usize()
         .ok_or(InternalError::DevProbeError)?;
 
-    debug!("cpus timebase-frequency: {} Hz", timebase_freq);
     TIMEBASE_FREQ
         .try_call_once::<_, ()>(|| Ok(timebase_freq))
         .unwrap();
@@ -23,9 +25,7 @@ fn probe(node: &FdtNode) -> Result<()> {
             None => false,
         })
         .count();
-    debug!("cpus nproc: {}", nproc);
     NPROC.try_call_once::<_, ()>(|| Ok(nproc)).unwrap();
-
     Ok(())
 }
 

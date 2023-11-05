@@ -1,0 +1,16 @@
+[package]
+name = "jrinx-driver"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+fdt = "0.1.5"
+jrinx-addr = { version = "0.1.0", path = "../addr" }
+jrinx-config = { version = "0.1.0", path = "../config" }
+jrinx-devprober = { version = "0.1.0", path = "../devprober" }
+jrinx-devprober-macro = { version = "0.1.0", path = "../devprober-macro" }
+jrinx-error = { version = "0.1.0", path = "../error" }
+jrinx-heap = { version = "0.1.0", path = "../heap" }
+jrinx-layout = { version = "0.1.0", path = "../layout" }
+jrinx-util = { version = "0.1.0", path = "../util" }
+log = { version = "0.4.20", default-features = false }

@@ -2,9 +2,7 @@ use core::fmt::Display;
 
 use alloc::string::String;
 use bitflags::bitflags;
-use jrinx_addr::{PhysAddr, VirtAddr};
-
-use crate::mm::virt::PageTable;
+use jrinx_addr::PhysAddr;
 
 bitflags! {
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -39,6 +37,12 @@ pub struct PageTableEntry {
 }
 
 impl PageTableEntry {
+    pub(in crate::arch) fn new(phys_addr: PhysAddr, perm: PagePerm) -> Self {
+        let mut pte = Self { bits: 0 };
+        pte.set(phys_addr, perm);
+        pte
+    }
+
     pub fn set(&mut self, phys_addr: PhysAddr, perm: PagePerm) {
         let mut perm = perm;
         if perm.contains(PagePerm::R) {
@@ -65,21 +69,8 @@ impl PageTableEntry {
     }
 }
 
-pub fn enable_pt_mapping(page_table: &PageTable) {
-    let pt_ppn = page_table.addr().as_usize() / jrinx_config::PAGE_SIZE;
-    unsafe {
-        #[cfg(target_arch = "riscv64")]
-        riscv::register::satp::set(riscv::register::satp::Mode::Sv39, 0, pt_ppn);
-
-        #[cfg(target_arch = "riscv32")]
-        riscv::register::satp::set(riscv::register::satp::Mode::Sv32, 0, pt_ppn);
-
-        riscv::asm::sfence_vma_all();
-    }
-}
-
-pub fn sync(addr: VirtAddr) {
-    unsafe {
-        core::arch::asm!("sfence.vma {}, x0", in(reg) addr.as_usize());
+impl From<PageTableEntry> for usize {
+    fn from(value: PageTableEntry) -> Self {
+        value.bits
     }
 }

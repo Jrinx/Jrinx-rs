@@ -1,15 +1,12 @@
 use alloc::{collections::BTreeMap, sync::Arc};
 use jrinx_addr::{PhysAddr, VirtAddr};
 use jrinx_error::{InternalError, Result};
-use lazy_static::lazy_static;
-use spin::RwLock;
+use spin::{Lazy, RwLock};
 
-use crate::{
-    arch::{
-        self,
-        mm::virt::{PagePerm, PageTableEntry},
-    },
-    mm::phys,
+use crate::arch::{
+    self,
+    mm::virt::{PagePerm, PageTableEntry},
+    vm_enable,
 };
 
 use super::phys::PhysFrame;
@@ -19,12 +16,16 @@ pub struct PageTable {
     frames: BTreeMap<VirtAddr, Arc<PhysFrame>>,
 }
 
+pub static KERN_PAGE_TABLE: Lazy<RwLock<PageTable>> =
+    Lazy::new(|| RwLock::new(PageTable::new().unwrap()));
+
 impl PageTable {
     pub fn new() -> Result<Self> {
         let frame = PhysFrame::alloc()?;
         let root = frame.addr();
         let mut frames = BTreeMap::new();
-        frames.insert(arch::mm::phys_to_virt(root), frame);
+        frames.insert(root.to_virt(), frame);
+        arch::vm_clone_kernel(root.to_virt().as_array_base());
         Ok(Self { root, frames })
     }
 
@@ -32,7 +33,7 @@ impl PageTable {
         let indexes = addr.indexes();
         let mut pa = self.root;
         for i in 0..indexes.len() {
-            let pte = &mut arch::mm::phys_to_virt(pa).as_array_base::<PageTableEntry>()[indexes[i]];
+            let pte = &mut pa.to_virt().as_array_base::<PageTableEntry>()[indexes[i]];
             if i == indexes.len() - 1 {
                 return Ok(pte);
             } else if !pte.is_valid() {
@@ -47,14 +48,14 @@ impl PageTable {
         let indexes = addr.indexes();
         let mut pa = self.root;
         for i in 0..indexes.len() {
-            let pte = &mut arch::mm::phys_to_virt(pa).as_array_base::<PageTableEntry>()[indexes[i]];
+            let pte = &mut pa.to_virt().as_array_base::<PageTableEntry>()[indexes[i]];
             if i == indexes.len() - 1 {
                 return Ok(pte);
             } else if !pte.is_valid() {
                 let frame = PhysFrame::alloc()?;
                 let addr = frame.addr();
                 pte.set(addr, PagePerm::V);
-                self.frames.insert(arch::mm::phys_to_virt(addr), frame);
+                self.frames.insert(addr.to_virt(), frame);
             }
             (pa, _) = pte.as_tuple();
         }
@@ -111,79 +112,9 @@ impl PageTable {
         pte.clr();
         Ok(())
     }
-
-    fn kernel_map(&mut self, addr: VirtAddr, perm: PagePerm) -> Result<()> {
-        let addr = addr.align_page_down();
-        let phys_addr = PhysAddr::new(addr.as_usize());
-        let pte = self.find_or_create(addr)?;
-        pte.set(phys_addr, perm | PagePerm::V);
-        Ok(())
-    }
-}
-
-lazy_static! {
-    pub static ref KERN_PAGE_TABLE: RwLock<PageTable> = RwLock::new(PageTable::new().unwrap());
 }
 
 pub(super) fn init() {
-    let mut pt = KERN_PAGE_TABLE.write();
-    // Map kernel codes and data
-    let mapping = [
-        (
-            ".text",
-            jrinx_layout::_stext(),
-            jrinx_layout::_etext(),
-            PagePerm::G | PagePerm::X | PagePerm::R | PagePerm::V,
-        ),
-        (
-            ".rodata",
-            jrinx_layout::_srodata(),
-            jrinx_layout::_erodata(),
-            PagePerm::G | PagePerm::R | PagePerm::V,
-        ),
-        (
-            ".data",
-            jrinx_layout::_sdata(),
-            jrinx_layout::_edata(),
-            PagePerm::G | PagePerm::R | PagePerm::W | PagePerm::V,
-        ),
-        (
-            ".bss",
-            jrinx_layout::_sbss(),
-            jrinx_layout::_ebss(),
-            PagePerm::G | PagePerm::R | PagePerm::W | PagePerm::V,
-        ),
-    ];
-
-    for (name, st, ed, perm) in mapping {
-        info!(
-            "mapping kernel {:7} ({} - {}) with perm {}",
-            name,
-            PhysAddr::new(st),
-            PhysAddr::new(ed).align_page_up(),
-            perm
-        );
-        for addr in (st..ed).step_by(jrinx_config::PAGE_SIZE) {
-            pt.kernel_map(VirtAddr::new(addr), perm).unwrap();
-        }
-    }
-
-    // Map physical memory regions
-    for &(addr, size) in &*phys::get_init_regions() {
-        let perm = PagePerm::G | PagePerm::R | PagePerm::W | PagePerm::V;
-        info!(
-            "mapping memory region  ({} - {}) with perm {}",
-            addr,
-            addr + size,
-            perm
-        );
-        for addr in (addr.as_usize()..(addr + size).as_usize())
-            .step_by(jrinx_config::PAGE_SIZE)
-            .map(PhysAddr::new)
-        {
-            pt.kernel_map(arch::mm::phys_to_virt(addr), perm).unwrap();
-        }
-    }
-    debug!("enable page table ({}) mapping", pt.addr());
-    arch::mm::virt::enable_pt_mapping(&pt);
+    let addr = KERN_PAGE_TABLE.read().addr();
+    vm_enable(addr);
 }

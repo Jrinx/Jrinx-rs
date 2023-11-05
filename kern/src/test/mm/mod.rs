@@ -72,8 +72,8 @@ pub(super) mod virt {
             assert_eq!(paddr1, paddr2);
             assert_eq!(perm1.bits(), perm2.bits());
 
-            arch::mm::virt::sync(vaddr1);
-            arch::mm::virt::sync(vaddr2);
+            arch::vm_barrier(vaddr1);
+            arch::vm_barrier(vaddr2);
 
             let space = [vaddr1.as_usize() as *mut u64, paddr.as_usize() as *mut u64];
 
