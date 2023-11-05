@@ -125,7 +125,7 @@ impl Runtime {
 }
 
 pub fn start() -> ! {
-    info!("runtime started running all inspectors");
+    debug!("runtime started running all inspectors");
 
     arch::int_enable();
 
@@ -170,7 +170,7 @@ pub fn start() -> ! {
         }
     }
 
-    info!("runtime finished running all inspectors");
+    debug!("runtime finished running all inspectors");
 
     arch::halt(HaltReason::NormalExit);
 }
