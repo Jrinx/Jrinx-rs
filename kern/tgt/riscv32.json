@@ -14,7 +14,7 @@
     "linker-flavor": "ld.lld",
     "pre-link-args": {
         "ld.lld": [
-            "-Tkern/tgt/riscv32.ld"
+            "-Tkern/tgt/riscv.ld"
         ]
     },
     "executables": true,
