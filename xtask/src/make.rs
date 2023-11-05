@@ -62,11 +62,12 @@ pub fn run(arg: &MakeArg) -> Option<ExitStatus> {
 
     construct_build_cmd(arg, cmd);
 
-    cmd.status().ok()?;
+    if !cmd.status().ok()?.success() {
+        return None;
+    }
 
-    let cmd = &mut Command::new("rust-objcopy");
-
-    cmd.args(["-O", "binary"])
+    Command::new("rust-objcopy")
+        .args(["-O", "binary"])
         .arg(format!("--binary-architecture={}", arch))
         .arg(format!(
             "target/{}/{}/jrinx",
