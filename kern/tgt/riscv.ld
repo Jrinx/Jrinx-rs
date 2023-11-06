@@ -11,18 +11,18 @@ SECTIONS {
     # Text section
 
     . = ALIGN(PAGE_SIZE);
-    PROVIDE(_stext = .);
     .text : {
+        PROVIDE(_stext = .);
         *(.boot)
         *(.text .text*)
+        PROVIDE(_etext = .);
     }
-    PROVIDE(_etext = .);
 
     # Data section
 
     . = ALIGN(PAGE_SIZE);
-    PROVIDE(_srodata = .);
     .rodata : {
+        PROVIDE(_srodata = .);
         *(.rodata .rodata* .srodata .srodata*)
 
         . = ALIGN(8);
@@ -36,29 +36,29 @@ SECTIONS {
         PROVIDE(_stest = .);
         *(.test*)
         PROVIDE(_etest = .);
+        PROVIDE(_erodata = .);
     }
-    PROVIDE(_erodata = .);
 
     . = ALIGN(PAGE_SIZE);
-    PROVIDE(_sdata = .);
     .data : {
+        PROVIDE(_sdata = .);
         *(.data .data* .sdata .sdata*)
+        PROVIDE(_edata = .);
     }
-    PROVIDE(_edata = .);
 
     # BSS section
 
     . = ALIGN(PAGE_SIZE);
-    PROVIDE(_sbss = .);
     .bss : {
+        PROVIDE(_sbss = .);
         *(.bss .bss* .sbss .sbss*)
 
         . = ALIGN(PAGE_SIZE);
         PROVIDE(_sstack = .);
         *(.stack)
         PROVIDE(_estack = .);
+        PROVIDE(_ebss = .);
     }
-    PROVIDE(_ebss = .);
 
     # Discarded sections
 
