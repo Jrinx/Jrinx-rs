@@ -73,7 +73,10 @@ pub(super) mod virt {
 
             hal!().vm().sync_all();
 
-            let space = [vaddr1.as_usize() as *mut u64, paddr.as_usize() as *mut u64];
+            let space = [
+                vaddr1.as_usize() as *mut u64,
+                paddr.to_virt().as_usize() as *mut u64,
+            ];
 
             for i in 0..jrinx_config::PAGE_SIZE / mem::size_of::<usize>() {
                 let src = space[i % 2];
