@@ -1,6 +1,7 @@
 pub(super) mod status {
     use core::time::Duration;
 
+    use jrinx_hal::{Hal, Interrupt};
     use jrinx_testdef_macro::testdef;
     use spin::Mutex;
 
@@ -26,7 +27,7 @@ pub(super) mod status {
             ),
         );
 
-        arch::wait_for_interrupt();
+        hal!().interrupt().wait();
 
         assert_eq!(*DATA.lock(), Some(TimedEventStatus::Timeout));
 
@@ -55,6 +56,7 @@ pub(super) mod queue {
     use core::time::Duration;
 
     use alloc::vec::Vec;
+    use jrinx_hal::{Hal, Interrupt};
     use jrinx_testdef_macro::testdef;
     use spin::Mutex;
 
@@ -86,7 +88,7 @@ pub(super) mod queue {
         }
 
         for i in 1..=EVENT_MAX {
-            arch::wait_for_interrupt();
+            hal!().interrupt().wait();
             assert_eq!(ORDER.lock().len(), i);
         }
 

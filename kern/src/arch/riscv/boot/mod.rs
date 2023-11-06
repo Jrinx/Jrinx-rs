@@ -1,13 +1,10 @@
 use jrinx_addr::PhysAddr;
+use jrinx_paging::boot::BootPageTable;
 use riscv::register::{sie, sstatus};
 
 use crate::arch::{trap, BootInfo};
 
-use self::paging::BootPageTable;
-
 use super::cpus;
-
-pub(in crate::arch) mod paging;
 
 #[used(linker)]
 #[link_section = ".stack"]

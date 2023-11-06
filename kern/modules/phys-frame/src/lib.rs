@@ -1,3 +1,8 @@
+#![no_std]
+#![feature(allocator_api)]
+
+extern crate alloc;
+
 use alloc::{alloc::Global, sync::Arc};
 use jrinx_addr::{PhysAddr, VirtAddr};
 use jrinx_error::{InternalError, Result};

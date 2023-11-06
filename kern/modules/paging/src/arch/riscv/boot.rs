@@ -9,17 +9,27 @@ use riscv::{
     register::satp::{self, Mode},
 };
 
-use crate::arch::mm::virt::{PagePerm, PageTableEntry};
+use crate::{GenericPagePerm, PagePerm, PageTableEntry};
 
 #[repr(C, align(4096))]
-pub(in crate::arch) struct BootPageTable([usize; PAGE_SIZE / size_of::<usize>()]);
+pub struct BootPageTable([usize; PAGE_SIZE / size_of::<usize>()]);
 
-pub(in crate::arch) static mut BOOT_PAGE_TABLE: BootPageTable =
-    BootPageTable([0; PAGE_SIZE / size_of::<usize>()]);
+pub static mut BOOT_PAGE_TABLE: BootPageTable = BootPageTable([0; PAGE_SIZE / size_of::<usize>()]);
 
 impl BootPageTable {
+    /// # Safety
+    ///
+    /// This function is used to initialize kernel remapping at the bootstrap entry **BEFORE** calling `BootPageTable::start`.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// // system entry
+    /// BootPageTable::init();
+    /// BootPageTable::start();
+    /// ```
     #[inline(always)]
-    pub(in crate::arch) unsafe fn init() {
+    pub unsafe fn init() {
         for &RemapMemRegion {
             virt_addr,
             phys_addr,
@@ -38,8 +48,19 @@ impl BootPageTable {
         }
     }
 
+    /// # Safety
+    ///
+    /// This function is used to enable kernel remapping at the bootstrap entry **AFTER** `BootPageTable::init`.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// // system entry
+    /// BootPageTable::init();
+    /// BootPageTable::start();
+    /// ```
     #[inline(always)]
-    pub(in crate::arch) unsafe fn start() {
+    pub unsafe fn start() {
         let pt_ppn: usize = BOOT_PAGE_TABLE.0.as_ptr() as usize / PAGE_SIZE;
 
         #[cfg(target_arch = "riscv32")]
@@ -58,7 +79,8 @@ impl BootPageTable {
         core::arch::asm!("li t0, {OFFSET}", "add sp, sp, t0", "add ra, ra, t0", "ret", OFFSET = const REMAP_MEM_OFFSET, options(noreturn),);
     }
 
-    pub(in crate::arch) fn clone_into(dst: &mut [usize]) {
-        dst.clone_from_slice(&unsafe { BOOT_PAGE_TABLE.0 });
+    pub fn clone_into(dst: &mut [usize]) {
+        const HALF: usize = PAGE_SIZE / size_of::<usize>() / 2;
+        dst[HALF..].copy_from_slice(&unsafe { BOOT_PAGE_TABLE.0 }[HALF..]);
     }
 }

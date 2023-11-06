@@ -7,7 +7,8 @@ use alloc::{
     collections::{BTreeMap, VecDeque},
 };
 use jrinx_addr::VirtAddr;
-use jrinx_error::{HaltReason, InternalError, Result};
+use jrinx_error::{InternalError, Result};
+use jrinx_hal::{Hal, HaltReason, Interrupt};
 
 use crate::{
     arch::{self, task::executor::SwitchContext},
@@ -127,7 +128,7 @@ impl Runtime {
 pub fn start() -> ! {
     debug!("runtime started running all inspectors");
 
-    arch::int_enable();
+    hal!().interrupt().enable();
 
     let runtime_switch_ctx = CpuDataVisitor::new()
         .runtime(|rt| rt.switch_context_addr())
@@ -172,7 +173,7 @@ pub fn start() -> ! {
 
     debug!("runtime finished running all inspectors");
 
-    arch::halt(HaltReason::NormalExit);
+    hal!().halt(HaltReason::NormalExit);
 }
 
 pub fn switch_yield() {

@@ -8,12 +8,14 @@ use alloc::{boxed::Box, collections::BTreeMap, sync::Arc, task::Wake};
 use jrinx_addr::VirtAddr;
 use jrinx_error::{InternalError, Result};
 use jrinx_linear_alloc::LinearAllocator;
+use jrinx_paging::{GenericPagePerm, GenericPageTable, PagePerm};
+use jrinx_phys_frame::PhysFrame;
 use jrinx_serial_id_macro::SerialId;
 use jrinx_util::fastpq::{FastPriority, FastPriorityQueueWithLock};
 
 use crate::{
-    arch::{self, mm::virt::PagePerm, task::executor::SwitchContext},
-    mm::{phys::PhysFrame, virt::KERN_PAGE_TABLE},
+    arch::{self, task::executor::SwitchContext},
+    vmm::KERN_PAGE_TABLE,
 };
 
 use super::{runtime, Task, TaskId, TaskPriority};

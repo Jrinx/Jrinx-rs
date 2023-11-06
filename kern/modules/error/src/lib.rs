@@ -18,8 +18,3 @@ pub enum InternalError {
 }
 
 pub type Result<T> = core::result::Result<T, InternalError>;
-
-pub enum HaltReason {
-    NormalExit,
-    SysFailure,
-}

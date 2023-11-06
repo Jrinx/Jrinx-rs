@@ -1,8 +1,6 @@
 use core::panic::PanicInfo;
 
-use jrinx_error::HaltReason;
-
-use crate::arch;
+use jrinx_hal::{Hal, HaltReason};
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
@@ -16,5 +14,5 @@ fn panic(info: &PanicInfo) -> ! {
     } else {
         error!("panicked: {}", info.message().unwrap());
     }
-    arch::halt(HaltReason::SysFailure);
+    hal!().halt(HaltReason::SysFailure);
 }

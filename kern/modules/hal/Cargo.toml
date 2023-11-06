@@ -1,0 +1,12 @@
+[package]
+name = "jrinx-hal"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cfg-if = "1.0.0"
+jrinx-addr = { version = "0.1.0", path = "../addr" }
+
+[target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]
+riscv = "0.10.1"
+sbi = "0.2.0"

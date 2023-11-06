@@ -428,7 +428,6 @@ checksum = "af150ab688ff2122fcef229be89cb50dd66af9e01a4ff320cc137eecc9bacc38"
 name = "jrinx"
 version = "0.1.0"
 dependencies = [
- "bitflags 2.4.1",
  "cfg-if",
  "fdt",
  "getargs",
@@ -437,9 +436,12 @@ dependencies = [
  "jrinx-config",
  "jrinx-driver",
  "jrinx-error",
+ "jrinx-hal",
  "jrinx-heap",
  "jrinx-layout",
  "jrinx-linear-alloc",
+ "jrinx-paging",
+ "jrinx-phys-frame",
  "jrinx-serial-id-macro",
  "jrinx-testdef",
  "jrinx-testdef-macro",
@@ -512,6 +514,16 @@ name = "jrinx-error"
 version = "0.1.0"
 
 [[package]]
+name = "jrinx-hal"
+version = "0.1.0"
+dependencies = [
+ "cfg-if",
+ "jrinx-addr",
+ "riscv",
+ "sbi",
+]
+
+[[package]]
 name = "jrinx-heap"
 version = "0.1.0"
 dependencies = [
@@ -531,6 +543,29 @@ dependencies = [
  "jrinx-addr",
  "jrinx-error",
  "spin",
+]
+
+[[package]]
+name = "jrinx-paging"
+version = "0.1.0"
+dependencies = [
+ "bitflags 2.4.1",
+ "cfg-if",
+ "jrinx-addr",
+ "jrinx-config",
+ "jrinx-error",
+ "jrinx-phys-frame",
+ "riscv",
+ "sbi",
+]
+
+[[package]]
+name = "jrinx-phys-frame"
+version = "0.1.0"
+dependencies = [
+ "jrinx-addr",
+ "jrinx-config",
+ "jrinx-error",
 ]
 
 [[package]]

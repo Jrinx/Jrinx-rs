@@ -3,6 +3,7 @@ use core::{fmt::Display, pin::Pin};
 use alloc::{boxed::Box, collections::BTreeMap};
 use jrinx_addr::VirtAddr;
 use jrinx_error::{InternalError, Result};
+use jrinx_hal::{Hal, Interrupt};
 use jrinx_serial_id_macro::SerialId;
 use jrinx_util::fastpq::FastPriorityQueueWithLock;
 
@@ -160,7 +161,7 @@ pub(super) fn run(runtime_switch_ctx: VirtAddr) {
             .inspector(|inspector| inspector.pop_executor())
             .unwrap()
         else {
-            arch::wait_for_interrupt();
+            hal!().interrupt().wait();
             continue;
         };
         trace!("switch to executor {:?}", executor_id);

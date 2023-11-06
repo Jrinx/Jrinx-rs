@@ -1,13 +1,14 @@
 pub(super) mod breakpoint {
+    use jrinx_hal::Hal;
     use jrinx_testdef_macro::testdef;
 
-    use crate::{arch, trap::breakpoint};
+    use crate::trap::breakpoint;
 
     #[testdef]
     fn test() {
         for i in 0..10 {
             assert_eq!(breakpoint::count(), i);
-            arch::breakpoint();
+            hal!().breakpoint();
             assert_eq!(breakpoint::count(), i + 1);
         }
     }
@@ -16,13 +17,12 @@ pub(super) mod breakpoint {
 pub(super) mod page_fault {
     use cfg_if::cfg_if;
     use jrinx_addr::VirtAddr;
+    use jrinx_hal::{Cache, Hal, Vm};
+    use jrinx_paging::{GenericPagePerm, GenericPageTable, PagePerm};
+    use jrinx_phys_frame::PhysFrame;
     use jrinx_testdef_macro::testdef;
 
-    use crate::{
-        arch::{self, mm::virt::PagePerm},
-        mm::{phys, virt::KERN_PAGE_TABLE},
-        trap::TrapReason,
-    };
+    use crate::{arch, trap::TrapReason, vmm::KERN_PAGE_TABLE};
 
     cfg_if! {
         if #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))] {
@@ -32,7 +32,7 @@ pub(super) mod page_fault {
                         unsafe {
                             *($addr.as_usize() as *mut u32) = *(check_addr_protection as usize as *const u32);
                         }
-                        arch::inst_barrier();
+                        hal!().cache().sync_all();
                         #[naked]
                         unsafe extern "C" fn check_addr_protection() -> ! {
                             core::arch::asm!("lw zero, 0(zero)", options(noreturn));
@@ -47,7 +47,7 @@ pub(super) mod page_fault {
                         unsafe {
                             *($addr.as_usize() as *mut u32) = *(check_addr_protection as usize as *const u32);
                         }
-                        arch::inst_barrier();
+                        hal!().cache().sync_all();
                         #[naked]
                         unsafe extern "C" fn check_addr_protection() -> ! {
                             core::arch::asm!("sw zero, 0(zero)", options(noreturn));
@@ -73,7 +73,7 @@ pub(super) mod page_fault {
             }
         );
 
-        let frame = phys::PhysFrame::alloc().unwrap();
+        let frame = PhysFrame::alloc().unwrap();
         let addr = frame.addr();
         KERN_PAGE_TABLE
             .write()
@@ -83,7 +83,8 @@ pub(super) mod page_fault {
                 PagePerm::U | PagePerm::R | PagePerm::X,
             )
             .unwrap();
-        arch::vm_barrier(VirtAddr::new(USER_TEXT));
+
+        hal!().vm().sync_all();
 
         code_read_zero!(addr.to_virt());
         ctx.run();
@@ -109,13 +110,12 @@ pub(super) mod page_fault {
 
 pub(super) mod syscall {
     use jrinx_addr::VirtAddr;
+    use jrinx_hal::{Cache, Hal, Vm};
+    use jrinx_paging::{GenericPagePerm, GenericPageTable, PagePerm};
+    use jrinx_phys_frame::PhysFrame;
     use jrinx_testdef_macro::testdef;
 
-    use crate::{
-        arch::{self, mm::virt::PagePerm},
-        mm::{phys, virt::KERN_PAGE_TABLE},
-        trap::TrapReason,
-    };
+    use crate::{arch, trap::TrapReason, vmm::KERN_PAGE_TABLE};
 
     #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
     macro_rules! code_syscall_with_num {
@@ -124,7 +124,7 @@ pub(super) mod syscall {
                 unsafe {
                     *($addr.as_usize() as *mut u64) = *(syscall_with_num as *const u64);
                 }
-                arch::inst_barrier();
+                hal!().cache().sync_all();
                 #[naked]
                 unsafe extern "C" fn syscall_with_num() -> ! {
                     core::arch::asm!("ori a7, zero, {}", "ecall", const $num, options(noreturn));
@@ -139,7 +139,7 @@ pub(super) mod syscall {
     fn test() {
         let mut ctx = arch::trap::Context::default();
 
-        let frame = phys::PhysFrame::alloc().unwrap();
+        let frame = PhysFrame::alloc().unwrap();
         let addr = frame.addr();
         KERN_PAGE_TABLE
             .write()
@@ -149,7 +149,8 @@ pub(super) mod syscall {
                 PagePerm::U | PagePerm::R | PagePerm::X,
             )
             .unwrap();
-        arch::vm_barrier(VirtAddr::new(USER_TEXT));
+
+        hal!().vm().sync_all();
 
         code_syscall_with_num!(addr.to_virt(), 32);
         ctx.setup_user(USER_TEXT, 0);

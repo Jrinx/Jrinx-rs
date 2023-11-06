@@ -4,9 +4,8 @@ pub(super) mod phys {
     use alloc::sync::Arc;
     use jrinx_addr::PhysAddr;
     use jrinx_error::Result;
+    use jrinx_phys_frame::PhysFrame;
     use jrinx_testdef_macro::testdef;
-
-    use crate::mm::phys::PhysFrame;
 
     #[testdef]
     fn test() {
@@ -39,13 +38,13 @@ pub(super) mod virt {
     use core::mem;
 
     use jrinx_addr::VirtAddr;
+    use jrinx_hal::{Hal, Vm};
+    use jrinx_paging::{GenericPagePerm, GenericPageTable, PagePerm};
+    use jrinx_phys_frame::PhysFrame;
     use jrinx_testdef_macro::testdef;
     use rand::{rngs::SmallRng, RngCore, SeedableRng};
 
-    use crate::{
-        arch::{self, mm::virt::PagePerm},
-        mm::{phys::PhysFrame, virt::KERN_PAGE_TABLE},
-    };
+    use crate::vmm::KERN_PAGE_TABLE;
 
     #[testdef]
     fn test() {
@@ -72,8 +71,7 @@ pub(super) mod virt {
             assert_eq!(paddr1, paddr2);
             assert_eq!(perm1.bits(), perm2.bits());
 
-            arch::vm_barrier(vaddr1);
-            arch::vm_barrier(vaddr2);
+            hal!().vm().sync_all();
 
             let space = [vaddr1.as_usize() as *mut u64, paddr.as_usize() as *mut u64];
 

@@ -1,0 +1,9 @@
+[package]
+name = "jrinx-phys-frame"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+jrinx-addr = { version = "0.1.0", path = "../addr" }
+jrinx-config = { version = "0.1.0", path = "../config" }
+jrinx-error = { version = "0.1.0", path = "../error" }

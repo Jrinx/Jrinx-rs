@@ -3,8 +3,7 @@ pub mod interrupt;
 pub mod timer_int;
 
 use jrinx_addr::VirtAddr;
-
-use crate::arch::mm::virt::PagePerm;
+use jrinx_paging::PagePerm;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TrapReason {

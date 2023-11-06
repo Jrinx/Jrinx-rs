@@ -1,4 +1,3 @@
-#![feature(allocator_api)]
 #![feature(asm_const)]
 #![feature(iter_collect_into)]
 #![feature(map_try_insert)]
@@ -15,19 +14,22 @@ use arch::BootInfo;
 use crate::{task::runtime, util::logging};
 
 extern crate alloc;
-extern crate jrinx_driver as _;
 #[macro_use]
 extern crate log;
+
+extern crate jrinx_driver as _;
+#[macro_use]
+extern crate jrinx_hal;
 
 mod arch;
 mod bootargs;
 mod cpudata;
-mod mm;
 mod task;
 mod test;
 mod time;
 mod trap;
 mod util;
+mod vmm;
 
 fn cold_init(boot_info: BootInfo) -> ! {
     jrinx_heap::init();
@@ -47,7 +49,7 @@ fn cold_init(boot_info: BootInfo) -> ! {
         bootargs::set(bootargs);
     }
 
-    mm::init();
+    vmm::init();
     cpudata::init();
     runtime::start();
 }

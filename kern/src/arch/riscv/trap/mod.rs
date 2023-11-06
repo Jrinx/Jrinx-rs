@@ -1,6 +1,7 @@
 mod entry;
 
 use jrinx_addr::VirtAddr;
+use jrinx_paging::{GenericPagePerm, PagePerm};
 use riscv::register::{
     scause::Exception,
     sstatus::{FS, SPP},
@@ -8,8 +9,6 @@ use riscv::register::{
 };
 
 use crate::trap::{breakpoint, timer_int, TrapReason};
-
-use super::mm::virt::PagePerm;
 
 #[derive(Debug, Default, Clone, Copy)]
 #[repr(C)]
