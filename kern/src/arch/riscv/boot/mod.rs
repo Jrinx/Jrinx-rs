@@ -18,7 +18,7 @@ unsafe extern "C" fn _start() -> ! {
         static _estack: usize;
     }
     core::arch::asm!(
-        "la sp, {INIT_STACK_TOP}",
+        "lla sp, {INIT_STACK_TOP}",
         "mv tp, a0",
         "mv a0, a1",
         "call {INIT}",
