@@ -1,7 +1,7 @@
 OUTPUT_ARCH(riscv)
 
 ENTRY(_start)
-INCLUDE kern/tgt/kernel-vars.ld-inc
+INCLUDE kern/tgt/vars.ld-inc
 
 PAGE_SIZE = 4096;
 
