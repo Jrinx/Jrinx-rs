@@ -3,6 +3,8 @@
 use fdt::{node::FdtNode, Fdt};
 use jrinx_error::Result;
 
+pub use jrinx_devprober_macro::*;
+
 #[repr(C)]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum DevIdent {

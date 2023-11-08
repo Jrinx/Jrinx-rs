@@ -5,7 +5,7 @@ pub(super) mod phys {
     use jrinx_addr::PhysAddr;
     use jrinx_error::Result;
     use jrinx_phys_frame::PhysFrame;
-    use jrinx_testdef_macro::testdef;
+    use jrinx_testdef::testdef;
 
     #[testdef]
     fn test() {
@@ -41,7 +41,7 @@ pub(super) mod virt {
     use jrinx_hal::{Hal, Vm};
     use jrinx_paging::{GenericPagePerm, GenericPageTable, PagePerm};
     use jrinx_phys_frame::PhysFrame;
-    use jrinx_testdef_macro::testdef;
+    use jrinx_testdef::testdef;
     use rand::{rngs::SmallRng, RngCore, SeedableRng};
 
     use crate::vmm::KERN_PAGE_TABLE;

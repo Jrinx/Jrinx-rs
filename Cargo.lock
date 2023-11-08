@@ -432,7 +432,6 @@ dependencies = [
  "fdt",
  "getargs",
  "jrinx-addr",
- "jrinx-addr-macro",
  "jrinx-config",
  "jrinx-driver",
  "jrinx-error",
@@ -444,7 +443,6 @@ dependencies = [
  "jrinx-phys-frame",
  "jrinx-serial-id-macro",
  "jrinx-testdef",
- "jrinx-testdef-macro",
  "jrinx-util",
  "log",
  "rand",
@@ -481,6 +479,7 @@ name = "jrinx-devprober"
 version = "0.1.0"
 dependencies = [
  "fdt",
+ "jrinx-devprober-macro",
  "jrinx-error",
  "jrinx-layout",
 ]
@@ -501,7 +500,6 @@ dependencies = [
  "jrinx-addr",
  "jrinx-config",
  "jrinx-devprober",
- "jrinx-devprober-macro",
  "jrinx-error",
  "jrinx-heap",
  "jrinx-layout",
@@ -581,6 +579,7 @@ name = "jrinx-testdef"
 version = "0.1.0"
 dependencies = [
  "jrinx-layout",
+ "jrinx-testdef-macro",
 ]
 
 [[package]]

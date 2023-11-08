@@ -2,7 +2,7 @@ use alloc::vec::Vec;
 use fdt::node::FdtNode;
 use jrinx_addr::{PhysAddr, VirtAddr};
 use jrinx_config::PHYS_MEM_BASE;
-use jrinx_devprober_macro::devprober;
+use jrinx_devprober::devprober;
 use jrinx_error::{InternalError, Result};
 use jrinx_util::interval::{Bound, ExclusiveIntervals};
 

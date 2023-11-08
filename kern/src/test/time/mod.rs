@@ -2,7 +2,7 @@ pub(super) mod status {
     use core::time::Duration;
 
     use jrinx_hal::{Hal, Interrupt};
-    use jrinx_testdef_macro::testdef;
+    use jrinx_testdef::testdef;
     use spin::Mutex;
 
     use crate::{
@@ -57,7 +57,7 @@ pub(super) mod queue {
 
     use alloc::vec::Vec;
     use jrinx_hal::{Hal, Interrupt};
-    use jrinx_testdef_macro::testdef;
+    use jrinx_testdef::testdef;
     use spin::Mutex;
 
     use crate::{

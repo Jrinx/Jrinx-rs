@@ -1,6 +1,6 @@
 pub(super) mod executor {
     use alloc::vec::Vec;
-    use jrinx_testdef_macro::testdef;
+    use jrinx_testdef::testdef;
     use spin::RwLock;
 
     use crate::task::{self, TaskPriority};
@@ -43,7 +43,7 @@ pub(super) mod executor {
 
 pub(super) mod inspector {
     use alloc::vec::Vec;
-    use jrinx_testdef_macro::testdef;
+    use jrinx_testdef::testdef;
     use spin::Mutex;
 
     use crate::{
@@ -116,7 +116,7 @@ pub(super) mod inspector {
 
 pub(super) mod runtime {
     use alloc::vec::Vec;
-    use jrinx_testdef_macro::testdef;
+    use jrinx_testdef::testdef;
     use spin::Mutex;
 
     use crate::{

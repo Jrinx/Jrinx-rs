@@ -4,8 +4,9 @@ extern crate alloc;
 
 use core::slice::from_raw_parts_mut;
 
-use jrinx_addr_macro::Address;
 use jrinx_config::{PAGE_SIZE, REMAP_MEM_OFFSET};
+
+pub use jrinx_addr_macro::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Address)]
 pub struct PhysAddr(usize);

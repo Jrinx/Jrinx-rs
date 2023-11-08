@@ -1,5 +1,5 @@
 use fdt::node::FdtNode;
-use jrinx_devprober_macro::devprober;
+use jrinx_devprober::devprober;
 use jrinx_error::Result;
 
 #[devprober(compatible = "ns16550a")]

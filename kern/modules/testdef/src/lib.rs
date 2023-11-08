@@ -1,5 +1,7 @@
 #![no_std]
 
+pub use jrinx_testdef_macro::*;
+
 #[repr(C)]
 pub struct TestDef {
     name: &'static str,

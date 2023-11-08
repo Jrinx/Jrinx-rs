@@ -1,5 +1,5 @@
 use alloc::vec;
-use jrinx_testdef_macro::testdef;
+use jrinx_testdef::testdef;
 
 #[testdef]
 fn test() {

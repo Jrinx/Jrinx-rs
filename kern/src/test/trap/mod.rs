@@ -1,6 +1,6 @@
 pub(super) mod breakpoint {
     use jrinx_hal::Hal;
-    use jrinx_testdef_macro::testdef;
+    use jrinx_testdef::testdef;
 
     use crate::trap::breakpoint;
 
@@ -20,7 +20,7 @@ pub(super) mod page_fault {
     use jrinx_hal::{Cache, Hal, Vm};
     use jrinx_paging::{GenericPagePerm, GenericPageTable, PagePerm};
     use jrinx_phys_frame::PhysFrame;
-    use jrinx_testdef_macro::testdef;
+    use jrinx_testdef::testdef;
 
     use crate::{arch, trap::TrapReason, vmm::KERN_PAGE_TABLE};
 
@@ -113,7 +113,7 @@ pub(super) mod syscall {
     use jrinx_hal::{Cache, Hal, Vm};
     use jrinx_paging::{GenericPagePerm, GenericPageTable, PagePerm};
     use jrinx_phys_frame::PhysFrame;
-    use jrinx_testdef_macro::testdef;
+    use jrinx_testdef::testdef;
 
     use crate::{arch, trap::TrapReason, vmm::KERN_PAGE_TABLE};
 
