@@ -19,6 +19,7 @@ pub fn devprober(attr: TokenStream, func: TokenStream) -> TokenStream {
         .map(|i| Ident::new(&format!("__DEV_PROBER_{}", i), Span::call_site().into()));
 
     let func = parse_macro_input!(func as ItemFn);
+    let func_attrs = &func.attrs;
     let func_vis = &func.vis;
     let func_name = &func.sig.ident;
     let func_generics = &func.sig.generics;
@@ -27,6 +28,7 @@ pub fn devprober(attr: TokenStream, func: TokenStream) -> TokenStream {
     let func_output = &func.sig.output;
 
     let caller = quote! {
+        #(#func_attrs)*
         #func_vis fn #func_name #func_generics(#func_inputs) #func_output {
             #(
                 #[used(linker)]

@@ -5,6 +5,7 @@ use syn::{parse_macro_input, ItemFn};
 #[proc_macro_attribute]
 pub fn testdef(_: TokenStream, func: TokenStream) -> TokenStream {
     let func = parse_macro_input!(func as ItemFn);
+    let func_attrs = &func.attrs;
     let func_vis = &func.vis;
     let func_name = &func.sig.ident;
     let func_generics = &func.sig.generics;
@@ -13,6 +14,7 @@ pub fn testdef(_: TokenStream, func: TokenStream) -> TokenStream {
     let func_output = &func.sig.output;
 
     let caller = quote! {
+        #(#func_attrs)*
         #func_vis fn #func_name #func_generics(#func_inputs) #func_output {
             #[cfg_attr(feature = "no_test", used)]
             #[cfg_attr(
