@@ -1,4 +1,5 @@
 #![feature(asm_const)]
+#![feature(const_binary_heap_constructor)]
 #![feature(iter_collect_into)]
 #![feature(map_try_insert)]
 #![feature(naked_functions)]
@@ -11,7 +12,11 @@
 
 use arch::BootInfo;
 
-use crate::{task::runtime, util::logging};
+use crate::{
+    arch::{cpu, cpus},
+    task::runtime,
+    util::logging,
+};
 
 extern crate alloc;
 #[macro_use]
@@ -23,7 +28,6 @@ extern crate jrinx_hal;
 
 mod arch;
 mod bootargs;
-mod cpudata;
 mod task;
 mod test;
 mod time;
@@ -34,6 +38,9 @@ mod vmm;
 fn cold_init(boot_info: BootInfo) -> ! {
     jrinx_heap::init();
     logging::init();
+
+    jrinx_percpu::init(cpus::nproc().unwrap());
+    jrinx_percpu::set_local_pointer(cpu::id());
 
     let arch = core::option_env!("ARCH").unwrap_or("unknown");
     let build_time = core::option_env!("BUILD_TIME").unwrap_or("unknown");
@@ -50,7 +57,7 @@ fn cold_init(boot_info: BootInfo) -> ! {
     }
 
     vmm::init();
-    cpudata::init();
+    runtime::init(master_init());
     runtime::start();
 }
 

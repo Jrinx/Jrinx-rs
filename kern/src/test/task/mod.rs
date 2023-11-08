@@ -46,12 +46,10 @@ pub(super) mod inspector {
     use jrinx_testdef::testdef;
     use spin::Mutex;
 
-    use crate::{
-        cpudata::CpuDataVisitor,
-        task::{
-            executor::{Executor, ExecutorPriority},
-            runtime, Task, TaskPriority,
-        },
+    use crate::task::{
+        executor::{Executor, ExecutorPriority},
+        runtime::{self, inspector},
+        Task, TaskPriority,
     };
 
     #[testdef]
@@ -93,9 +91,7 @@ pub(super) mod inspector {
                     .unwrap();
             }
 
-            CpuDataVisitor::new()
-                .inspector(|inspector| inspector.register_executor(executor).unwrap())
-                .unwrap();
+            inspector::with_current(|is| is.register_executor(executor).unwrap()).unwrap();
         }
 
         runtime::switch_yield();
@@ -119,16 +115,14 @@ pub(super) mod runtime {
     use jrinx_testdef::testdef;
     use spin::Mutex;
 
-    use crate::{
-        cpudata::CpuDataVisitor,
-        task::{
-            executor::{Executor, ExecutorPriority},
-            runtime::{
-                self,
-                inspector::{Inspector, InspectorMode},
-            },
-            Task, TaskPriority,
+    use crate::task::{
+        executor::{Executor, ExecutorPriority},
+        runtime::{
+            self,
+            inspector::{Inspector, InspectorMode},
+            with_current,
         },
+        Task, TaskPriority,
     };
 
     #[testdef]
@@ -174,14 +168,10 @@ pub(super) mod runtime {
                     .unwrap();
             }
 
-            CpuDataVisitor::new()
-                .runtime(|rt| rt.register_inspector(inspector).unwrap())
-                .unwrap();
+            with_current(|rt| rt.register_inspector(inspector).unwrap()).unwrap();
         }
 
-        CpuDataVisitor::new()
-            .runtime(|rt| rt.set_inspector_switch_pending())
-            .unwrap();
+        with_current(|rt| rt.set_inspector_switch_pending()).unwrap();
         runtime::switch_yield();
 
         assert!(!ORDER.is_locked());

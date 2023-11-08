@@ -30,7 +30,11 @@ pub(super) mod page_fault {
                 ($addr:expr) => {
                     {
                         unsafe {
-                            *($addr.as_usize() as *mut u32) = *(check_addr_protection as usize as *const u32);
+                            core::ptr::copy_nonoverlapping(
+                                check_addr_protection as *const u8,
+                                $addr.as_usize() as *mut u8,
+                                4
+                            );
                         }
                         hal!().cache().sync_all();
                         #[naked]
@@ -45,7 +49,11 @@ pub(super) mod page_fault {
                 ($addr:expr) => {
                     {
                         unsafe {
-                            *($addr.as_usize() as *mut u32) = *(check_addr_protection as usize as *const u32);
+                            core::ptr::copy_nonoverlapping(
+                                check_addr_protection as *const u8,
+                                $addr.as_usize() as *mut u8,
+                                4
+                            );
                         }
                         hal!().cache().sync_all();
                         #[naked]
@@ -122,7 +130,11 @@ pub(super) mod syscall {
         ($addr:expr, $num:literal) => {
             {
                 unsafe {
-                    *($addr.as_usize() as *mut u64) = *(syscall_with_num as *const u64);
+                    core::ptr::copy_nonoverlapping(
+                        syscall_with_num as *const u8,
+                        $addr.as_usize() as *mut u8,
+                        8
+                    );
                 }
                 hal!().cache().sync_all();
                 #[naked]

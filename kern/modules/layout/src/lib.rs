@@ -17,6 +17,9 @@ def_ld_sym!(_etext);
 def_ld_sym!(_srodata);
 def_ld_sym!(_erodata);
 
+def_ld_sym!(_spercpu);
+def_ld_sym!(_epercpu);
+
 def_ld_sym!(_sdata);
 def_ld_sym!(_edata);
 

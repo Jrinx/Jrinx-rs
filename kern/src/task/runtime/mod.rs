@@ -1,6 +1,6 @@
 pub mod inspector;
 
-use core::pin::Pin;
+use core::{future::Future, pin::Pin};
 
 use alloc::{
     boxed::Box,
@@ -9,14 +9,21 @@ use alloc::{
 use jrinx_addr::VirtAddr;
 use jrinx_error::{InternalError, Result};
 use jrinx_hal::{Hal, HaltReason, Interrupt};
+use jrinx_percpu::percpu;
+use spin::{Mutex, Once};
 
 use crate::{
     arch::{self, task::executor::SwitchContext},
-    cpudata::CpuDataVisitor,
     task::runtime::inspector::InspectorStatus,
+    trap::interrupt,
 };
 
-use self::inspector::{Inspector, InspectorId};
+use self::inspector::{Inspector, InspectorId, InspectorMode};
+
+use super::{
+    executor::{self, Executor, ExecutorPriority},
+    Task, TaskPriority,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum RuntimeStatus {
@@ -34,7 +41,7 @@ pub struct Runtime {
 }
 
 impl Runtime {
-    pub fn new(root_inspector: Inspector) -> Pin<Box<Self>> {
+    pub fn new(root_inspector: Inspector) -> Mutex<Pin<Box<Self>>> {
         let mut runtime = Box::pin(Self {
             inspector_registry: BTreeMap::new(),
             inspector_queue: VecDeque::new(),
@@ -45,7 +52,7 @@ impl Runtime {
 
         runtime.register_inspector(root_inspector).unwrap();
 
-        runtime
+        Mutex::new(runtime)
     }
 
     pub fn register_inspector(&mut self, inspector: Inspector) -> Result<()> {
@@ -120,9 +127,44 @@ impl Runtime {
         Ok(())
     }
 
-    fn switch_context_addr(&mut self) -> VirtAddr {
-        VirtAddr::new(&mut self.switch_context as *mut _ as usize)
+    fn switch_context_addr(&self) -> VirtAddr {
+        VirtAddr::new(&self.switch_context as *const _ as usize)
     }
+}
+
+unsafe impl Send for Runtime {}
+
+#[percpu]
+static RUNTIME: Once<Mutex<Pin<Box<Runtime>>>> = Once::new();
+
+pub fn with_current<F, R>(f: F) -> Result<R>
+where
+    F: FnOnce(&mut Runtime) -> R,
+{
+    interrupt::with_interrupt_saved_off(|| {
+        RUNTIME.with_ref(|rt| {
+            if let Some(rt) = rt.get() {
+                Ok(f(&mut rt.lock()))
+            } else {
+                Err(InternalError::InvalidRuntimeStatus)
+            }
+        })
+    })
+}
+
+pub fn init(future: impl Future<Output = ()> + 'static) {
+    RUNTIME
+        .as_ref()
+        .try_call_once::<_, ()>(|| {
+            Ok(Runtime::new(Inspector::new(
+                InspectorMode::Bootstrap,
+                Executor::new(
+                    ExecutorPriority::default(),
+                    Task::new(future, TaskPriority::default()),
+                ),
+            )))
+        })
+        .unwrap();
 }
 
 pub fn start() -> ! {
@@ -130,44 +172,29 @@ pub fn start() -> ! {
 
     hal!().interrupt().enable();
 
-    let runtime_switch_ctx = CpuDataVisitor::new()
-        .runtime(|rt| rt.switch_context_addr())
-        .unwrap();
-    while let Some(inspector_id) = CpuDataVisitor::new()
-        .runtime(|rt| rt.pop_inspector())
-        .unwrap()
-    {
+    let runtime_switch_ctx = with_current(|rt| rt.switch_context_addr()).unwrap();
+    while let Some(inspector_id) = with_current(|rt| rt.pop_inspector()).unwrap() {
         debug!("runtime running inspector {:?}", inspector_id);
 
-        CpuDataVisitor::new()
-            .runtime(|rt| rt.set_current_inspector(Some(inspector_id)))
-            .unwrap();
+        with_current(|rt| rt.set_current_inspector(Some(inspector_id))).unwrap();
 
         inspector::run(runtime_switch_ctx);
 
-        CpuDataVisitor::new()
-            .runtime(|rt| rt.clr_inspector_switch_pending())
-            .unwrap();
+        with_current(|rt| {
+            rt.clr_inspector_switch_pending();
+            rt.set_current_inspector(None);
+        })
+        .unwrap();
 
-        CpuDataVisitor::new()
-            .runtime(|rt| rt.set_current_inspector(None))
-            .unwrap();
-        if CpuDataVisitor::new()
-            .runtime(|rt| {
-                rt.with_inspector(inspector_id, |inspector| {
-                    inspector.status() == InspectorStatus::Finished
-                })
+        if with_current(|rt| {
+            rt.with_inspector(inspector_id, |is| is.status() == InspectorStatus::Finished)
                 .unwrap()
-            })
-            .unwrap()
+        })
+        .unwrap()
         {
-            CpuDataVisitor::new()
-                .runtime(|rt| rt.unregister_inspector(inspector_id).unwrap())
-                .unwrap();
+            with_current(|rt| rt.unregister_inspector(inspector_id).unwrap()).unwrap();
         } else {
-            CpuDataVisitor::new()
-                .runtime(|rt| rt.push_inspector(inspector_id).unwrap())
-                .unwrap();
+            with_current(|rt| rt.push_inspector(inspector_id).unwrap()).unwrap();
         }
     }
 
@@ -177,12 +204,8 @@ pub fn start() -> ! {
 }
 
 pub fn switch_yield() {
-    let runtime_switch_ctx = CpuDataVisitor::new()
-        .runtime(|rt| rt.switch_context_addr())
-        .unwrap();
-    let executor_switch_ctx = CpuDataVisitor::new()
-        .executor(|ex| ex.switch_context_addr())
-        .unwrap();
+    let runtime_switch_ctx = with_current(|rt| rt.switch_context_addr()).unwrap();
+    let executor_switch_ctx = executor::with_current(|ex| ex.switch_context_addr()).unwrap();
     unsafe {
         arch::task::executor::switch(
             executor_switch_ctx.as_usize(),

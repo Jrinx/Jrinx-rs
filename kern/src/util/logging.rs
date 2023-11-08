@@ -2,7 +2,7 @@ use core::fmt::Write;
 
 use alloc::{fmt, format, string::ToString};
 
-use crate::{arch, cpudata::CpuDataVisitor};
+use crate::{arch, task::runtime};
 
 use super::color::{self, with_color};
 
@@ -48,16 +48,15 @@ impl log::Log for Logger {
             log::Level::Trace => color::ColorCode::Magenta,
         };
 
-        let kernel_state = CpuDataVisitor::new()
-            .runtime(|rt| {
-                rt.with_current_inspector(|inspector| {
-                    inspector
-                        .with_current_executor(|executor| format!("executor#{}", executor.id()))
-                        .unwrap_or(format!("inspector#{}", inspector.id()))
-                })
-                .unwrap_or("runtime".to_string())
+        let kernel_state = runtime::with_current(|rt| {
+            rt.with_current_inspector(|inspector| {
+                inspector
+                    .with_current_executor(|executor| format!("executor#{}", executor.id()))
+                    .unwrap_or(format!("inspector#{}", inspector.id()))
             })
-            .unwrap_or("bootstrap".to_string());
+            .unwrap_or("runtime".to_string())
+        })
+        .unwrap_or("bootstrap".to_string());
 
         fmt::format(*record.args()).split('\n').for_each(|args| {
             print_fmt(with_color! {

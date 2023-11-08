@@ -3,6 +3,7 @@ OUTPUT_ARCH(riscv)
 ENTRY(_start)
 INCLUDE kern/tgt/vars.ld-inc
 
+CACHE_LINE_SIZE = 64;
 PAGE_SIZE = 4096;
 
 SECTIONS {
@@ -44,6 +45,14 @@ SECTIONS {
         PROVIDE(_sdata = .);
         *(.data .data* .sdata .sdata*)
         PROVIDE(_edata = .);
+    }
+
+    . = ALIGN(PAGE_SIZE);
+    .percpu : {
+        PROVIDE(_spercpu = .);
+        *(.percpu .percpu*)
+        . = ALIGN(CACHE_LINE_SIZE);
+        PROVIDE(_epercpu = .);
     }
 
     # BSS section

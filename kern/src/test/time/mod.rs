@@ -7,8 +7,7 @@ pub(super) mod status {
 
     use crate::{
         arch,
-        cpudata::CpuDataVisitor,
-        time::{TimedEvent, TimedEventHandler, TimedEventStatus},
+        time::{self, TimedEvent, TimedEventHandler, TimedEventStatus},
     };
 
     #[testdef]
@@ -45,10 +44,7 @@ pub(super) mod status {
         tracker.cancel().unwrap();
 
         assert_eq!(*DATA.lock(), Some(TimedEventStatus::Cancelled));
-        assert!(CpuDataVisitor::new()
-            .timed_event_queue(|queue| queue.peek_outdated())
-            .unwrap()
-            .is_none());
+        assert!(time::with_current(|tq| tq.peek_outdated()).is_none());
     }
 }
 

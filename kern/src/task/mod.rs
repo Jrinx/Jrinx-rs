@@ -11,8 +11,6 @@ use alloc::boxed::Box;
 use jrinx_serial_id_macro::SerialId;
 use jrinx_util::fastpq::FastPriority;
 
-use crate::cpudata::CpuDataVisitor;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, SerialId)]
 pub struct TaskId(u64);
 
@@ -61,11 +59,10 @@ impl Task {
 }
 
 pub fn do_spawn(future: impl Future<Output = ()> + 'static, priority: TaskPriority) {
-    CpuDataVisitor::new()
-        .executor(|executor| {
-            executor.spawn(Task::new(future, priority)).unwrap();
-        })
-        .unwrap();
+    executor::with_current(|ex| {
+        ex.spawn(Task::new(future, priority)).unwrap();
+    })
+    .unwrap();
 }
 
 macro_rules! spawn {

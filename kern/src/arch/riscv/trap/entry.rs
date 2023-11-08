@@ -305,16 +305,18 @@ core::arch::global_asm! {
         POP_REG s10, 10 * XLENB
         POP_REG s11, 11 * XLENB
         POP_REG ra, 12 * XLENB
-        POP_REG tp, 13 * XLENB
+        POP_REG gp, 13 * XLENB
+        POP_REG tp, 14 * XLENB
 
-        addi sp, sp, 14 * XLENB
+        addi sp, sp, 15 * XLENB
         ret
 
     .global run_user
     run_user:
-        addi sp, sp, -14 * XLENB
+        addi sp, sp, -15 * XLENB
 
-        PUSH_REG tp, 13 * XLENB
+        PUSH_REG tp, 14 * XLENB
+        PUSH_REG gp, 13 * XLENB
         PUSH_REG ra, 12 * XLENB
         PUSH_REG s11, 11 * XLENB
         PUSH_REG s10, 10 * XLENB

@@ -18,7 +18,10 @@ use crate::{
     vmm::KERN_PAGE_TABLE,
 };
 
-use super::{runtime, Task, TaskId, TaskPriority};
+use super::{
+    runtime::{self, inspector},
+    Task, TaskId, TaskPriority,
+};
 
 type TaskQueue = FastPriorityQueueWithLock<TaskPriority, TaskId>;
 
@@ -184,6 +187,13 @@ impl Drop for Executor {
             .deallocate(self.stack_top - jrinx_config::EXECUTOR_STACK_SIZE)
             .unwrap();
     }
+}
+
+pub fn with_current<F, R>(f: F) -> Result<R>
+where
+    F: FnOnce(&mut Pin<Box<Executor>>) -> R,
+{
+    inspector::with_current(|is| is.with_current_executor(|ex| f(ex)))?
 }
 
 pub extern "C" fn start(address: usize) -> ! {

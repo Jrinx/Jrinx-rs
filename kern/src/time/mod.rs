@@ -6,10 +6,11 @@ use alloc::{
     sync::Arc,
 };
 use jrinx_error::{InternalError, Result};
+use jrinx_percpu::percpu;
 use jrinx_serial_id_macro::SerialId;
 use spin::Mutex;
 
-use crate::{arch, cpudata::CpuDataVisitor};
+use crate::{arch, trap::interrupt};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, SerialId)]
 struct TimedEventId(u64);
@@ -43,6 +44,16 @@ pub struct TimedEvent {
     handler: Option<TimedEventHandler>,
 }
 
+#[percpu]
+static TIMED_EVENT_QUEUE: Mutex<TimedEventQueue> = Mutex::new(TimedEventQueue::new());
+
+pub fn with_current<F, R>(f: F) -> R
+where
+    F: FnOnce(&mut TimedEventQueue) -> R,
+{
+    interrupt::with_interrupt_saved_off(|| f(&mut TIMED_EVENT_QUEUE.as_ref().lock()))
+}
+
 impl TimedEvent {
     pub fn create(time: Duration, handler: TimedEventHandler) -> TimedEventTracker {
         let tracker = TimedEventTracker(Arc::new(Mutex::new(Self {
@@ -52,9 +63,7 @@ impl TimedEvent {
             status: TimedEventStatus::Pending,
             handler: Some(handler),
         })));
-        CpuDataVisitor::new()
-            .timed_event_queue(|queue| queue.add(tracker.clone()))
-            .unwrap();
+        TIMED_EVENT_QUEUE.as_ref().lock().add(tracker.clone());
         tracker
     }
 
@@ -82,16 +91,14 @@ pub struct TimedEventTracker(Arc<Mutex<TimedEvent>>);
 
 impl TimedEventTracker {
     pub fn timeout(&self) -> Result<()> {
-        CpuDataVisitor::new()
-            .id(self.cpu_id())
-            .timed_event_queue(|queue| queue.remove(self.clone()))??;
+        TIMED_EVENT_QUEUE
+            .with_spec_ref(self.cpu_id(), |queue| queue.lock().remove(self.clone()))?;
         self.0.lock().invoke(TimedEventStatus::Timeout)
     }
 
     pub fn cancel(&self) -> Result<()> {
-        CpuDataVisitor::new()
-            .id(self.cpu_id())
-            .timed_event_queue(|queue| queue.remove(self.clone()))??;
+        TIMED_EVENT_QUEUE
+            .with_spec_ref(self.cpu_id(), |queue| queue.lock().remove(self.clone()))?;
         self.0.lock().invoke(TimedEventStatus::Cancelled)
     }
 
@@ -114,7 +121,7 @@ pub struct TimedEventQueue {
 }
 
 impl TimedEventQueue {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             registry: BTreeMap::new(),
             queue: BinaryHeap::new(),

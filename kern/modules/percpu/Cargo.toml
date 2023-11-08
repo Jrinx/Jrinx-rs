@@ -1,0 +1,11 @@
+[package]
+name = "jrinx-percpu"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cfg-if = "1.0.0"
+jrinx-config = { version = "0.1.0", path = "../config" }
+jrinx-layout = { version = "0.1.0", path = "../layout" }
+jrinx-percpu-macro = { version = "0.1.0", path = "../percpu-macro" }
+spin = "0.9.8"

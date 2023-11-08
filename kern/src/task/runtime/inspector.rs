@@ -9,8 +9,10 @@ use jrinx_util::fastpq::FastPriorityQueueWithLock;
 
 use crate::{
     arch,
-    cpudata::CpuDataVisitor,
-    task::executor::{Executor, ExecutorId, ExecutorPriority, ExecutorStatus},
+    task::{
+        executor::{self, Executor, ExecutorId, ExecutorPriority, ExecutorStatus},
+        runtime::{self, inspector},
+    },
 };
 
 type ExecutorQueue = FastPriorityQueueWithLock<ExecutorPriority, ExecutorId>;
@@ -145,36 +147,33 @@ impl Inspector {
     }
 }
 
+pub fn with_current<F, R>(f: F) -> Result<R>
+where
+    F: FnOnce(&mut Inspector) -> R,
+{
+    runtime::with_current(|rt| rt.with_current_inspector(|is| f(is)))?
+}
+
 pub(super) fn run(runtime_switch_ctx: VirtAddr) {
     loop {
-        if CpuDataVisitor::new()
-            .runtime(|rt| rt.inspector_switch_pending)
-            .unwrap()
-            || CpuDataVisitor::new()
-                .inspector(|inspector| inspector.status() == InspectorStatus::Finished)
-                .unwrap()
+        if runtime::with_current(|rt| rt.inspector_switch_pending).unwrap()
+            || inspector::with_current(|is| is.status() == InspectorStatus::Finished).unwrap()
         {
             break;
         }
 
-        let Some(executor_id) = CpuDataVisitor::new()
-            .inspector(|inspector| inspector.pop_executor())
-            .unwrap()
-        else {
+        let Some(executor_id) = inspector::with_current(|is| is.pop_executor()).unwrap() else {
             hal!().interrupt().wait();
             continue;
         };
-        trace!("switch to executor {:?}", executor_id);
+        trace!("switch into executor {:?}", executor_id);
 
-        CpuDataVisitor::new()
-            .inspector(|inspector| {
-                inspector.set_current_executor(Some(executor_id));
-            })
-            .unwrap();
+        inspector::with_current(|is| {
+            is.set_current_executor(Some(executor_id));
+        })
+        .unwrap();
 
-        let executor_switch_ctx = CpuDataVisitor::new()
-            .executor(|executor| executor.switch_context_addr())
-            .unwrap();
+        let executor_switch_ctx = executor::with_current(|ex| ex.switch_context_addr()).unwrap();
 
         unsafe {
             arch::task::executor::switch(
@@ -182,44 +181,32 @@ pub(super) fn run(runtime_switch_ctx: VirtAddr) {
                 executor_switch_ctx.as_usize(),
             );
         }
-        CpuDataVisitor::new()
-            .inspector(|inspector| inspector.set_current_executor(None))
-            .unwrap();
 
-        trace!("switch back from executor {:?}", executor_id);
+        inspector::with_current(|is| is.set_current_executor(None)).unwrap();
 
-        if CpuDataVisitor::new()
-            .inspector(|inspector| {
-                inspector
-                    .with_executor(executor_id, |executor| {
-                        executor.status() == ExecutorStatus::Finished
-                    })
-                    .unwrap()
-            })
-            .unwrap()
+        trace!("switch from executor {:?}", executor_id);
+
+        if inspector::with_current(|is| {
+            is.with_executor(executor_id, |ex| ex.status() == ExecutorStatus::Finished)
+                .unwrap()
+        })
+        .unwrap()
         {
-            CpuDataVisitor::new()
-                .inspector(|inspector| {
-                    inspector.unregister_executor(executor_id).unwrap();
-                })
-                .unwrap();
+            inspector::with_current(|is| {
+                is.unregister_executor(executor_id).unwrap();
+            })
+            .unwrap();
         } else {
-            CpuDataVisitor::new()
-                .inspector(|inspector| {
-                    inspector.push_executor(executor_id).unwrap();
-                })
-                .unwrap();
+            inspector::with_current(|is| {
+                is.push_executor(executor_id).unwrap();
+            })
+            .unwrap();
         }
 
-        if CpuDataVisitor::new()
-            .inspector(|inspector| {
-                inspector.is_empty() && inspector.mode() == InspectorMode::Bootstrap
-            })
+        if inspector::with_current(|is| is.is_empty() && is.mode() == InspectorMode::Bootstrap)
             .unwrap()
         {
-            CpuDataVisitor::new()
-                .inspector(|inspector| inspector.mark_finished())
-                .unwrap();
+            inspector::with_current(|is| is.mark_finished()).unwrap();
         }
     }
 }
