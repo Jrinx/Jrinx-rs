@@ -520,6 +520,7 @@ dependencies = [
  "jrinx-addr",
  "riscv",
  "sbi",
+ "spin",
 ]
 
 [[package]]

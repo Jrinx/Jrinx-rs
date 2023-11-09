@@ -1,6 +1,7 @@
 use core::fmt::Write;
 
 use alloc::{fmt, format, string::ToString};
+use jrinx_hal::{Cpu, Hal};
 
 use crate::{arch, task::runtime};
 
@@ -37,8 +38,8 @@ impl log::Log for Logger {
         if !self.enabled(record.metadata()) {
             return;
         }
-        let cpu_id = arch::cpu::id();
-        let cpu_time = arch::cpu::time();
+        let cpu_id = hal!().cpu().id();
+        let cpu_time = hal!().cpu().get_time();
         let level = record.level();
         let color = match level {
             log::Level::Error => color::ColorCode::Red,

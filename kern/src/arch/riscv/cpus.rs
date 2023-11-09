@@ -1,6 +1,6 @@
 use fdt::Fdt;
 use jrinx_error::{InternalError, Result};
-use spin::Once;
+use jrinx_hal::{Cpu, Hal};
 
 pub(in crate::arch) fn init(fdt: &Fdt<'_>) -> Result<()> {
     let node = fdt
@@ -14,9 +14,7 @@ pub(in crate::arch) fn init(fdt: &Fdt<'_>) -> Result<()> {
         .as_usize()
         .ok_or(InternalError::DevProbeError)?;
 
-    TIMEBASE_FREQ
-        .try_call_once::<_, ()>(|| Ok(timebase_freq))
-        .unwrap();
+    hal!().cpu().set_timebase_freq(timebase_freq as u64);
 
     let nproc = node
         .children()
@@ -25,18 +23,8 @@ pub(in crate::arch) fn init(fdt: &Fdt<'_>) -> Result<()> {
             None => false,
         })
         .count();
-    NPROC.try_call_once::<_, ()>(|| Ok(nproc)).unwrap();
+
+    hal!().cpu().set_nproc(nproc);
+
     Ok(())
-}
-
-static TIMEBASE_FREQ: Once<usize> = Once::new();
-
-pub fn timebase_freq() -> Option<usize> {
-    TIMEBASE_FREQ.get().copied()
-}
-
-static NPROC: Once<usize> = Once::new();
-
-pub fn nproc() -> Option<usize> {
-    NPROC.get().copied()
 }

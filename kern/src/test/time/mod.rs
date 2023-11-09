@@ -1,21 +1,18 @@
 pub(super) mod status {
     use core::time::Duration;
 
-    use jrinx_hal::{Hal, Interrupt};
+    use jrinx_hal::{Cpu, Hal, Interrupt};
     use jrinx_testdef::testdef;
     use spin::Mutex;
 
-    use crate::{
-        arch,
-        time::{self, TimedEvent, TimedEventHandler, TimedEventStatus},
-    };
+    use crate::time::{self, TimedEvent, TimedEventHandler, TimedEventStatus};
 
     #[testdef]
     fn test() {
         static DATA: Mutex<Option<TimedEventStatus>> = Mutex::new(None);
 
         TimedEvent::create(
-            arch::cpu::time() + Duration::from_secs(1),
+            hal!().cpu().get_time() + Duration::from_secs(1),
             TimedEventHandler::new(
                 || {
                     *DATA.lock() = Some(TimedEventStatus::Timeout);
@@ -31,7 +28,7 @@ pub(super) mod status {
         assert_eq!(*DATA.lock(), Some(TimedEventStatus::Timeout));
 
         let tracker = TimedEvent::create(
-            arch::cpu::time() + Duration::from_secs(1),
+            hal!().cpu().get_time() + Duration::from_secs(1),
             TimedEventHandler::new(
                 || {
                     *DATA.lock() = Some(TimedEventStatus::Timeout);
@@ -52,14 +49,11 @@ pub(super) mod queue {
     use core::time::Duration;
 
     use alloc::vec::Vec;
-    use jrinx_hal::{Hal, Interrupt};
+    use jrinx_hal::{Cpu, Hal, Interrupt};
     use jrinx_testdef::testdef;
     use spin::Mutex;
 
-    use crate::{
-        arch,
-        time::{TimedEvent, TimedEventHandler},
-    };
+    use crate::time::{TimedEvent, TimedEventHandler};
 
     #[testdef]
     fn test() {
@@ -73,7 +67,7 @@ pub(super) mod queue {
         for i in (1..=EVENT_MAX).rev() {
             let this_order = i;
             TimedEvent::create(
-                arch::cpu::time() + Duration::from_secs(i as u64),
+                hal!().cpu().get_time() + Duration::from_secs(i as u64),
                 TimedEventHandler::new(
                     move || {
                         order_push(this_order);

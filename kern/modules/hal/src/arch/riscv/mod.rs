@@ -1,4 +1,5 @@
 pub mod cache;
+pub mod cpu;
 pub mod earlycon;
 pub mod interrupt;
 pub mod vm;
@@ -15,6 +16,10 @@ impl Hal for HalImpl {
         unsafe {
             riscv::asm::ebreak();
         }
+    }
+
+    fn cpu(&self) -> impl crate::Cpu {
+        cpu::CPU
     }
 
     fn earlycon(&self) -> impl crate::Earlycon {

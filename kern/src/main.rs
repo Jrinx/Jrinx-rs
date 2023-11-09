@@ -12,11 +12,9 @@
 
 use arch::BootInfo;
 
-use crate::{
-    arch::{cpu, cpus},
-    task::runtime,
-    util::logging,
-};
+use crate::{task::runtime, util::logging};
+
+use jrinx_hal::{Cpu, Hal};
 
 extern crate alloc;
 #[macro_use]
@@ -39,8 +37,8 @@ fn cold_init(boot_info: BootInfo) -> ! {
     jrinx_heap::init();
     logging::init();
 
-    jrinx_percpu::init(cpus::nproc().unwrap());
-    jrinx_percpu::set_local_pointer(cpu::id());
+    jrinx_percpu::init(hal!().cpu().nproc());
+    jrinx_percpu::set_local_pointer(hal!().cpu().id());
 
     let arch = core::option_env!("ARCH").unwrap_or("unknown");
     let build_time = core::option_env!("BUILD_TIME").unwrap_or("unknown");

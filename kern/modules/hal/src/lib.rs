@@ -3,6 +3,8 @@
 extern crate alloc;
 
 mod arch;
+use core::time::Duration;
+
 pub use arch::*;
 
 use jrinx_addr::PhysAddr;
@@ -17,6 +19,8 @@ macro_rules! hal {
 pub trait Hal: Send + Sync {
     fn breakpoint(&self);
 
+    fn cpu(&self) -> impl Cpu;
+
     fn earlycon(&self) -> impl Earlycon;
 
     fn halt(&self, reason: HaltReason) -> !;
@@ -28,6 +32,22 @@ pub trait Hal: Send + Sync {
     fn vm(&self) -> impl Vm;
 }
 
+pub trait Cpu: Send + Sync {
+    fn id(&self) -> usize;
+
+    fn set_nproc(&self, count: usize);
+
+    fn nproc(&self) -> usize;
+
+    fn set_timebase_freq(&self, freq: u64);
+
+    fn timebase_freq(&self) -> u64;
+
+    fn get_time(&self) -> Duration;
+
+    fn set_timer(&self, next: Duration);
+}
+
 pub trait Earlycon: Send + Sync {
     fn putc(&self, c: u8);
 
@@ -36,6 +56,12 @@ pub trait Earlycon: Send + Sync {
 
 pub trait Cache: Send + Sync {
     fn sync_all(&self);
+}
+
+pub trait Timer: Send + Sync {
+    fn get(&self) -> Duration;
+
+    fn set_next(&self);
 }
 
 pub trait Interrupt: Send + Sync {

@@ -6,12 +6,10 @@ use alloc::{
     sync::Arc,
 };
 use jrinx_error::{InternalError, Result};
-use jrinx_hal::{Hal, Interrupt};
+use jrinx_hal::{Cpu, Hal, Interrupt};
 use jrinx_percpu::percpu;
 use jrinx_serial_id_macro::SerialId;
 use spin::Mutex;
-
-use crate::arch;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, SerialId)]
 struct TimedEventId(u64);
@@ -61,7 +59,7 @@ impl TimedEvent {
     pub fn create(time: Duration, handler: TimedEventHandler) -> TimedEventTracker {
         let tracker = TimedEventTracker(Arc::new(Mutex::new(Self {
             id: TimedEventId::new(),
-            cpu_id: arch::cpu::id(),
+            cpu_id: hal!().cpu().id(),
             time,
             status: TimedEventStatus::Pending,
             handler: Some(handler),
@@ -133,7 +131,7 @@ impl TimedEventQueue {
 
     pub fn peek_outdated(&self) -> Option<TimedEventTracker> {
         self.peek()
-            .filter(|tracker| tracker.time() <= arch::cpu::time())
+            .filter(|tracker| tracker.time() <= hal!().cpu().get_time())
     }
 
     fn add(&mut self, tracker: TimedEventTracker) {
@@ -162,9 +160,9 @@ impl TimedEventQueue {
 
     fn update_timer(&self) {
         if let Some(Reverse((time, _))) = self.queue.peek() {
-            arch::cpu::set_timer(*time);
+            hal!().cpu().set_timer(*time);
         } else {
-            arch::cpu::set_timer(Duration::MAX);
+            hal!().cpu().set_timer(Duration::MAX);
         }
     }
 }
