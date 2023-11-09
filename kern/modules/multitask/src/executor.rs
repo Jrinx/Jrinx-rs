@@ -16,7 +16,9 @@ use jrinx_vmm::KERN_PAGE_TABLE;
 
 use crate::{
     arch::{self, SwitchContext},
-    inspector, runtime, Task, TaskId, TaskPriority,
+    inspector::{Inspector, InspectorStatus},
+    runtime::Runtime,
+    Task, TaskId, TaskPriority,
 };
 
 type TaskQueue = FastPriorityQueueWithLock<TaskPriority, TaskId>;
@@ -132,10 +134,6 @@ impl Executor {
         self.status
     }
 
-    pub fn switch_context_addr(&self) -> VirtAddr {
-        VirtAddr::new(&self.switch_context as *const _ as usize)
-    }
-
     pub fn spawn(&mut self, task: Task) -> Result<&mut Self> {
         let id = task.id;
         self.task_queue.enqueue(task.priority, id);
@@ -145,7 +143,24 @@ impl Executor {
         Ok(self)
     }
 
-    pub fn run(&mut self) {
+    pub fn with_current<F, R>(f: F) -> Result<R>
+    where
+        F: FnOnce(&mut Pin<Box<Executor>>) -> R,
+    {
+        Inspector::with_current(|is| {
+            let f = |ex: &mut _| f(ex);
+            let InspectorStatus::Running(executor_id) = is.status() else {
+                return Err(InternalError::InvalidInspectorStatus);
+            };
+            is.with_executor(executor_id, f)
+        })?
+    }
+
+    pub(crate) fn switch_context(&self) -> VirtAddr {
+        VirtAddr::new(&self.switch_context as *const _ as usize)
+    }
+
+    pub(crate) fn run(&mut self) {
         let Self {
             task_registry,
             task_queue,
@@ -175,6 +190,14 @@ impl Executor {
 
         self.status = ExecutorStatus::Finished;
     }
+
+    pub(crate) fn start(address: usize) -> ! {
+        let mut executor = unsafe { Box::from_raw(address as *mut Executor) };
+        executor.run();
+
+        Runtime::switch_yield();
+        unreachable!();
+    }
 }
 
 impl Drop for Executor {
@@ -183,21 +206,6 @@ impl Drop for Executor {
             .deallocate(self.stack_top - jrinx_config::EXECUTOR_STACK_SIZE)
             .unwrap();
     }
-}
-
-pub fn with_current<F, R>(f: F) -> Result<R>
-where
-    F: FnOnce(&mut Pin<Box<Executor>>) -> R,
-{
-    inspector::with_current(|is| is.with_current_executor(|ex| f(ex)))?
-}
-
-pub extern "C" fn start(address: usize) -> ! {
-    let mut executor = unsafe { Box::from_raw(address as *mut Executor) };
-    executor.run();
-
-    runtime::switch_yield();
-    unreachable!();
 }
 
 struct TaskWaker {

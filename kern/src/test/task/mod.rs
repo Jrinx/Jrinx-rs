@@ -44,7 +44,9 @@ pub(super) mod inspector {
     use alloc::vec::Vec;
     use jrinx_multitask::{
         executor::{Executor, ExecutorPriority},
-        inspector, runtime, Task, TaskPriority,
+        inspector::Inspector,
+        runtime::Runtime,
+        Task, TaskPriority,
     };
     use jrinx_testdef::testdef;
     use spin::Mutex;
@@ -81,17 +83,17 @@ pub(super) mod inspector {
 
                             order_push(executor_order, task_order);
 
-                            runtime::switch_yield();
+                            Runtime::switch_yield();
                         },
                         TaskPriority::new(j),
                     ))
                     .unwrap();
             }
 
-            inspector::with_current(|is| is.register_executor(executor).unwrap()).unwrap();
+            Inspector::with_current(|is| is.register_executor(executor).unwrap()).unwrap();
         }
 
-        runtime::switch_yield();
+        Runtime::switch_yield();
 
         assert!(!ORDER.is_locked());
 
@@ -112,7 +114,8 @@ pub(super) mod runtime {
     use jrinx_multitask::{
         executor::{Executor, ExecutorPriority},
         inspector::{Inspector, InspectorMode},
-        runtime, Task, TaskPriority,
+        runtime::Runtime,
+        Task, TaskPriority,
     };
     use jrinx_testdef::testdef;
     use spin::Mutex;
@@ -160,11 +163,11 @@ pub(super) mod runtime {
                     .unwrap();
             }
 
-            runtime::with_current(|rt| rt.register_inspector(inspector).unwrap()).unwrap();
+            Runtime::with_current(|rt| rt.register_inspector(inspector).unwrap()).unwrap();
         }
 
-        runtime::with_current(|rt| rt.set_inspector_switch_pending()).unwrap();
-        runtime::switch_yield();
+        Runtime::with_current(|rt| rt.set_inspector_switch_pending()).unwrap();
+        Runtime::switch_yield();
 
         assert!(!ORDER.is_locked());
 

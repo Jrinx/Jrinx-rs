@@ -10,7 +10,7 @@
 
 use arch::BootInfo;
 use jrinx_hal::{Cpu, Hal};
-use jrinx_multitask::runtime;
+use jrinx_multitask::runtime::{self, Runtime};
 
 use crate::util::logging;
 
@@ -51,7 +51,8 @@ fn cold_init(boot_info: BootInfo) -> ! {
 
     jrinx_vmm::init();
     runtime::init(master_init());
-    runtime::start();
+
+    Runtime::start();
 }
 
 async fn master_init() {

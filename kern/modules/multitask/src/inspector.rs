@@ -9,8 +9,8 @@ use jrinx_util::fastpq::FastPriorityQueueWithLock;
 
 use crate::{
     arch,
-    executor::{self, Executor, ExecutorId, ExecutorPriority, ExecutorStatus},
-    inspector, runtime,
+    executor::{Executor, ExecutorId, ExecutorPriority, ExecutorStatus},
+    runtime::{Runtime, RuntimeStatus},
 };
 
 type ExecutorQueue = FastPriorityQueueWithLock<ExecutorPriority, ExecutorId>;
@@ -92,21 +92,24 @@ impl Inspector {
         Ok(())
     }
 
-    pub fn with_current_executor<F, R>(&mut self, f: F) -> Result<R>
-    where
-        F: FnOnce(&mut Pin<Box<Executor>>) -> R,
-    {
-        let InspectorStatus::Running(executor_id) = self.status else {
-            return Err(InternalError::InvalidInspectorStatus);
-        };
-        self.with_executor(executor_id, f)
-    }
-
     pub fn mark_finished(&mut self) {
         self.status = InspectorStatus::Finished;
     }
 
-    pub(super) fn with_executor<F, R>(&mut self, id: ExecutorId, f: F) -> Result<R>
+    pub fn with_current<F, R>(f: F) -> Result<R>
+    where
+        F: FnOnce(&mut Inspector) -> R,
+    {
+        Runtime::with_current(|rt| {
+            let f = |is: &mut _| f(is);
+            let RuntimeStatus::Running(inspector_id) = rt.status() else {
+                return Err(InternalError::InvalidRuntimeStatus);
+            };
+            rt.with_inspector(inspector_id, f)
+        })?
+    }
+
+    pub(crate) fn with_executor<F, R>(&mut self, id: ExecutorId, f: F) -> Result<R>
     where
         F: FnOnce(&mut Pin<Box<Executor>>) -> R,
     {
@@ -117,11 +120,11 @@ impl Inspector {
         Ok(f(executor))
     }
 
-    pub(super) fn pop_executor(&mut self) -> Option<ExecutorId> {
+    pub(crate) fn pop_executor(&mut self) -> Option<ExecutorId> {
         self.executor_queue.dequeue().map(|(_, id)| id)
     }
 
-    pub(super) fn push_executor(&mut self, id: ExecutorId) -> Result<()> {
+    pub(crate) fn push_executor(&mut self, id: ExecutorId) -> Result<()> {
         let Some(executor) = self.executor_registry.get(&id) else {
             return Err(InternalError::InvalidExecutorId);
         };
@@ -129,7 +132,7 @@ impl Inspector {
         Ok(())
     }
 
-    pub(super) fn set_current_executor(&mut self, id: Option<ExecutorId>) {
+    pub(crate) fn set_executor(&mut self, id: Option<ExecutorId>) {
         if let Some(id) = id {
             match self.status {
                 InspectorStatus::Running(ref mut executor_id) => {
@@ -143,68 +146,61 @@ impl Inspector {
             self.status = InspectorStatus::Idle;
         }
     }
-}
 
-pub fn with_current<F, R>(f: F) -> Result<R>
-where
-    F: FnOnce(&mut Inspector) -> R,
-{
-    runtime::with_current(|rt| rt.with_current_inspector(|is| f(is)))?
-}
+    pub(crate) fn run(runtime_switch_ctx: VirtAddr) {
+        loop {
+            if Runtime::with_current(|rt| rt.get_inspector_switch_pending()).unwrap()
+                || Inspector::with_current(|is| is.status() == InspectorStatus::Finished).unwrap()
+            {
+                break;
+            }
 
-pub(super) fn run(runtime_switch_ctx: VirtAddr) {
-    loop {
-        if runtime::with_current(|rt| rt.get_inspector_switch_pending()).unwrap()
-            || inspector::with_current(|is| is.status() == InspectorStatus::Finished).unwrap()
-        {
-            break;
-        }
+            let Some(executor_id) = Inspector::with_current(|is| is.pop_executor()).unwrap() else {
+                hal!().interrupt().wait();
+                continue;
+            };
+            trace!("switch into executor {:?}", executor_id);
 
-        let Some(executor_id) = inspector::with_current(|is| is.pop_executor()).unwrap() else {
-            hal!().interrupt().wait();
-            continue;
-        };
-        trace!("switch into executor {:?}", executor_id);
-
-        inspector::with_current(|is| {
-            is.set_current_executor(Some(executor_id));
-        })
-        .unwrap();
-
-        let executor_switch_ctx = executor::with_current(|ex| ex.switch_context_addr()).unwrap();
-
-        unsafe {
-            arch::switch(
-                runtime_switch_ctx.as_usize(),
-                executor_switch_ctx.as_usize(),
-            );
-        }
-
-        inspector::with_current(|is| is.set_current_executor(None)).unwrap();
-
-        trace!("switch from executor {:?}", executor_id);
-
-        if inspector::with_current(|is| {
-            is.with_executor(executor_id, |ex| ex.status() == ExecutorStatus::Finished)
-                .unwrap()
-        })
-        .unwrap()
-        {
-            inspector::with_current(|is| {
-                is.unregister_executor(executor_id).unwrap();
+            Inspector::with_current(|is| {
+                is.set_executor(Some(executor_id));
             })
             .unwrap();
-        } else {
-            inspector::with_current(|is| {
-                is.push_executor(executor_id).unwrap();
-            })
-            .unwrap();
-        }
 
-        if inspector::with_current(|is| is.is_empty() && is.mode() == InspectorMode::Bootstrap)
+            let executor_switch_ctx = Executor::with_current(|ex| ex.switch_context()).unwrap();
+
+            unsafe {
+                arch::switch(
+                    runtime_switch_ctx.as_usize(),
+                    executor_switch_ctx.as_usize(),
+                );
+            }
+
+            Inspector::with_current(|is| is.set_executor(None)).unwrap();
+
+            trace!("switch from executor {:?}", executor_id);
+
+            if Inspector::with_current(|is| {
+                is.with_executor(executor_id, |ex| ex.status() == ExecutorStatus::Finished)
+                    .unwrap()
+            })
             .unwrap()
-        {
-            inspector::with_current(|is| is.mark_finished()).unwrap();
+            {
+                Inspector::with_current(|is| {
+                    is.unregister_executor(executor_id).unwrap();
+                })
+                .unwrap();
+            } else {
+                Inspector::with_current(|is| {
+                    is.push_executor(executor_id).unwrap();
+                })
+                .unwrap();
+            }
+
+            if Inspector::with_current(|is| is.is_empty() && is.mode() == InspectorMode::Bootstrap)
+                .unwrap()
+            {
+                Inspector::with_current(|is| is.mark_finished()).unwrap();
+            }
         }
     }
 }

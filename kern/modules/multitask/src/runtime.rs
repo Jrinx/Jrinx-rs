@@ -12,16 +12,13 @@ use spin::{Mutex, Once};
 
 use crate::{
     arch::{self, SwitchContext},
-    inspector::{self, Inspector, InspectorId, InspectorMode, InspectorStatus},
-};
-
-use super::{
-    executor::{self, Executor, ExecutorPriority},
+    executor::{Executor, ExecutorPriority},
+    inspector::{Inspector, InspectorId, InspectorMode, InspectorStatus},
     Task, TaskPriority,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum RuntimeStatus {
+pub(crate) enum RuntimeStatus {
     Init,
     Idle,
     Running(InspectorId),
@@ -66,29 +63,81 @@ impl Runtime {
         Ok(())
     }
 
-    pub fn with_current_inspector<F, R>(&mut self, f: F) -> Result<R>
+    pub fn with_current<F, R>(f: F) -> Result<R>
     where
-        F: FnOnce(&mut Inspector) -> R,
+        F: FnOnce(&mut Runtime) -> R,
     {
-        let RuntimeStatus::Running(inspector_id) = self.status else {
-            return Err(InternalError::InvalidRuntimeStatus);
-        };
-        self.with_inspector(inspector_id, f)
-    }
-
-    pub(crate) fn get_inspector_switch_pending(&self) -> bool {
-        self.inspector_switch_pending
+        hal!().interrupt().with_saved_off(|| {
+            RUNTIME.with_ref(|rt| {
+                if let Some(rt) = rt.get() {
+                    Ok(f(&mut rt.lock()))
+                } else {
+                    Err(InternalError::InvalidRuntimeStatus)
+                }
+            })
+        })
     }
 
     pub fn set_inspector_switch_pending(&mut self) {
         self.inspector_switch_pending = true;
     }
 
-    fn clr_inspector_switch_pending(&mut self) {
-        self.inspector_switch_pending = false;
+    pub fn start() -> ! {
+        debug!("runtime started running all inspectors");
+
+        hal!().interrupt().enable();
+
+        let runtime_switch_ctx = Self::with_current(|rt| rt.switch_context_addr()).unwrap();
+        while let Some(inspector_id) = Self::with_current(|rt| rt.pop_inspector()).unwrap() {
+            debug!("runtime running inspector {:?}", inspector_id);
+
+            Self::with_current(|rt| rt.set_current_inspector(Some(inspector_id))).unwrap();
+
+            Inspector::run(runtime_switch_ctx);
+
+            Self::with_current(|rt| {
+                rt.clr_inspector_switch_pending();
+                rt.set_current_inspector(None);
+            })
+            .unwrap();
+
+            if Self::with_current(|rt| {
+                rt.with_inspector(inspector_id, |is| is.status() == InspectorStatus::Finished)
+                    .unwrap()
+            })
+            .unwrap()
+            {
+                Self::with_current(|rt| rt.unregister_inspector(inspector_id).unwrap()).unwrap();
+            } else {
+                Self::with_current(|rt| rt.push_inspector(inspector_id).unwrap()).unwrap();
+            }
+        }
+
+        debug!("runtime finished running all inspectors");
+
+        hal!().halt(HaltReason::NormalExit);
     }
 
-    fn with_inspector<F, R>(&mut self, id: InspectorId, f: F) -> Result<R>
+    pub fn switch_yield() {
+        let runtime_switch_ctx = Self::with_current(|rt| rt.switch_context_addr()).unwrap();
+        let executor_switch_ctx = Executor::with_current(|ex| ex.switch_context()).unwrap();
+        unsafe {
+            arch::switch(
+                executor_switch_ctx.as_usize(),
+                runtime_switch_ctx.as_usize(),
+            );
+        }
+    }
+
+    pub(crate) fn status(&self) -> RuntimeStatus {
+        self.status
+    }
+
+    pub(crate) fn get_inspector_switch_pending(&self) -> bool {
+        self.inspector_switch_pending
+    }
+
+    pub(crate) fn with_inspector<F, R>(&mut self, id: InspectorId, f: F) -> Result<R>
     where
         F: FnOnce(&mut Inspector) -> R,
     {
@@ -99,6 +148,9 @@ impl Runtime {
         Ok(f(inspector))
     }
 
+    fn clr_inspector_switch_pending(&mut self) {
+        self.inspector_switch_pending = false;
+    }
     fn set_current_inspector(&mut self, id: Option<InspectorId>) {
         if let Some(id) = id {
             match self.status {
@@ -136,21 +188,6 @@ unsafe impl Send for Runtime {}
 #[percpu]
 static RUNTIME: Once<Mutex<Pin<Box<Runtime>>>> = Once::new();
 
-pub fn with_current<F, R>(f: F) -> Result<R>
-where
-    F: FnOnce(&mut Runtime) -> R,
-{
-    hal!().interrupt().with_saved_off(|| {
-        RUNTIME.with_ref(|rt| {
-            if let Some(rt) = rt.get() {
-                Ok(f(&mut rt.lock()))
-            } else {
-                Err(InternalError::InvalidRuntimeStatus)
-            }
-        })
-    })
-}
-
 pub fn init(future: impl Future<Output = ()> + 'static) {
     RUNTIME
         .as_ref()
@@ -164,51 +201,4 @@ pub fn init(future: impl Future<Output = ()> + 'static) {
             )))
         })
         .unwrap();
-}
-
-pub fn start() -> ! {
-    debug!("runtime started running all inspectors");
-
-    hal!().interrupt().enable();
-
-    let runtime_switch_ctx = with_current(|rt| rt.switch_context_addr()).unwrap();
-    while let Some(inspector_id) = with_current(|rt| rt.pop_inspector()).unwrap() {
-        debug!("runtime running inspector {:?}", inspector_id);
-
-        with_current(|rt| rt.set_current_inspector(Some(inspector_id))).unwrap();
-
-        inspector::run(runtime_switch_ctx);
-
-        with_current(|rt| {
-            rt.clr_inspector_switch_pending();
-            rt.set_current_inspector(None);
-        })
-        .unwrap();
-
-        if with_current(|rt| {
-            rt.with_inspector(inspector_id, |is| is.status() == InspectorStatus::Finished)
-                .unwrap()
-        })
-        .unwrap()
-        {
-            with_current(|rt| rt.unregister_inspector(inspector_id).unwrap()).unwrap();
-        } else {
-            with_current(|rt| rt.push_inspector(inspector_id).unwrap()).unwrap();
-        }
-    }
-
-    debug!("runtime finished running all inspectors");
-
-    hal!().halt(HaltReason::NormalExit);
-}
-
-pub fn switch_yield() {
-    let runtime_switch_ctx = with_current(|rt| rt.switch_context_addr()).unwrap();
-    let executor_switch_ctx = executor::with_current(|ex| ex.switch_context_addr()).unwrap();
-    unsafe {
-        arch::switch(
-            executor_switch_ctx.as_usize(),
-            runtime_switch_ctx.as_usize(),
-        );
-    }
 }

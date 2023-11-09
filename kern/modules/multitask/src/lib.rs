@@ -21,6 +21,7 @@ use core::{
 };
 
 use alloc::boxed::Box;
+use executor::Executor;
 use jrinx_serial_id_macro::SerialId;
 use jrinx_util::fastpq::FastPriority;
 
@@ -72,7 +73,7 @@ impl Task {
 }
 
 pub fn do_spawn(future: impl Future<Output = ()> + 'static, priority: TaskPriority) {
-    executor::with_current(|ex| {
+    Executor::with_current(|ex| {
         ex.spawn(Task::new(future, priority)).unwrap();
     })
     .unwrap();

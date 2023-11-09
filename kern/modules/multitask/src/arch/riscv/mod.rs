@@ -130,7 +130,7 @@ core::arch::global_asm! {
         mv a0, s0
         call {EXECUTOR_START}
     ",
-    EXECUTOR_START = sym crate::executor::start,
+    EXECUTOR_START = sym crate::executor::Executor::start,
 }
 
 extern "C" {

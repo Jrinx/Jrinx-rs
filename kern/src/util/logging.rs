@@ -2,7 +2,7 @@ use core::fmt::Write;
 
 use alloc::{fmt, format, string::ToString};
 use jrinx_hal::{Cpu, Earlycon, Hal};
-use jrinx_multitask::runtime;
+use jrinx_multitask::{executor::Executor, inspector::Inspector, runtime::Runtime};
 
 use super::color::{self, with_color};
 
@@ -48,15 +48,15 @@ impl log::Log for Logger {
             log::Level::Trace => color::ColorCode::Magenta,
         };
 
-        let kernel_state = runtime::with_current(|rt| {
-            rt.with_current_inspector(|inspector| {
-                inspector
-                    .with_current_executor(|executor| format!("executor#{}", executor.id()))
-                    .unwrap_or(format!("inspector#{}", inspector.id()))
-            })
-            .unwrap_or("runtime".to_string())
-        })
-        .unwrap_or("bootstrap".to_string());
+        let kernel_state = if let Ok(id) = Executor::with_current(|ex| ex.id()) {
+            format!("executor#{}", id)
+        } else if let Ok(id) = Inspector::with_current(|is| is.id()) {
+            format!("inspector#{}", id)
+        } else if Runtime::with_current(|_| ()).is_ok() {
+            "runtime".to_string()
+        } else {
+            "bootstrap".to_string()
+        };
 
         fmt::format(*record.args()).split('\n').for_each(|args| {
             print_fmt(with_color! {
