@@ -1,3 +1,8 @@
+#![no_std]
+#![feature(const_binary_heap_constructor)]
+
+extern crate alloc;
+
 use core::{cmp::Reverse, fmt::Debug, time::Duration};
 
 use alloc::{
@@ -6,7 +11,7 @@ use alloc::{
     sync::Arc,
 };
 use jrinx_error::{InternalError, Result};
-use jrinx_hal::{Cpu, Hal, Interrupt};
+use jrinx_hal::{hal, Cpu, Hal, Interrupt};
 use jrinx_percpu::percpu;
 use jrinx_serial_id_macro::SerialId;
 use spin::Mutex;

@@ -3,9 +3,8 @@ pub(super) mod status {
 
     use jrinx_hal::{Cpu, Hal, Interrupt};
     use jrinx_testdef::testdef;
+    use jrinx_timed_event::{TimedEvent, TimedEventHandler, TimedEventStatus};
     use spin::Mutex;
-
-    use crate::time::{self, TimedEvent, TimedEventHandler, TimedEventStatus};
 
     #[testdef]
     fn test() {
@@ -41,7 +40,7 @@ pub(super) mod status {
         tracker.cancel().unwrap();
 
         assert_eq!(*DATA.lock(), Some(TimedEventStatus::Cancelled));
-        assert!(time::with_current(|tq| tq.peek_outdated()).is_none());
+        assert!(jrinx_timed_event::with_current(|tq| tq.peek_outdated()).is_none());
     }
 }
 
@@ -51,9 +50,8 @@ pub(super) mod queue {
     use alloc::vec::Vec;
     use jrinx_hal::{Cpu, Hal, Interrupt};
     use jrinx_testdef::testdef;
+    use jrinx_timed_event::{TimedEvent, TimedEventHandler};
     use spin::Mutex;
-
-    use crate::time::{TimedEvent, TimedEventHandler};
 
     #[testdef]
     fn test() {

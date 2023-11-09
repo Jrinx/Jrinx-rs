@@ -1,5 +1,4 @@
 #![feature(asm_const)]
-#![feature(const_binary_heap_constructor)]
 #![feature(iter_collect_into)]
 #![feature(map_try_insert)]
 #![feature(naked_functions)]
@@ -28,7 +27,6 @@ mod arch;
 mod bootargs;
 mod task;
 mod test;
-mod time;
 mod trap;
 mod util;
 mod vmm;

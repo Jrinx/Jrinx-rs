@@ -444,6 +444,7 @@ dependencies = [
  "jrinx-phys-frame",
  "jrinx-serial-id-macro",
  "jrinx-testdef",
+ "jrinx-timed-event",
  "jrinx-util",
  "log",
  "rand",
@@ -609,6 +610,18 @@ version = "0.1.0"
 dependencies = [
  "quote",
  "syn 2.0.39",
+]
+
+[[package]]
+name = "jrinx-timed-event"
+version = "0.1.0"
+dependencies = [
+ "jrinx-error",
+ "jrinx-hal",
+ "jrinx-layout",
+ "jrinx-percpu",
+ "jrinx-serial-id-macro",
+ "spin",
 ]
 
 [[package]]

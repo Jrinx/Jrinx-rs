@@ -25,6 +25,7 @@ jrinx-percpu = { version = "0.1.0", path = "modules/percpu" }
 jrinx-phys-frame = { version = "0.1.0", path = "modules/phys-frame" }
 jrinx-serial-id-macro = { version = "0.1.0", path = "modules/serial-id-macro" }
 jrinx-testdef = { version = "0.1.0", path = "modules/testdef" }
+jrinx-timed-event = { version = "0.1.0", path = "modules/timed-event" }
 jrinx-util = { version = "0.1.0", path = "modules/util" }
 log = { version = "0.4.20", default-features = false }
 rand = { version = "0.8.5", default-features = false, features = ["small_rng"] }
