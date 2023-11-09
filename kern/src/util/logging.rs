@@ -1,9 +1,9 @@
 use core::fmt::Write;
 
 use alloc::{fmt, format, string::ToString};
-use jrinx_hal::{Cpu, Hal};
+use jrinx_hal::{Cpu, Earlycon, Hal};
 
-use crate::{arch, task::runtime};
+use crate::task::runtime;
 
 use super::color::{self, with_color};
 
@@ -12,7 +12,7 @@ struct Logger;
 impl Write for Logger {
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
         for b in s.bytes() {
-            arch::earlycon::putc(b);
+            hal!().earlycon().putc(b);
         }
         Ok(())
     }
