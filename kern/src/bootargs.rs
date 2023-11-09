@@ -1,8 +1,7 @@
 use alloc::{borrow::ToOwned, string::String, vec::Vec};
 use getargs::{Opt, Options};
+use jrinx_multitask::{spawn, yield_now};
 use spin::Once;
-
-use crate::task;
 
 static BOOTARGS: Once<String> = Once::new();
 
@@ -47,10 +46,10 @@ pub async fn execute() {
                         let (name, func) = jrinx_testdef::find(test)
                             .unwrap_or_else(|| panic!("unrecognized test case: {}", test));
                         info!("test case {} begin", name);
-                        task::spawn!(async move {
+                        spawn!(async move {
                             func();
                         });
-                        task::yield_now!();
+                        yield_now!();
                         info!("test case {} end", name);
                     }
                 }

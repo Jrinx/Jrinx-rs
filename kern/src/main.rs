@@ -1,6 +1,5 @@
 #![feature(asm_const)]
 #![feature(iter_collect_into)]
-#![feature(map_try_insert)]
 #![feature(naked_functions)]
 #![feature(offset_of)]
 #![feature(panic_info_message)]
@@ -10,10 +9,10 @@
 #![no_main]
 
 use arch::BootInfo;
-
-use crate::{task::runtime, util::logging};
-
 use jrinx_hal::{Cpu, Hal};
+use jrinx_multitask::runtime;
+
+use crate::util::logging;
 
 extern crate alloc;
 #[macro_use]
@@ -25,11 +24,9 @@ extern crate jrinx_hal;
 
 mod arch;
 mod bootargs;
-mod task;
 mod test;
 mod trap;
 mod util;
-mod vmm;
 
 fn cold_init(boot_info: BootInfo) -> ! {
     jrinx_heap::init();
@@ -52,7 +49,7 @@ fn cold_init(boot_info: BootInfo) -> ! {
         bootargs::set(bootargs);
     }
 
-    vmm::init();
+    jrinx_vmm::init();
     runtime::init(master_init());
     runtime::start();
 }

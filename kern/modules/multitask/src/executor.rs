@@ -12,15 +12,11 @@ use jrinx_paging::{GenericPagePerm, GenericPageTable, PagePerm};
 use jrinx_phys_frame::PhysFrame;
 use jrinx_serial_id_macro::SerialId;
 use jrinx_util::fastpq::{FastPriority, FastPriorityQueueWithLock};
+use jrinx_vmm::KERN_PAGE_TABLE;
 
 use crate::{
-    arch::{self, task::executor::SwitchContext},
-    vmm::KERN_PAGE_TABLE,
-};
-
-use super::{
-    runtime::{self, inspector},
-    Task, TaskId, TaskPriority,
+    arch::{self, SwitchContext},
+    inspector, runtime, Task, TaskId, TaskPriority,
 };
 
 type TaskQueue = FastPriorityQueueWithLock<TaskPriority, TaskId>;
@@ -98,7 +94,7 @@ pub struct Executor {
 
 impl Executor {
     pub fn new(priority: ExecutorPriority, root_task: Task) -> Pin<Box<Self>> {
-        let entry = VirtAddr::new(arch::task::executor::launch as usize);
+        let entry = VirtAddr::new(arch::executor_launch as usize);
         let stack_top =
             EXECUTOR_STACK_ALLOCATOR.allocate().unwrap() + jrinx_config::EXECUTOR_STACK_SIZE;
 

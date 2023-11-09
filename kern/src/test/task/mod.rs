@@ -1,9 +1,8 @@
 pub(super) mod executor {
     use alloc::vec::Vec;
+    use jrinx_multitask::{spawn, yield_now, TaskPriority};
     use jrinx_testdef::testdef;
     use spin::RwLock;
-
-    use crate::task::{self, TaskPriority};
 
     static QUEUE: RwLock<Vec<i32>> = RwLock::new(Vec::new());
 
@@ -17,7 +16,7 @@ pub(super) mod executor {
 
     #[testdef]
     fn test() {
-        task::spawn!(
+        spawn!(
             pri := TaskPriority::MAX / 3 => async {
             for i in 0..10 {
                 let priority = TaskPriority::new(i + TaskPriority::MAX / 2);
@@ -27,7 +26,7 @@ pub(super) mod executor {
                 } else {
                     None
                 };
-                task::spawn!(
+                spawn!(
                     pri := priority => async move {
                         trace!("spawned task: value = {}", this_value);
                         assert_eq!(QUEUE.read().last(), prev_value.as_ref());
@@ -35,7 +34,7 @@ pub(super) mod executor {
                     }
                 );
             }
-            task::yield_now!();
+            yield_now!();
             assert_eq!(QUEUE.read().len(), 10);
         });
     }
@@ -43,14 +42,12 @@ pub(super) mod executor {
 
 pub(super) mod inspector {
     use alloc::vec::Vec;
+    use jrinx_multitask::{
+        executor::{Executor, ExecutorPriority},
+        inspector, runtime, Task, TaskPriority,
+    };
     use jrinx_testdef::testdef;
     use spin::Mutex;
-
-    use crate::task::{
-        executor::{Executor, ExecutorPriority},
-        runtime::{self, inspector},
-        Task, TaskPriority,
-    };
 
     #[testdef]
     fn test() {
@@ -112,18 +109,13 @@ pub(super) mod inspector {
 
 pub(super) mod runtime {
     use alloc::vec::Vec;
+    use jrinx_multitask::{
+        executor::{Executor, ExecutorPriority},
+        inspector::{Inspector, InspectorMode},
+        runtime, Task, TaskPriority,
+    };
     use jrinx_testdef::testdef;
     use spin::Mutex;
-
-    use crate::task::{
-        executor::{Executor, ExecutorPriority},
-        runtime::{
-            self,
-            inspector::{Inspector, InspectorMode},
-            with_current,
-        },
-        Task, TaskPriority,
-    };
 
     #[testdef]
     fn test() {
@@ -168,10 +160,10 @@ pub(super) mod runtime {
                     .unwrap();
             }
 
-            with_current(|rt| rt.register_inspector(inspector).unwrap()).unwrap();
+            runtime::with_current(|rt| rt.register_inspector(inspector).unwrap()).unwrap();
         }
 
-        with_current(|rt| rt.set_inspector_switch_pending()).unwrap();
+        runtime::with_current(|rt| rt.set_inspector_switch_pending()).unwrap();
         runtime::switch_yield();
 
         assert!(!ORDER.is_locked());

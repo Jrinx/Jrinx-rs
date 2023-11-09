@@ -9,10 +9,8 @@ use jrinx_util::fastpq::FastPriorityQueueWithLock;
 
 use crate::{
     arch,
-    task::{
-        executor::{self, Executor, ExecutorId, ExecutorPriority, ExecutorStatus},
-        runtime::{self, inspector},
-    },
+    executor::{self, Executor, ExecutorId, ExecutorPriority, ExecutorStatus},
+    inspector, runtime,
 };
 
 type ExecutorQueue = FastPriorityQueueWithLock<ExecutorPriority, ExecutorId>;
@@ -156,7 +154,7 @@ where
 
 pub(super) fn run(runtime_switch_ctx: VirtAddr) {
     loop {
-        if runtime::with_current(|rt| rt.inspector_switch_pending).unwrap()
+        if runtime::with_current(|rt| rt.get_inspector_switch_pending()).unwrap()
             || inspector::with_current(|is| is.status() == InspectorStatus::Finished).unwrap()
         {
             break;
@@ -176,7 +174,7 @@ pub(super) fn run(runtime_switch_ctx: VirtAddr) {
         let executor_switch_ctx = executor::with_current(|ex| ex.switch_context_addr()).unwrap();
 
         unsafe {
-            arch::task::executor::switch(
+            arch::switch(
                 runtime_switch_ctx.as_usize(),
                 executor_switch_ctx.as_usize(),
             );

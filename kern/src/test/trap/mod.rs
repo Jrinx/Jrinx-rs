@@ -21,8 +21,9 @@ pub(super) mod page_fault {
     use jrinx_paging::{GenericPagePerm, GenericPageTable, PagePerm};
     use jrinx_phys_frame::PhysFrame;
     use jrinx_testdef::testdef;
+    use jrinx_vmm::KERN_PAGE_TABLE;
 
-    use crate::{arch, trap::TrapReason, vmm::KERN_PAGE_TABLE};
+    use crate::{arch, trap::TrapReason};
 
     cfg_if! {
         if #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))] {
@@ -122,8 +123,9 @@ pub(super) mod syscall {
     use jrinx_paging::{GenericPagePerm, GenericPageTable, PagePerm};
     use jrinx_phys_frame::PhysFrame;
     use jrinx_testdef::testdef;
+    use jrinx_vmm::KERN_PAGE_TABLE;
 
-    use crate::{arch, trap::TrapReason, vmm::KERN_PAGE_TABLE};
+    use crate::{arch, trap::TrapReason};
 
     #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
     macro_rules! code_syscall_with_num {

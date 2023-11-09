@@ -438,14 +438,14 @@ dependencies = [
  "jrinx-hal",
  "jrinx-heap",
  "jrinx-layout",
- "jrinx-linear-alloc",
+ "jrinx-multitask",
  "jrinx-paging",
  "jrinx-percpu",
  "jrinx-phys-frame",
- "jrinx-serial-id-macro",
  "jrinx-testdef",
  "jrinx-timed-event",
  "jrinx-util",
+ "jrinx-vmm",
  "log",
  "rand",
  "riscv",
@@ -547,6 +547,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "jrinx-multitask"
+version = "0.1.0"
+dependencies = [
+ "cfg-if",
+ "jrinx-addr",
+ "jrinx-config",
+ "jrinx-error",
+ "jrinx-hal",
+ "jrinx-layout",
+ "jrinx-linear-alloc",
+ "jrinx-paging",
+ "jrinx-percpu",
+ "jrinx-phys-frame",
+ "jrinx-serial-id-macro",
+ "jrinx-util",
+ "jrinx-vmm",
+ "log",
+ "riscv",
+ "spin",
+]
+
+[[package]]
 name = "jrinx-paging"
 version = "0.1.0"
 dependencies = [
@@ -628,6 +650,15 @@ dependencies = [
 name = "jrinx-util"
 version = "0.1.0"
 dependencies = [
+ "spin",
+]
+
+[[package]]
+name = "jrinx-vmm"
+version = "0.1.0"
+dependencies = [
+ "jrinx-hal",
+ "jrinx-paging",
  "spin",
 ]
 

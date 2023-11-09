@@ -2,8 +2,7 @@ use core::fmt::Write;
 
 use alloc::{fmt, format, string::ToString};
 use jrinx_hal::{Cpu, Earlycon, Hal};
-
-use crate::task::runtime;
+use jrinx_multitask::runtime;
 
 use super::color::{self, with_color};
 

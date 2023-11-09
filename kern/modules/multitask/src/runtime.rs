@@ -1,5 +1,3 @@
-pub mod inspector;
-
 use core::{future::Future, pin::Pin};
 
 use alloc::{
@@ -13,11 +11,9 @@ use jrinx_percpu::percpu;
 use spin::{Mutex, Once};
 
 use crate::{
-    arch::{self, task::executor::SwitchContext},
-    task::runtime::inspector::InspectorStatus,
+    arch::{self, SwitchContext},
+    inspector::{self, Inspector, InspectorId, InspectorMode, InspectorStatus},
 };
-
-use self::inspector::{Inspector, InspectorId, InspectorMode};
 
 use super::{
     executor::{self, Executor, ExecutorPriority},
@@ -78,6 +74,10 @@ impl Runtime {
             return Err(InternalError::InvalidRuntimeStatus);
         };
         self.with_inspector(inspector_id, f)
+    }
+
+    pub(crate) fn get_inspector_switch_pending(&self) -> bool {
+        self.inspector_switch_pending
     }
 
     pub fn set_inspector_switch_pending(&mut self) {
@@ -206,7 +206,7 @@ pub fn switch_yield() {
     let runtime_switch_ctx = with_current(|rt| rt.switch_context_addr()).unwrap();
     let executor_switch_ctx = executor::with_current(|ex| ex.switch_context_addr()).unwrap();
     unsafe {
-        arch::task::executor::switch(
+        arch::switch(
             executor_switch_ctx.as_usize(),
             runtime_switch_ctx.as_usize(),
         );

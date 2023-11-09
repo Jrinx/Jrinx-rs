@@ -23,7 +23,7 @@ pub struct SwitchContext {
 }
 
 impl SwitchContext {
-    pub fn new_executor(entry: VirtAddr, stack_top: VirtAddr) -> Self {
+    pub(crate) fn new_executor(entry: VirtAddr, stack_top: VirtAddr) -> Self {
         Self {
             ra: entry.as_usize(),
             sp: stack_top.as_usize(),
@@ -32,11 +32,11 @@ impl SwitchContext {
         }
     }
 
-    pub fn init_executor_addr(&mut self, executor: VirtAddr) {
+    pub(crate) fn init_executor_addr(&mut self, executor: VirtAddr) {
         self.s0 = executor.as_usize();
     }
 
-    pub fn new_runtime() -> Self {
+    pub(crate) fn new_runtime() -> Self {
         Default::default()
     }
 }
@@ -130,12 +130,11 @@ core::arch::global_asm! {
         mv a0, s0
         call {EXECUTOR_START}
     ",
-    EXECUTOR_START = sym crate::task::executor::start,
+    EXECUTOR_START = sym crate::executor::start,
 }
 
 extern "C" {
-    #[link_name = "executor_launch"]
-    pub fn launch();
+    pub fn executor_launch();
 
     #[link_name = "switch_context"]
     pub fn switch(old_ctx: usize, new_ctx: usize);

@@ -1,5 +1,18 @@
+#![no_std]
+#![feature(asm_const)]
+#![feature(map_try_insert)]
+#![feature(offset_of)]
+
+mod arch;
 pub mod executor;
+pub mod inspector;
 pub mod runtime;
+
+extern crate alloc;
+#[macro_use]
+extern crate log;
+#[macro_use]
+extern crate jrinx_hal;
 
 use core::{
     future::Future,
@@ -65,15 +78,15 @@ pub fn do_spawn(future: impl Future<Output = ()> + 'static, priority: TaskPriori
     .unwrap();
 }
 
+#[macro_export]
 macro_rules! spawn {
     ($future: expr) => {
-        $crate::task::do_spawn($future, $crate::task::TaskPriority::default())
+        $crate::do_spawn($future, $crate::TaskPriority::default())
     };
     (pri := $priority:expr => $future: expr) => {
-        $crate::task::do_spawn($future, $priority.into())
+        $crate::do_spawn($future, $priority.into())
     };
 }
-pub(crate) use spawn;
 
 pub async fn do_yield() {
     struct YieldNow {
@@ -97,9 +110,9 @@ pub async fn do_yield() {
     YieldNow { done: false }.await;
 }
 
+#[macro_export]
 macro_rules! yield_now {
     () => {
-        $crate::task::do_yield().await
+        $crate::do_yield().await
     };
 }
-pub(crate) use yield_now;
