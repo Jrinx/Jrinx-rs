@@ -15,7 +15,6 @@ use spin::{Mutex, Once};
 use crate::{
     arch::{self, task::executor::SwitchContext},
     task::runtime::inspector::InspectorStatus,
-    trap::interrupt,
 };
 
 use self::inspector::{Inspector, InspectorId, InspectorMode};
@@ -141,7 +140,7 @@ pub fn with_current<F, R>(f: F) -> Result<R>
 where
     F: FnOnce(&mut Runtime) -> R,
 {
-    interrupt::with_interrupt_saved_off(|| {
+    hal!().interrupt().with_saved_off(|| {
         RUNTIME.with_ref(|rt| {
             if let Some(rt) = rt.get() {
                 Ok(f(&mut rt.lock()))

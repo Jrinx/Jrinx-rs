@@ -1,5 +1,4 @@
 pub mod breakpoint;
-pub mod interrupt;
 pub mod timer_int;
 
 use jrinx_addr::VirtAddr;

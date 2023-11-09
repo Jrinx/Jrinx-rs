@@ -46,6 +46,32 @@ pub trait Interrupt: Send + Sync {
     fn enable(&self);
 
     fn disable(&self);
+
+    fn with_saved_on<F, R>(&self, f: F) -> R
+    where
+        F: FnOnce() -> R,
+    {
+        let enabled = self.is_enabled();
+        self.enable();
+        let ret = f();
+        if !enabled {
+            self.disable();
+        }
+        ret
+    }
+
+    fn with_saved_off<F, R>(&self, f: F) -> R
+    where
+        F: FnOnce() -> R,
+    {
+        let enabled = self.is_enabled();
+        self.disable();
+        let ret = f();
+        if enabled {
+            self.enable();
+        }
+        ret
+    }
 }
 
 pub trait Vm: Send + Sync {

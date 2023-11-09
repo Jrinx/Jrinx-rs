@@ -6,11 +6,12 @@ use alloc::{
     sync::Arc,
 };
 use jrinx_error::{InternalError, Result};
+use jrinx_hal::{Hal, Interrupt};
 use jrinx_percpu::percpu;
 use jrinx_serial_id_macro::SerialId;
 use spin::Mutex;
 
-use crate::{arch, trap::interrupt};
+use crate::arch;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, SerialId)]
 struct TimedEventId(u64);
@@ -51,7 +52,9 @@ pub fn with_current<F, R>(f: F) -> R
 where
     F: FnOnce(&mut TimedEventQueue) -> R,
 {
-    interrupt::with_interrupt_saved_off(|| f(&mut TIMED_EVENT_QUEUE.as_ref().lock()))
+    hal!()
+        .interrupt()
+        .with_saved_off(|| f(&mut TIMED_EVENT_QUEUE.as_ref().lock()))
 }
 
 impl TimedEvent {
