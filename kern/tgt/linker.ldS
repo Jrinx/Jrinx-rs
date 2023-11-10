@@ -1,13 +1,12 @@
-OUTPUT_ARCH(riscv)
+OUTPUT_ARCH(%ARCH%)
 
 ENTRY(_start)
-INCLUDE kern/tgt/vars.ld-inc
 
 CACHE_LINE_SIZE = 64;
 PAGE_SIZE = 4096;
 
 SECTIONS {
-    . = BASE_ADDRESS;
+    . = %BASE_ADDRESS%;
 
     # Text section
 
