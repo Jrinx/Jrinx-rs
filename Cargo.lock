@@ -450,7 +450,6 @@ dependencies = [
  "log",
  "rand",
  "riscv",
- "sbi",
  "spin",
 ]
 
