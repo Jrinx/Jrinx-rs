@@ -44,6 +44,6 @@ unsafe extern "C" fn init(fdtaddr: usize) -> ! {
         fdt_addr: PhysAddr::new(fdtaddr).to_virt(),
     };
 
-    cpus::init(&boot_info.fdt()).unwrap();
+    cpus::init(&boot_info.fdt());
     crate::cold_init(boot_info);
 }

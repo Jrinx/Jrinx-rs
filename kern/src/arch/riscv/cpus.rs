@@ -1,18 +1,14 @@
 use fdt::Fdt;
-use jrinx_error::{InternalError, Result};
 use jrinx_hal::{Cpu, Hal};
 
-pub(in crate::arch) fn init(fdt: &Fdt<'_>) -> Result<()> {
-    let node = fdt
-        .find_all_nodes("/cpus")
-        .next()
-        .ok_or(InternalError::DevProbeError)?;
+pub(in crate::arch) fn init(fdt: &Fdt<'_>) {
+    let node = fdt.find_all_nodes("/cpus").next().unwrap();
 
     let timebase_freq = node
         .property("timebase-frequency")
-        .ok_or(InternalError::DevProbeError)?
+        .unwrap()
         .as_usize()
-        .ok_or(InternalError::DevProbeError)?;
+        .unwrap();
 
     hal!().cpu().set_timebase_freq(timebase_freq as u64);
 
@@ -25,6 +21,4 @@ pub(in crate::arch) fn init(fdt: &Fdt<'_>) -> Result<()> {
         .count();
 
     hal!().cpu().set_nproc(nproc);
-
-    Ok(())
 }
