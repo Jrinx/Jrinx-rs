@@ -29,9 +29,11 @@ unsafe extern "C" fn _start() -> ! {
 }
 
 unsafe extern "C" fn init(fdtaddr: usize) -> ! {
-    (jrinx_layout::_sbss()..jrinx_layout::_ebss()).for_each(|x| {
-        core::ptr::write_volatile(x as *mut u8, 0);
-    });
+    core::ptr::write_bytes(
+        jrinx_layout::_sbss() as *mut u8,
+        0,
+        jrinx_layout::_ebss() - jrinx_layout::_sbss(),
+    );
 
     BootPageTable::init();
     BootPageTable::start();

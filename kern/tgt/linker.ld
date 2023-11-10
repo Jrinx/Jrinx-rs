@@ -61,12 +61,12 @@ SECTIONS {
     .bss : {
         PROVIDE(_sbss = .);
         *(.bss .bss* .sbss .sbss*)
+        PROVIDE(_ebss = .);
 
         . = ALIGN(PAGE_SIZE);
         PROVIDE(_sstack = .);
         *(.stack)
         PROVIDE(_estack = .);
-        PROVIDE(_ebss = .);
     }
 
     # Discarded sections
