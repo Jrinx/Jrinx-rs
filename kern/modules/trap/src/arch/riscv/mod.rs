@@ -8,7 +8,7 @@ use riscv::register::{
     utvec::TrapMode,
 };
 
-use crate::trap::{breakpoint, timer_int, TrapReason};
+use crate::{breakpoint, timer_int, GenericContext, TrapReason};
 
 #[derive(Debug, Default, Clone, Copy)]
 #[repr(C)]
@@ -96,8 +96,8 @@ pub struct Context {
     sepc: usize,
 }
 
-impl Context {
-    pub fn trap_reason(&self) -> TrapReason {
+impl GenericContext for Context {
+    fn trap_reason(&self) -> TrapReason {
         let cause = self.scause;
         let is_interrupt = (cause & (1 << (usize::BITS - 1))) != 0;
         if is_interrupt {
@@ -127,14 +127,14 @@ impl Context {
         }
     }
 
-    pub fn setup_user(&mut self, entry_point: usize, stack_top: usize) {
+    fn user_setup(&mut self, entry_point: usize, stack_top: usize) {
         self.regs.sp = stack_top;
         self.sstatus = 1 << 18 | (FS::Initial as usize) << 13 | (SPP::User as usize) << 8 | 1 << 5; // sum | fs | spp | spie
         self.sie = 1 << 9 | 1 << 5 | 1 << 1; // external int | timer int | software int
         self.sepc = entry_point;
     }
 
-    pub fn acc_pc(&mut self) {
+    fn pc_advance(&mut self) {
         let is_rvc = (unsafe { core::ptr::read_volatile(self.sepc as *const u8) & 0b11 }) != 0b11;
         if is_rvc {
             self.sepc += 2;
@@ -143,21 +143,19 @@ impl Context {
         }
     }
 
-    pub fn get_syscall_num(&self) -> usize {
+    fn syscall_num(&self) -> usize {
         self.regs.a7
     }
 
-    pub fn run(&mut self) {
+    fn run(&mut self) {
         extern "C" {
             fn run_user(ctx: &mut Context);
         }
-        unsafe {
-            run_user(self);
-        }
+        unsafe { run_user(self) };
     }
 }
 
-pub(in crate::arch) fn init() {
+pub(crate) fn init() {
     extern "C" {
         fn trap_entry();
     }
@@ -169,10 +167,9 @@ pub(in crate::arch) fn init() {
 
 extern "C" fn handle_kern_trap(ctx: &mut Context) {
     let reason = ctx.trap_reason();
-    trace!("kernel trap ({:?}) from {:#x}", reason, ctx.sepc);
     match reason {
         TrapReason::Breakpoint { addr: _ } => breakpoint::handle(ctx),
         TrapReason::Interrupt(5) => timer_int::handle(ctx),
-        _ => todo!(),
+        _ => unimplemented!(),
     }
 }

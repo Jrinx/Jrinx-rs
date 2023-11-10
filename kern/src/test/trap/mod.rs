@@ -1,8 +1,7 @@
 pub(super) mod breakpoint {
     use jrinx_hal::Hal;
     use jrinx_testdef::testdef;
-
-    use crate::trap::breakpoint;
+    use jrinx_trap::breakpoint;
 
     #[testdef]
     fn test() {
@@ -21,9 +20,8 @@ pub(super) mod page_fault {
     use jrinx_paging::{GenericPagePerm, GenericPageTable, PagePerm};
     use jrinx_phys_frame::PhysFrame;
     use jrinx_testdef::testdef;
+    use jrinx_trap::{arch::Context, GenericContext, TrapReason};
     use jrinx_vmm::KERN_PAGE_TABLE;
-
-    use crate::{arch, trap::TrapReason};
 
     cfg_if! {
         if #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))] {
@@ -71,8 +69,8 @@ pub(super) mod page_fault {
 
     #[testdef]
     fn test() {
-        let mut ctx = arch::trap::Context::default();
-        ctx.setup_user(USER_TEXT, 0);
+        let mut ctx = Context::default();
+        ctx.user_setup(USER_TEXT, 0);
         ctx.run();
         assert_eq!(
             ctx.trap_reason(),
@@ -123,9 +121,8 @@ pub(super) mod syscall {
     use jrinx_paging::{GenericPagePerm, GenericPageTable, PagePerm};
     use jrinx_phys_frame::PhysFrame;
     use jrinx_testdef::testdef;
+    use jrinx_trap::{arch::Context, GenericContext, TrapReason};
     use jrinx_vmm::KERN_PAGE_TABLE;
-
-    use crate::{arch, trap::TrapReason};
 
     #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
     macro_rules! code_syscall_with_num {
@@ -151,7 +148,7 @@ pub(super) mod syscall {
 
     #[testdef]
     fn test() {
-        let mut ctx = arch::trap::Context::default();
+        let mut ctx = Context::default();
 
         let frame = PhysFrame::alloc().unwrap();
         let addr = frame.addr();
@@ -167,15 +164,15 @@ pub(super) mod syscall {
         hal!().vm().sync_all();
 
         code_syscall_with_num!(addr.to_virt(), 32);
-        ctx.setup_user(USER_TEXT, 0);
+        ctx.user_setup(USER_TEXT, 0);
         ctx.run();
         assert_eq!(ctx.trap_reason(), TrapReason::SystemCall);
-        assert_eq!(ctx.get_syscall_num(), 32);
+        assert_eq!(ctx.syscall_num(), 32);
 
         code_syscall_with_num!(addr.to_virt(), 64);
-        ctx.setup_user(USER_TEXT, 0);
+        ctx.user_setup(USER_TEXT, 0);
         ctx.run();
         assert_eq!(ctx.trap_reason(), TrapReason::SystemCall);
-        assert_eq!(ctx.get_syscall_num(), 64);
+        assert_eq!(ctx.syscall_num(), 64);
     }
 }

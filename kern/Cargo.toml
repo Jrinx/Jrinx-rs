@@ -25,6 +25,7 @@ jrinx-percpu = { version = "0.1.0", path = "modules/percpu" }
 jrinx-phys-frame = { version = "0.1.0", path = "modules/phys-frame" }
 jrinx-testdef = { version = "0.1.0", path = "modules/testdef" }
 jrinx-timed-event = { version = "0.1.0", path = "modules/timed-event" }
+jrinx-trap = { version = "0.1.0", path = "modules/trap" }
 jrinx-util = { version = "0.1.0", path = "modules/util" }
 jrinx-vmm = { version = "0.1.0", path = "modules/vmm" }
 log = { version = "0.4.20", default-features = false }

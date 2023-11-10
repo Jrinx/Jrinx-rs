@@ -444,6 +444,7 @@ dependencies = [
  "jrinx-phys-frame",
  "jrinx-testdef",
  "jrinx-timed-event",
+ "jrinx-trap",
  "jrinx-util",
  "jrinx-vmm",
  "log",
@@ -643,6 +644,19 @@ dependencies = [
  "jrinx-layout",
  "jrinx-percpu",
  "jrinx-serial-id-macro",
+ "spin",
+]
+
+[[package]]
+name = "jrinx-trap"
+version = "0.1.0"
+dependencies = [
+ "cfg-if",
+ "jrinx-addr",
+ "jrinx-paging",
+ "jrinx-timed-event",
+ "log",
+ "riscv",
  "spin",
 ]
 

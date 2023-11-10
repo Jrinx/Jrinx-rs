@@ -1,0 +1,15 @@
+[package]
+name = "jrinx-trap"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cfg-if = "1.0.0"
+jrinx-addr = { version = "0.1.0", path = "../addr" }
+jrinx-paging = { version = "0.1.0", path = "../paging" }
+jrinx-timed-event = { version = "0.1.0", path = "../timed-event" }
+log = { version = "0.4.20", default-features = false }
+spin = "0.9.8"
+
+[target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]
+riscv = "0.10.1"

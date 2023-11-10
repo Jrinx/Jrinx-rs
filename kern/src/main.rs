@@ -1,7 +1,5 @@
 #![feature(asm_const)]
-#![feature(iter_collect_into)]
 #![feature(naked_functions)]
-#![feature(offset_of)]
 #![feature(panic_info_message)]
 #![feature(used_with_arg)]
 #![deny(warnings)]
@@ -25,10 +23,10 @@ extern crate jrinx_hal;
 mod arch;
 mod bootargs;
 mod test;
-mod trap;
 mod util;
 
 fn cold_init(boot_info: BootInfo) -> ! {
+    jrinx_trap::init();
     jrinx_heap::init();
     logging::init();
 

@@ -1,10 +1,10 @@
 use spin::RwLock;
 
-use crate::{arch::trap::Context, trap::TrapReason};
+use crate::{GenericContext, TrapReason};
 
 static BREAKPOINT_COUNTER: RwLock<usize> = RwLock::new(0);
 
-pub fn handle(ctx: &mut Context) {
+pub(crate) fn handle(ctx: &mut impl GenericContext) {
     let TrapReason::Breakpoint { addr } = ctx.trap_reason() else {
         panic!("not a breakpoint trap");
     };
@@ -14,7 +14,7 @@ pub fn handle(ctx: &mut Context) {
     let mut counter = BREAKPOINT_COUNTER.write();
     *counter += 1;
 
-    ctx.acc_pc();
+    ctx.pc_advance();
 }
 
 pub fn count() -> usize {
