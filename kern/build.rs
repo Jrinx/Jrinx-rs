@@ -1,13 +1,12 @@
 use std::fs;
 use std::io::Write;
 
+const TARGET_ARCH_ENV: &str = "CARGO_CFG_TARGET_ARCH";
+
 fn main() {
+    println!("cargo:rerun-if-env-changed={}", TARGET_ARCH_ENV);
     let base_addr: usize = {
-        match std::env::var_os("CARGO_CFG_TARGET_ARCH")
-            .unwrap()
-            .to_str()
-            .unwrap()
-        {
+        match std::env::var_os(TARGET_ARCH_ENV).unwrap().to_str().unwrap() {
             "riscv32" => 0x8040_0000,
             "riscv64" => 0xFFFF_FFC0_8020_0000,
             other => panic!("Unsupported arch: {}", other),
