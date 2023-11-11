@@ -63,13 +63,12 @@ impl LinearAllocator {
     }
 
     pub fn deallocate(&self, va: VirtAddr) -> Result<()> {
-        let va = if !self.allocated_va.lock().remove(&va) {
+        if !self.allocated_va.lock().remove(&va) {
             Err(InternalError::InvalidVirtAddr)
         } else {
+            (self.unmap_fn)(va, self.ele_size)?;
             self.recycled_va.lock().push_back(va);
-            Ok(va)
-        }?;
-
-        (self.unmap_fn)(va, self.ele_size)
+            Ok(())
+        }
     }
 }
