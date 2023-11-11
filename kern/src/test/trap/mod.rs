@@ -71,6 +71,7 @@ pub(super) mod page_fault {
     fn test() {
         let mut ctx = Context::default();
         ctx.user_setup(USER_TEXT, 0);
+        ctx.disable_int();
         ctx.run();
         assert_eq!(
             ctx.trap_reason(),
@@ -165,12 +166,14 @@ pub(super) mod syscall {
 
         code_syscall_with_num!(addr.to_virt(), 32);
         ctx.user_setup(USER_TEXT, 0);
+        ctx.disable_int();
         ctx.run();
         assert_eq!(ctx.trap_reason(), TrapReason::SystemCall);
         assert_eq!(ctx.syscall_num(), 32);
 
         code_syscall_with_num!(addr.to_virt(), 64);
         ctx.user_setup(USER_TEXT, 0);
+        ctx.disable_int();
         ctx.run();
         assert_eq!(ctx.trap_reason(), TrapReason::SystemCall);
         assert_eq!(ctx.syscall_num(), 64);

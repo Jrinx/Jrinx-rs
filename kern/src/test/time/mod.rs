@@ -4,6 +4,7 @@ pub(super) mod status {
     use jrinx_hal::{Cpu, Hal, Interrupt};
     use jrinx_testdef::testdef;
     use jrinx_timed_event::{TimedEvent, TimedEventHandler, TimedEventStatus};
+    use jrinx_trap::timer_int;
     use spin::Mutex;
 
     #[testdef]
@@ -22,7 +23,11 @@ pub(super) mod status {
             ),
         );
 
-        hal!().interrupt().wait();
+        let timer_int_count = timer_int::count();
+
+        while timer_int::count() == timer_int_count {
+            hal!().interrupt().wait();
+        }
 
         assert_eq!(*DATA.lock(), Some(TimedEventStatus::Timeout));
 
@@ -51,6 +56,7 @@ pub(super) mod queue {
     use jrinx_hal::{Cpu, Hal, Interrupt};
     use jrinx_testdef::testdef;
     use jrinx_timed_event::{TimedEvent, TimedEventHandler};
+    use jrinx_trap::timer_int;
     use spin::Mutex;
 
     #[testdef]
@@ -76,7 +82,10 @@ pub(super) mod queue {
         }
 
         for i in 1..=EVENT_MAX {
-            hal!().interrupt().wait();
+            let timer_int_count = timer_int::count();
+            while timer_int::count() == timer_int_count {
+                hal!().interrupt().wait();
+            }
             assert_eq!(ORDER.lock().len(), i);
         }
 

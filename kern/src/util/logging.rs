@@ -1,8 +1,9 @@
 use core::fmt::Write;
 
 use alloc::{fmt, format, string::ToString};
-use jrinx_hal::{Cpu, Earlycon, Hal};
+use jrinx_hal::{Cpu, Earlycon, Hal, Interrupt};
 use jrinx_multitask::{executor::Executor, inspector::Inspector, runtime::Runtime};
+use spin::Mutex;
 
 use super::color::{self, with_color};
 
@@ -34,9 +35,11 @@ impl log::Log for Logger {
     }
 
     fn log(&self, record: &log::Record) {
+        static MUTEX: Mutex<()> = Mutex::new(());
         if !self.enabled(record.metadata()) {
             return;
         }
+
         let cpu_id = hal!().cpu().id();
         let cpu_time = hal!().cpu().get_time();
         let level = record.level();
@@ -59,18 +62,22 @@ impl log::Log for Logger {
         };
 
         fmt::format(*record.args()).split('\n').for_each(|args| {
-            print_fmt(with_color! {
-                color::ColorCode::White,
-                color::ColorCode::White,
-                "[ {time} cpu#{id} {level} ] ( {kernel_state} ) {args}\n",
-                time = {
-                    let micros = cpu_time.as_micros();
-                    format_args!("{s:>6}.{us:06}", s = micros / 1000000, us = micros % 1000000)
-                },
-                id = cpu_id,
-                level = with_color!(color, color::ColorCode::White, "{:>5}", level),
-                kernel_state = with_color!(color::ColorCode::Blue, color::ColorCode::White, "{:^14}", kernel_state),
-                args = with_color!(color::ColorCode::White, color::ColorCode::White, "{}", args),
+            hal!().interrupt().with_saved_off(|| {
+                let mutex = MUTEX.lock();
+                print_fmt(with_color! {
+                    color::ColorCode::White,
+                    color::ColorCode::White,
+                    "[ {time} cpu#{id} {level} ] ( {kernel_state} ) {args}\n",
+                    time = {
+                        let micros = cpu_time.as_micros();
+                        format_args!("{s:>6}.{us:06}", s = micros / 1000000, us = micros % 1000000)
+                    },
+                    id = cpu_id,
+                    level = with_color!(color, color::ColorCode::White, "{:>5}", level),
+                    kernel_state = with_color!(color::ColorCode::Blue, color::ColorCode::White, "{:^14}", kernel_state),
+                    args = with_color!(color::ColorCode::White, color::ColorCode::White, "{}", args),
+                });
+                core::hint::black_box(mutex);
             });
         });
     }

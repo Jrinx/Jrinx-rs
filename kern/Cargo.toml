@@ -34,3 +34,4 @@ spin = "0.9.8"
 
 [target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]
 riscv = "0.10.1"
+sbi = "0.2.0"

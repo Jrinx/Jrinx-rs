@@ -1,3 +1,4 @@
+#![feature(allocator_api)]
 #![feature(asm_const)]
 #![feature(naked_functions)]
 #![feature(panic_info_message)]
@@ -9,6 +10,7 @@
 use arch::BootInfo;
 use jrinx_hal::{Cpu, Hal};
 use jrinx_multitask::runtime::{self, Runtime};
+use spin::Mutex;
 
 use crate::util::logging;
 
@@ -25,10 +27,36 @@ mod bootargs;
 mod test;
 mod util;
 
-fn cold_init(boot_info: BootInfo) -> ! {
+enum BootState {
+    Bootstrap,
+    Ready(usize),
+}
+
+static BOOT_STATE: Mutex<BootState> = Mutex::new(BootState::Bootstrap);
+
+fn boot_set_ready() {
+    let mut boot_state = BOOT_STATE.lock();
+    if let BootState::Ready(ref mut count) = *boot_state {
+        *count += 1;
+    } else {
+        *boot_state = BootState::Ready(1);
+    }
+}
+
+fn primary_init(boot_info: BootInfo) -> ! {
     jrinx_trap::init();
     jrinx_heap::init();
     logging::init();
+
+    let fdt = &boot_info.fdt();
+
+    jrinx_driver::probe_all(fdt);
+
+    if let Some(bootargs) = fdt.chosen().bootargs() {
+        bootargs::set(bootargs);
+    }
+
+    arch::secondary_boot(fdt);
 
     jrinx_percpu::init(hal!().cpu().nproc());
     jrinx_percpu::set_local_pointer(hal!().cpu().id());
@@ -41,18 +69,46 @@ fn cold_init(boot_info: BootInfo) -> ! {
         arch, build_time, build_mode,
     );
 
-    jrinx_driver::probe_all(&boot_info.fdt());
-
-    if let Some(bootargs) = boot_info.fdt().chosen().bootargs() {
-        bootargs::set(bootargs);
-    }
-
     jrinx_vmm::init();
-    runtime::init(master_init());
+
+    runtime::init(primary_task());
+
+    boot_set_ready();
 
     Runtime::start();
 }
 
-async fn master_init() {
+fn secondary_init() -> ! {
+    jrinx_trap::init();
+
+    while let BootState::Bootstrap = *BOOT_STATE.lock() {
+        core::hint::spin_loop();
+    }
+
+    jrinx_percpu::set_local_pointer(hal!().cpu().id());
+
+    jrinx_vmm::init();
+
+    runtime::init(secondary_task());
+
+    boot_set_ready();
+
+    Runtime::start();
+}
+
+async fn primary_task() {
+    info!("primary task started");
+
+    while let BootState::Ready(count) = *BOOT_STATE.lock() {
+        if count == hal!().cpu().nproc_valid() {
+            break;
+        }
+        core::hint::spin_loop();
+    }
+
     bootargs::execute().await;
+}
+
+async fn secondary_task() {
+    info!("secondary task started");
 }
