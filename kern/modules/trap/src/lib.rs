@@ -7,6 +7,7 @@ extern crate log;
 
 pub mod arch;
 pub mod breakpoint;
+pub mod soft_int;
 pub mod timer_int;
 
 use core::fmt::Debug;
@@ -16,7 +17,9 @@ use jrinx_paging::PagePerm;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TrapReason {
-    Interrupt(usize),
+    ExternalInterrupt,
+    SoftwareInterrupt,
+    TimerInterrupt,
     SystemCall,
     Breakpoint { addr: VirtAddr },
     PageFault { addr: VirtAddr, perm: PagePerm },
@@ -29,6 +32,10 @@ pub trait GenericContext: Debug + Clone + Copy {
     fn syscall_num(&self) -> usize;
 
     fn user_setup(&mut self, entry_point: usize, stack_top: usize);
+
+    fn enable_int(&mut self);
+
+    fn disable_int(&mut self);
 
     fn pc_advance(&mut self);
 

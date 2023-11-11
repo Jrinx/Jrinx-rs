@@ -651,6 +651,7 @@ version = "0.1.0"
 dependencies = [
  "cfg-if",
  "jrinx-addr",
+ "jrinx-hal",
  "jrinx-paging",
  "jrinx-timed-event",
  "log",

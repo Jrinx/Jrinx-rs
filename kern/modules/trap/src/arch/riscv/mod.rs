@@ -3,12 +3,12 @@ mod entry;
 use jrinx_addr::VirtAddr;
 use jrinx_paging::{GenericPagePerm, PagePerm};
 use riscv::register::{
-    scause::Exception,
+    scause::{Exception, Interrupt},
     sstatus::{FS, SPP},
     utvec::TrapMode,
 };
 
-use crate::{breakpoint, timer_int, GenericContext, TrapReason};
+use crate::{breakpoint, soft_int, timer_int, GenericContext, TrapReason};
 
 #[derive(Debug, Default, Clone, Copy)]
 #[repr(C)]
@@ -98,13 +98,17 @@ pub struct Context {
 
 impl GenericContext for Context {
     fn trap_reason(&self) -> TrapReason {
-        let cause = self.scause;
-        let is_interrupt = (cause & (1 << (usize::BITS - 1))) != 0;
+        let is_interrupt = (self.scause & (1 << (usize::BITS - 1))) != 0;
         if is_interrupt {
-            let code = cause & !(1 << (usize::BITS - 1));
-            TrapReason::Interrupt(code)
+            let code = self.scause & !(1 << (usize::BITS - 1));
+            match Interrupt::from(code) {
+                Interrupt::SupervisorSoft => TrapReason::SoftwareInterrupt,
+                Interrupt::SupervisorTimer => TrapReason::TimerInterrupt,
+                Interrupt::SupervisorExternal => TrapReason::ExternalInterrupt,
+                _ => TrapReason::Unknown { code: self.scause },
+            }
         } else {
-            let code = Exception::from(cause);
+            let code = Exception::from(self.scause);
             match code {
                 Exception::UserEnvCall => TrapReason::SystemCall,
                 Exception::Breakpoint => TrapReason::Breakpoint {
@@ -130,8 +134,16 @@ impl GenericContext for Context {
     fn user_setup(&mut self, entry_point: usize, stack_top: usize) {
         self.regs.sp = stack_top;
         self.sstatus = 1 << 18 | (FS::Initial as usize) << 13 | (SPP::User as usize) << 8 | 1 << 5; // sum | fs | spp | spie
-        self.sie = 1 << 9 | 1 << 5 | 1 << 1; // external int | timer int | software int
         self.sepc = entry_point;
+        self.enable_int();
+    }
+
+    fn enable_int(&mut self) {
+        self.sie = 1 << 9 | 1 << 5 | 1 << 1; // external int | timer int | software int
+    }
+
+    fn disable_int(&mut self) {
+        self.sie = 0;
     }
 
     fn pc_advance(&mut self) {
@@ -169,7 +181,8 @@ extern "C" fn handle_kern_trap(ctx: &mut Context) {
     let reason = ctx.trap_reason();
     match reason {
         TrapReason::Breakpoint { addr: _ } => breakpoint::handle(ctx),
-        TrapReason::Interrupt(5) => timer_int::handle(ctx),
+        TrapReason::SoftwareInterrupt => soft_int::handle(ctx),
+        TrapReason::TimerInterrupt => timer_int::handle(ctx),
         _ => unimplemented!(),
     }
 }

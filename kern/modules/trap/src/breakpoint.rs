@@ -2,7 +2,7 @@ use spin::RwLock;
 
 use crate::{GenericContext, TrapReason};
 
-static BREAKPOINT_COUNTER: RwLock<usize> = RwLock::new(0);
+static BREAKPOINT_COUNTER: RwLock<u64> = RwLock::new(0);
 
 pub(crate) fn handle(ctx: &mut impl GenericContext) {
     let TrapReason::Breakpoint { addr } = ctx.trap_reason() else {
@@ -17,6 +17,6 @@ pub(crate) fn handle(ctx: &mut impl GenericContext) {
     ctx.pc_advance();
 }
 
-pub fn count() -> usize {
+pub fn count() -> u64 {
     *BREAKPOINT_COUNTER.read()
 }
