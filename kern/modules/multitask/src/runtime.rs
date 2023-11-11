@@ -7,7 +7,7 @@ use alloc::{
 };
 use jrinx_addr::VirtAddr;
 use jrinx_error::{InternalError, Result};
-use jrinx_hal::{Hal, HaltReason, Interrupt};
+use jrinx_hal::{Cpu, Hal, HaltReason, Interrupt};
 use jrinx_percpu::percpu;
 use spin::{Mutex, Once};
 
@@ -122,17 +122,10 @@ impl Runtime {
 
             debug!("runtime finished running all inspectors");
 
-            Self::with_current(|rt| rt.status = RuntimeStatus::Endpoint).unwrap();
+            Self::halt_if_all_finished_or_broadcast_ipi();
 
-            if !Self::all_finished() {
-                debug!("broadcast ipi");
-                hal!().interrupt().send_ipi(&Self::all_endpoint());
-
-                debug!("wait for interrupt");
-                hal!().interrupt().wait();
-            } else {
-                hal!().halt(HaltReason::NormalExit);
-            }
+            debug!("runtime send ipi and wait");
+            hal!().interrupt().wait();
         }
     }
 
@@ -200,32 +193,46 @@ impl Runtime {
         VirtAddr::new(&self.switch_context as *const _ as usize)
     }
 
-    fn all_finished() -> bool {
-        hal!().interrupt().with_saved_off(|| {
-            RUNTIME
-                .iter()
-                .filter(|rt| rt.get().is_some())
-                .map(|rt| rt.get().unwrap().try_lock())
-                .all(|guard| guard.is_some_and(|guard| guard.status == RuntimeStatus::Endpoint))
-        })
-    }
+    fn halt_if_all_finished_or_broadcast_ipi() {
+        while hal!().interrupt().with_saved_off(critical_inner).is_none() {}
 
-    fn all_endpoint() -> Vec<usize> {
-        hal!()
-            .interrupt()
-            .with_saved_off(|| {
-                RUNTIME
+        fn critical_inner() -> Option<()> {
+            let guards = RUNTIME
+                .iter()
+                .zip(0usize..)
+                .filter_map(|(rt, id)| rt.get().map(|rt| (rt.try_lock(), id)))
+                .collect::<Vec<_>>();
+            if guards.iter().any(|(guard, _)| guard.is_none()) {
+                None
+            } else {
+                if guards
                     .iter()
-                    .zip(0..)
-                    .filter(|(rt, _)| rt.get().is_some())
-                    .map(|(rt, id)| (rt.get().unwrap().try_lock(), id))
-                    .filter_map(|(guard, id)| {
-                        guard
-                            .is_some_and(|guard| guard.status == RuntimeStatus::Endpoint)
-                            .then_some(id)
-                    })
-            })
-            .collect()
+                    .all(|(guard, _)| guard.as_ref().unwrap().status == RuntimeStatus::Endpoint)
+                {
+                    hal!().halt(HaltReason::NormalExit);
+                } else {
+                    let ipi_target = guards
+                        .iter()
+                        .filter_map(|(guard, id)| {
+                            (guard.as_ref().unwrap().status == RuntimeStatus::Endpoint)
+                                .then_some(*id)
+                        })
+                        .min();
+
+                    guards
+                        .into_iter()
+                        .find_map(|(guard, id)| (id == hal!().cpu().id()).then_some(guard))
+                        .unwrap()
+                        .unwrap()
+                        .status = RuntimeStatus::Endpoint;
+
+                    if let Some(target) = ipi_target {
+                        hal!().interrupt().send_ipi(&[target]);
+                    }
+                }
+                Some(())
+            }
+        }
     }
 }
 
