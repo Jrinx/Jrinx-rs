@@ -19,7 +19,11 @@ pub fn percpu(attr: TokenStream, item: TokenStream) -> TokenStream {
     let expr = &ast.expr;
 
     let inner_name = &Ident::new(&format!("__PERCPU_{}", name), Span::call_site().into());
-    let struct_name = &Ident::new(&format!("{}_WRAPPER", name), Span::call_site().into());
+    let struct_name = &Ident::new(
+        &format!("{}_PERCPU_WRAPPER", name),
+        Span::call_site().into(),
+    );
+    let iter_name = &Ident::new(&format!("{}_PERCPU_ITER", name), Span::call_site().into());
 
     let safety = match mutability {
         StaticMutability::None => quote!(),
@@ -29,6 +33,11 @@ pub fn percpu(attr: TokenStream, item: TokenStream) -> TokenStream {
     let expand = quote! {
         #[allow(non_camel_case_types)]
         #vis struct #struct_name {}
+
+        #[allow(non_camel_case_types)]
+        #vis struct #iter_name {
+            cpu_id: usize,
+        }
 
         #[link_section = ".percpu"]
         #(#attrs)*
@@ -93,6 +102,31 @@ pub fn percpu(attr: TokenStream, item: TokenStream) -> TokenStream {
                 f(unsafe {
                     &mut *((jrinx_percpu::local_area_base(cpu_id) + self.offset()) as *mut #ty)
                 })
+            }
+
+            #[inline]
+            pub #safety fn iter(&self) -> #iter_name {
+                #iter_name {
+                    cpu_id: 0,
+                }
+            }
+        }
+
+        impl core::iter::Iterator for #iter_name {
+            type Item = &'static #ty;
+
+            fn next(&mut self) -> Option<Self::Item> {
+                use jrinx_hal::{Cpu, Hal};
+
+                if self.cpu_id >= jrinx_hal::hal!().cpu().nproc() {
+                    None
+                } else {
+                    let cpu_id = self.cpu_id;
+                    self.cpu_id += 1;
+                    Some(unsafe {
+                        &*((jrinx_percpu::local_area_base(cpu_id) + #name.offset()) as *const #ty)
+                    })
+                }
             }
         }
     };
