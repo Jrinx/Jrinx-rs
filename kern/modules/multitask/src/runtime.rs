@@ -3,6 +3,7 @@ use core::{future::Future, pin::Pin};
 use alloc::{
     boxed::Box,
     collections::{BTreeMap, VecDeque},
+    vec::Vec,
 };
 use jrinx_addr::VirtAddr;
 use jrinx_error::{InternalError, Result};
@@ -22,6 +23,7 @@ pub(crate) enum RuntimeStatus {
     Init,
     Idle,
     Running(InspectorId),
+    Endpoint,
 }
 
 pub struct Runtime {
@@ -88,34 +90,50 @@ impl Runtime {
         hal!().interrupt().enable();
 
         let runtime_switch_ctx = Self::with_current(|rt| rt.switch_context_addr()).unwrap();
-        while let Some(inspector_id) = Self::with_current(|rt| rt.pop_inspector()).unwrap() {
-            debug!("runtime running inspector {:?}", inspector_id);
 
-            Self::with_current(|rt| rt.set_current_inspector(Some(inspector_id))).unwrap();
+        loop {
+            while let Some(inspector_id) = Self::with_current(|rt| rt.pop_inspector()).unwrap() {
+                trace!("switch into inspector {:?}", inspector_id);
 
-            Inspector::run(runtime_switch_ctx);
+                Self::with_current(|rt| rt.set_current_inspector(Some(inspector_id))).unwrap();
 
-            Self::with_current(|rt| {
-                rt.clr_inspector_switch_pending();
-                rt.set_current_inspector(None);
-            })
-            .unwrap();
+                Inspector::run(runtime_switch_ctx);
 
-            if Self::with_current(|rt| {
-                rt.with_inspector(inspector_id, |is| is.status() == InspectorStatus::Finished)
-                    .unwrap()
-            })
-            .unwrap()
-            {
-                Self::with_current(|rt| rt.unregister_inspector(inspector_id).unwrap()).unwrap();
+                Self::with_current(|rt| {
+                    rt.clr_inspector_switch_pending();
+                    rt.set_current_inspector(None);
+                })
+                .unwrap();
+
+                trace!("switch from inspector {:?}", inspector_id);
+
+                if Self::with_current(|rt| {
+                    rt.with_inspector(inspector_id, |is| is.status() == InspectorStatus::Finished)
+                        .unwrap()
+                })
+                .unwrap()
+                {
+                    Self::with_current(|rt| rt.unregister_inspector(inspector_id).unwrap())
+                        .unwrap();
+                } else {
+                    Self::with_current(|rt| rt.push_inspector(inspector_id).unwrap()).unwrap();
+                }
+            }
+
+            debug!("runtime finished running all inspectors");
+
+            Self::with_current(|rt| rt.status = RuntimeStatus::Endpoint).unwrap();
+
+            if !Self::all_finished() {
+                debug!("broadcast ipi");
+                hal!().interrupt().send_ipi(&Self::all_endpoint());
+
+                debug!("wait for interrupt");
+                hal!().interrupt().wait();
             } else {
-                Self::with_current(|rt| rt.push_inspector(inspector_id).unwrap()).unwrap();
+                hal!().halt(HaltReason::NormalExit);
             }
         }
-
-        debug!("runtime finished running all inspectors");
-
-        hal!().halt(HaltReason::NormalExit);
     }
 
     pub fn switch_yield() {
@@ -157,7 +175,7 @@ impl Runtime {
                 RuntimeStatus::Running(ref mut inspector_id) => {
                     *inspector_id = id;
                 }
-                RuntimeStatus::Init | RuntimeStatus::Idle => {
+                _ => {
                     self.status = RuntimeStatus::Running(id);
                 }
             }
@@ -180,6 +198,34 @@ impl Runtime {
 
     fn switch_context_addr(&self) -> VirtAddr {
         VirtAddr::new(&self.switch_context as *const _ as usize)
+    }
+
+    fn all_finished() -> bool {
+        hal!().interrupt().with_saved_off(|| {
+            RUNTIME
+                .iter()
+                .filter(|rt| rt.get().is_some())
+                .map(|rt| rt.get().unwrap().try_lock())
+                .all(|guard| guard.is_some_and(|guard| guard.status == RuntimeStatus::Endpoint))
+        })
+    }
+
+    fn all_endpoint() -> Vec<usize> {
+        hal!()
+            .interrupt()
+            .with_saved_off(|| {
+                RUNTIME
+                    .iter()
+                    .zip(0..)
+                    .filter(|(rt, _)| rt.get().is_some())
+                    .map(|(rt, id)| (rt.get().unwrap().try_lock(), id))
+                    .filter_map(|(guard, id)| {
+                        guard
+                            .is_some_and(|guard| guard.status == RuntimeStatus::Endpoint)
+                            .then_some(id)
+                    })
+            })
+            .collect()
     }
 }
 
