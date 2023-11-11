@@ -9,6 +9,7 @@ use crate::Cpu;
 pub struct CpuImpl;
 
 static CPU_COUNT: Once<usize> = Once::new();
+static CPU_VALID_COUNT: Once<usize> = Once::new();
 static CPU_TIMEBASE_FREQ: Once<u64> = Once::new();
 
 pub(crate) static CPU: CpuImpl = CpuImpl;
@@ -23,6 +24,14 @@ impl Cpu for CpuImpl {
             );
         }
         id
+    }
+
+    fn set_nproc_valid(&self, count: usize) {
+        CPU_VALID_COUNT.call_once(|| count);
+    }
+
+    fn nproc_valid(&self) -> usize {
+        *CPU_VALID_COUNT.get().unwrap_or(&0)
     }
 
     fn set_nproc(&self, count: usize) {

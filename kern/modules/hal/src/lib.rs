@@ -5,6 +5,7 @@ extern crate alloc;
 mod arch;
 use core::time::Duration;
 
+use alloc::vec::Vec;
 pub use arch::*;
 
 use jrinx_addr::PhysAddr;
@@ -34,6 +35,10 @@ pub trait Hal: Send + Sync {
 
 pub trait Cpu: Send + Sync {
     fn id(&self) -> usize;
+
+    fn set_nproc_valid(&self, count: usize);
+
+    fn nproc_valid(&self) -> usize;
 
     fn set_nproc(&self, count: usize);
 
@@ -97,6 +102,20 @@ pub trait Interrupt: Send + Sync {
             self.enable();
         }
         ret
+    }
+
+    fn clr_soft(&self);
+
+    fn send_ipi(&self, cpu_ids: &[usize]);
+
+    fn broadcast_ipi(&self) {
+        self.send_ipi(
+            (0..hal!().cpu().nproc())
+                .filter(|&id| id != hal!().cpu().id())
+                .collect::<Vec<_>>()
+                .into_boxed_slice()
+                .as_ref(),
+        );
     }
 }
 
