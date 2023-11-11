@@ -45,20 +45,17 @@ impl LinearAllocator {
     pub fn allocate(&self) -> Result<VirtAddr> {
         let va = match self.recycled_va.lock().pop_front() {
             Some(va) => va,
-            None => {
-                let va = match self.next_va.load(Ordering::SeqCst) {
-                    va if va + self.ele_size > (self.region.0 + self.region.1).as_usize() => {
-                        Err(InternalError::NotEnoughMem)
-                    }
-                    _ => Ok(self
-                        .next_va
-                        .fetch_add(self.ele_size + self.grd_size, Ordering::SeqCst)),
+            None => match self.next_va.load(Ordering::SeqCst) {
+                va if va + self.ele_size > (self.region.0 + self.region.1).as_usize() => {
+                    Err(InternalError::NotEnoughMem)
                 }
-                .map(VirtAddr::new)?;
-                self.allocated_va.lock().insert(va);
-                va
+                _ => Ok(self
+                    .next_va
+                    .fetch_add(self.ele_size + self.grd_size, Ordering::SeqCst)),
             }
+            .map(VirtAddr::new)?,
         };
+        self.allocated_va.lock().insert(va);
 
         (self.map_fn)(va, self.ele_size)?;
 
