@@ -13,7 +13,6 @@ fn probe(node: &FdtNode) -> Result<()> {
         .filter_map(|mem_region| {
             mem_region.size.map(|size| {
                 let addr = PhysAddr::new(mem_region.starting_address as usize).to_virt();
-                debug!("probed memory region: {} - {}", addr, addr + size);
                 let bound = Bound::new(addr.as_usize(), size);
                 let mut intervals = ExclusiveIntervals::new([bound]);
                 intervals -= Bound::new(

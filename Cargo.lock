@@ -506,7 +506,6 @@ dependencies = [
  "jrinx-heap",
  "jrinx-layout",
  "jrinx-util",
- "log",
 ]
 
 [[package]]
