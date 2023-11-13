@@ -3,12 +3,12 @@ use core::{future::Future, pin::Pin};
 use alloc::{
     boxed::Box,
     collections::{BTreeMap, VecDeque},
-    vec::Vec,
 };
 use jrinx_addr::VirtAddr;
 use jrinx_error::{InternalError, Result};
 use jrinx_hal::{Cpu, Hal, HaltReason, Interrupt};
 use jrinx_percpu::percpu;
+use jrinx_util::mtxgroup::MutexGroup;
 use spin::{Mutex, Once};
 
 use crate::{
@@ -27,6 +27,7 @@ pub(crate) enum RuntimeStatus {
 }
 
 pub struct Runtime {
+    cpu_id: usize,
     inspector_registry: BTreeMap<InspectorId, Inspector>,
     inspector_queue: VecDeque<InspectorId>,
     inspector_switch_pending: bool,
@@ -37,6 +38,7 @@ pub struct Runtime {
 impl Runtime {
     pub fn new(root_inspector: Inspector) -> Mutex<Pin<Box<Self>>> {
         let mut runtime = Box::pin(Self {
+            cpu_id: hal!().cpu().id(),
             inspector_registry: BTreeMap::new(),
             inspector_queue: VecDeque::new(),
             inspector_switch_pending: false,
@@ -194,43 +196,30 @@ impl Runtime {
     }
 
     fn halt_if_all_finished_or_broadcast_ipi() {
-        while hal!().interrupt().with_saved_off(critical_inner).is_none() {}
+        let runtimes = MutexGroup::new(RUNTIME.iter().filter_map(|rt| rt.get()));
+        let guards = runtimes.lock();
 
-        fn critical_inner() -> Option<()> {
-            let guards = RUNTIME
+        if guards
+            .iter()
+            .all(|guard| guard.status == RuntimeStatus::Endpoint)
+        {
+            hal!().halt(HaltReason::NormalExit);
+        } else {
+            let ipi_target = guards
                 .iter()
-                .zip(0usize..)
-                .filter_map(|(rt, id)| rt.get().map(|rt| (rt.try_lock(), id)))
-                .collect::<Vec<_>>();
-            if guards.iter().any(|(guard, _)| guard.is_none()) {
-                None
-            } else {
-                if guards
-                    .iter()
-                    .all(|(guard, _)| guard.as_ref().unwrap().status == RuntimeStatus::Endpoint)
-                {
-                    hal!().halt(HaltReason::NormalExit);
-                } else {
-                    let ipi_target = guards
-                        .iter()
-                        .filter_map(|(guard, id)| {
-                            (guard.as_ref().unwrap().status == RuntimeStatus::Endpoint)
-                                .then_some(*id)
-                        })
-                        .min();
+                .filter_map(|guard| {
+                    (guard.status == RuntimeStatus::Endpoint).then_some(guard.cpu_id)
+                })
+                .min();
 
-                    guards
-                        .into_iter()
-                        .find_map(|(guard, id)| (id == hal!().cpu().id()).then_some(guard))
-                        .unwrap()
-                        .unwrap()
-                        .status = RuntimeStatus::Endpoint;
+            guards
+                .into_iter()
+                .find(|guard| guard.cpu_id == hal!().cpu().id())
+                .unwrap()
+                .status = RuntimeStatus::Endpoint;
 
-                    if let Some(target) = ipi_target {
-                        hal!().interrupt().send_ipi(&[target]);
-                    }
-                }
-                Some(())
+            if let Some(cpu_id) = ipi_target {
+                hal!().interrupt().send_ipi(&[cpu_id]);
             }
         }
     }
