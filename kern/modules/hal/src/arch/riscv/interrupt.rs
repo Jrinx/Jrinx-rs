@@ -4,9 +4,7 @@ use sbi::HartMask;
 use crate::Interrupt;
 
 #[derive(Debug, Clone, Copy)]
-pub struct InterruptImpl;
-
-pub(crate) static INTERRUPT: InterruptImpl = InterruptImpl;
+pub(crate) struct InterruptImpl;
 
 impl Interrupt for InterruptImpl {
     fn wait(&self) {

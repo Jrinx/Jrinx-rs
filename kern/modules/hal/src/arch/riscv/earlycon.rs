@@ -1,9 +1,7 @@
 use crate::Earlycon;
 
 #[derive(Debug, Clone, Copy)]
-pub struct EarlyconImpl;
-
-pub(crate) static EARLYCON: EarlyconImpl = EarlyconImpl;
+pub(crate) struct EarlyconImpl;
 
 impl Earlycon for EarlyconImpl {
     fn getc(&self) -> Option<u8> {

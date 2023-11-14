@@ -5,8 +5,6 @@ use crate::Vm;
 #[derive(Debug, Clone, Copy)]
 pub struct VmImpl;
 
-pub(crate) static VM: VmImpl = VmImpl;
-
 impl Vm for VmImpl {
     fn enable(&self, page_table: jrinx_addr::PhysAddr) {
         #[cfg(target_arch = "riscv32")]

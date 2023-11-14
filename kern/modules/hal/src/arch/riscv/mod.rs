@@ -9,8 +9,6 @@ use crate::{Hal, HaltReason};
 #[derive(Debug, Clone, Copy)]
 pub struct HalImpl;
 
-pub static HAL: HalImpl = HalImpl;
-
 impl Hal for HalImpl {
     fn breakpoint(&self) {
         unsafe {
@@ -19,11 +17,11 @@ impl Hal for HalImpl {
     }
 
     fn cpu(&self) -> impl crate::Cpu {
-        cpu::CPU
+        cpu::CpuImpl
     }
 
     fn earlycon(&self) -> impl crate::Earlycon {
-        earlycon::EARLYCON
+        earlycon::EarlyconImpl
     }
 
     fn halt(&self, reason: crate::HaltReason) -> ! {
@@ -38,14 +36,14 @@ impl Hal for HalImpl {
     }
 
     fn cache(&self) -> impl crate::Cache {
-        cache::CACHE
+        cache::CacheImpl
     }
 
     fn interrupt(&self) -> impl crate::Interrupt {
-        interrupt::INTERRUPT
+        interrupt::InterruptImpl
     }
 
     fn vm(&self) -> impl crate::Vm {
-        vm::VM
+        vm::VmImpl
     }
 }

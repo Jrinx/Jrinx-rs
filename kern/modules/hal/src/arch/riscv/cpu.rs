@@ -1,18 +1,11 @@
 use core::time::Duration;
 
 use riscv::register;
-use spin::Once;
 
 use crate::Cpu;
 
 #[derive(Debug, Clone, Copy)]
-pub struct CpuImpl;
-
-static CPU_COUNT: Once<usize> = Once::new();
-static CPU_VALID_COUNT: Once<usize> = Once::new();
-static CPU_TIMEBASE_FREQ: Once<u64> = Once::new();
-
-pub(crate) static CPU: CpuImpl = CpuImpl;
+pub(crate) struct CpuImpl;
 
 impl Cpu for CpuImpl {
     fn id(&self) -> usize {
@@ -24,30 +17,6 @@ impl Cpu for CpuImpl {
             );
         }
         id
-    }
-
-    fn set_nproc_valid(&self, count: usize) {
-        CPU_VALID_COUNT.call_once(|| count);
-    }
-
-    fn nproc_valid(&self) -> usize {
-        *CPU_VALID_COUNT.get().unwrap_or(&0)
-    }
-
-    fn set_nproc(&self, count: usize) {
-        CPU_COUNT.call_once(|| count);
-    }
-
-    fn nproc(&self) -> usize {
-        *CPU_COUNT.get().unwrap_or(&0)
-    }
-
-    fn set_timebase_freq(&self, freq: u64) {
-        CPU_TIMEBASE_FREQ.call_once(|| freq);
-    }
-
-    fn timebase_freq(&self) -> u64 {
-        *CPU_TIMEBASE_FREQ.get().unwrap_or(&0)
     }
 
     fn get_time(&self) -> core::time::Duration {

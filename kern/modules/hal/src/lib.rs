@@ -9,13 +9,18 @@ use alloc::vec::Vec;
 pub use arch::*;
 
 use jrinx_addr::PhysAddr;
+use spin::Once;
 
 #[macro_export]
 macro_rules! hal {
     () => {
-        $crate::HAL
+        $crate::HalImpl
     };
 }
+
+static CPU_COUNT: Once<usize> = Once::new();
+static CPU_VALID_COUNT: Once<usize> = Once::new();
+static CPU_TIMEBASE_FREQ: Once<u64> = Once::new();
 
 pub trait Hal: Send + Sync {
     fn breakpoint(&self);
@@ -36,17 +41,29 @@ pub trait Hal: Send + Sync {
 pub trait Cpu: Send + Sync {
     fn id(&self) -> usize;
 
-    fn set_nproc_valid(&self, count: usize);
+    fn set_nproc_valid(&self, count: usize) {
+        CPU_VALID_COUNT.call_once(|| count);
+    }
 
-    fn nproc_valid(&self) -> usize;
+    fn nproc_valid(&self) -> usize {
+        *CPU_VALID_COUNT.get().unwrap_or(&0)
+    }
 
-    fn set_nproc(&self, count: usize);
+    fn set_nproc(&self, count: usize) {
+        CPU_COUNT.call_once(|| count);
+    }
 
-    fn nproc(&self) -> usize;
+    fn nproc(&self) -> usize {
+        *CPU_COUNT.get().unwrap_or(&0)
+    }
 
-    fn set_timebase_freq(&self, freq: u64);
+    fn set_timebase_freq(&self, freq: u64) {
+        CPU_TIMEBASE_FREQ.call_once(|| freq);
+    }
 
-    fn timebase_freq(&self) -> u64;
+    fn timebase_freq(&self) -> u64 {
+        *CPU_TIMEBASE_FREQ.get().unwrap_or(&0)
+    }
 
     fn get_time(&self) -> Duration;
 
