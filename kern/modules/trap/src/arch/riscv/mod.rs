@@ -147,7 +147,7 @@ impl GenericContext for Context {
     }
 
     fn pc_advance(&mut self) {
-        let is_rvc = (unsafe { core::ptr::read_volatile(self.sepc as *const u8) & 0b11 }) != 0b11;
+        let is_rvc = (unsafe { (self.sepc as *const u8).read() & 0b11 }) != 0b11;
         if is_rvc {
             self.sepc += 2;
         } else {
