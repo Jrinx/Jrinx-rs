@@ -124,7 +124,7 @@ impl Runtime {
 
             debug!("runtime finished running all inspectors");
 
-            Self::halt_if_all_finished_or_broadcast_ipi();
+            Self::halt_if_all_finished_or_ipi();
 
             debug!("runtime send ipi and wait");
             hal!().interrupt().wait();
@@ -195,7 +195,7 @@ impl Runtime {
         VirtAddr::new(&self.switch_context as *const _ as usize)
     }
 
-    fn halt_if_all_finished_or_broadcast_ipi() {
+    fn halt_if_all_finished_or_ipi() {
         let runtimes = MutexGroup::new(RUNTIME.iter().filter_map(|rt| rt.get()));
         let guards = runtimes.lock();
 
