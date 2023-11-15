@@ -199,9 +199,10 @@ impl Runtime {
         let runtimes = MutexGroup::new(RUNTIME.iter().filter_map(|rt| rt.get()));
         let guards = runtimes.lock();
 
-        if guards
-            .iter()
-            .all(|guard| guard.status == RuntimeStatus::Endpoint)
+        if guards.iter().count() == 1
+            || guards
+                .iter()
+                .all(|guard| guard.status == RuntimeStatus::Endpoint)
         {
             hal!().halt(HaltReason::NormalExit);
         } else {
