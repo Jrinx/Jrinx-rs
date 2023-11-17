@@ -9,6 +9,10 @@ pub struct MutexGroupGuard<'a, T> {
     guards: Vec<MutexGuard<'a, T>>,
 }
 
+pub struct MutexGroupGuardIter<'a, 'b, T> {
+    iter: core::slice::Iter<'a, MutexGuard<'b, T>>,
+}
+
 impl<'a, T> MutexGroup<'a, T> {
     pub fn new(mutexes: impl Iterator<Item = &'a Mutex<T>>) -> Self {
         Self {
@@ -39,9 +43,11 @@ impl<'a, T> MutexGroup<'a, T> {
     }
 }
 
-impl<'a, T> MutexGroupGuard<'a, T> {
-    pub fn iter(&self) -> impl Iterator<Item = &MutexGuard<'a, T>> {
-        self.guards.iter()
+impl<'a, 'b, T> MutexGroupGuard<'b, T> {
+    pub fn iter(&'b self) -> MutexGroupGuardIter<'a, 'b, T> {
+        MutexGroupGuardIter {
+            iter: self.guards.iter(),
+        }
     }
 }
 
@@ -52,5 +58,13 @@ impl<'a, T> IntoIterator for MutexGroupGuard<'a, T> {
 
     fn into_iter(self) -> Self::IntoIter {
         self.guards.into_iter()
+    }
+}
+
+impl<'a, 'b, T> Iterator for MutexGroupGuardIter<'a, 'b, T> {
+    type Item = &'a MutexGuard<'b, T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next()
     }
 }
