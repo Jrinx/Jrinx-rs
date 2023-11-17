@@ -6,7 +6,7 @@ Jrinx-rs 是 [Jrinx](https://github.com/Coekjan/Jrinx) 的 Rust 语言版本。
 
 ## 快速开始
 
-> Windows 与 \*nix 开发者皆可进行开发、编译、运行，但是目前仅支持在 \*nix 系统上进行回归测试。
+> 开发、编译、运行以及回归测试均要求 \*nix 环境。
 
 首先你需要安装 QEMU、Python 与 Rust 工具链：
 - QEMU：https://www.qemu.org/download
@@ -23,7 +23,7 @@ $ cargo qemu -a riscv64
 
 即可编译代码并（在 QEMU/virt 上）运行 riscv64 架构上的 Jrinx。
 
-此外，在 \*nix 系统上使用：
+此外，使用：
 
 ```console
 $ # NOTE: `pip install -r requirements.txt` is needed for the first time
