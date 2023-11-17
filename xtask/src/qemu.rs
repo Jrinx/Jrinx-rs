@@ -15,7 +15,7 @@ pub struct QemuArg {
     #[clap(long, short = 'g')]
     pub gdb: bool,
 
-    #[clap(long, env = "SMP", default_value_t = 1)]
+    #[clap(long, env = "SMP", default_value_t = 5)]
     pub smp: u32,
 
     #[clap(long, short = 'm', env = "MEMORY", default_value = "1G")]
