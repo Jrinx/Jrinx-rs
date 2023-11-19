@@ -1,11 +1,35 @@
+#![no_std]
+
+extern crate alloc;
+
 use core::fmt::Write;
 
 use alloc::{fmt, format, string::ToString};
-use jrinx_hal::{Cpu, Earlycon, Hal, Interrupt};
+use jrinx_hal::{hal, Cpu, Earlycon, Hal, Interrupt};
 use jrinx_multitask::{executor::Executor, inspector::Inspector, runtime::Runtime};
+use jrinx_util::color;
 use spin::Mutex;
 
-use super::color::{self, with_color};
+#[cfg(feature = "colorful")]
+macro_rules! with_color {
+    ($color:expr, $restore_color:expr, $($arg:tt)*) => {
+        format_args!(
+            "\u{1B}[{color}m{arg}\u{1B}[{restore}m",
+            color = $color as u8,
+            arg = format_args!($($arg)*),
+            restore = $restore_color as u8,
+        )
+    };
+}
+
+#[cfg(not(feature = "colorful"))]
+macro_rules! with_color {
+    ($color:expr, $restore_color:expr, $($arg:tt)*) => {{
+        $color as u8;
+        $restore_color as u8;
+        format_args!($($arg)*)
+    }};
+}
 
 struct Logger;
 
@@ -16,17 +40,6 @@ impl Write for Logger {
         }
         Ok(())
     }
-}
-
-pub fn print_fmt(args: core::fmt::Arguments) {
-    Logger.write_fmt(args).unwrap();
-}
-
-#[macro_export]
-macro_rules! println {
-    ($fmt: literal $(, $($arg: tt)+)?) => {
-        $crate::util::logging::print_fmt(format_args!(concat!($fmt, "\n") $(, $($arg)+)?));
-    };
 }
 
 impl log::Log for Logger {
@@ -64,7 +77,7 @@ impl log::Log for Logger {
         fmt::format(*record.args()).split('\n').for_each(|args| {
             hal!().interrupt().with_saved_off(|| {
                 let mutex = MUTEX.lock();
-                print_fmt(with_color! {
+                Logger.write_fmt(with_color! {
                     color::ColorCode::White,
                     color::ColorCode::White,
                     "[ {time} cpu#{id} {level} ] ( {kernel_state} ) {args}\n",
@@ -76,7 +89,7 @@ impl log::Log for Logger {
                     level = with_color!(color, color::ColorCode::White, "{:>5}", level),
                     kernel_state = with_color!(color::ColorCode::Blue, color::ColorCode::White, "{:^14}", kernel_state),
                     args = with_color!(color::ColorCode::White, color::ColorCode::White, "{}", args),
-                });
+                }).unwrap();
                 core::hint::black_box(mutex);
             });
         });
@@ -93,4 +106,8 @@ pub fn init() {
     } else {
         log::set_max_level(log::LevelFilter::Info);
     }
+}
+
+pub fn set_max_level(level: log::LevelFilter) {
+    log::set_max_level(level);
 }

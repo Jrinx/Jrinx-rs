@@ -12,8 +12,6 @@ use jrinx_hal::{Cpu, Hal};
 use jrinx_multitask::runtime::{self, Runtime};
 use spin::Mutex;
 
-use crate::util::logging;
-
 extern crate alloc;
 #[macro_use]
 extern crate log;
@@ -24,8 +22,8 @@ extern crate jrinx_hal;
 
 mod arch;
 mod bootargs;
+mod panic;
 mod test;
-mod util;
 
 enum BootState {
     Bootstrap,
@@ -46,7 +44,7 @@ fn boot_set_ready() {
 fn primary_init(boot_info: BootInfo) -> ! {
     jrinx_trap::init();
     jrinx_heap::init();
-    logging::init();
+    jrinx_logging::init();
 
     let fdt = &boot_info.fdt();
 

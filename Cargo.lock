@@ -438,6 +438,7 @@ dependencies = [
  "jrinx-hal",
  "jrinx-heap",
  "jrinx-layout",
+ "jrinx-logging",
  "jrinx-multitask",
  "jrinx-paging",
  "jrinx-percpu",
@@ -543,6 +544,17 @@ version = "0.1.0"
 dependencies = [
  "jrinx-addr",
  "jrinx-error",
+ "spin",
+]
+
+[[package]]
+name = "jrinx-logging"
+version = "0.1.0"
+dependencies = [
+ "jrinx-hal",
+ "jrinx-multitask",
+ "jrinx-util",
+ "log",
  "spin",
 ]
 

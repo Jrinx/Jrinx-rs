@@ -6,7 +6,7 @@ build = "build.rs"
 
 [features]
 no_test = []
-colorful = []
+colorful = ["jrinx-logging/colorful"]
 
 [dependencies]
 cfg-if = "1.0.0"
@@ -19,6 +19,7 @@ jrinx-error = { version = "0.1.0", path = "modules/error" }
 jrinx-hal = { version = "0.1.0", path = "modules/hal" }
 jrinx-heap = { version = "0.1.0", path = "modules/heap" }
 jrinx-layout = { version = "0.1.0", path = "modules/layout" }
+jrinx-logging = { version = "0.1.0", path = "modules/logging" }
 jrinx-multitask = { version = "0.1.0", path = "modules/multitask" }
 jrinx-paging = { version = "0.1.0", path = "modules/paging" }
 jrinx-percpu = { version = "0.1.0", path = "modules/percpu" }
