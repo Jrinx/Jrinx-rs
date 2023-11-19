@@ -96,6 +96,10 @@ fn construct_build_cmd(arg: &MakeArg, cmd: &mut Command) {
 
     cmd.args(["--target", format!("tgt/{}.json", arch).as_str()])
         .args([
+            "-Zbuild-std=core,compiler_builtins,alloc",
+            "-Zbuild-std-features=compiler-builtins-mem",
+        ])
+        .args([
             "--features",
             feat.iter()
                 .map(|f| f.as_str())
