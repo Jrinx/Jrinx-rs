@@ -1,13 +1,15 @@
 mod arch;
-mod error;
+mod envs;
+mod lint;
 mod make;
 mod qemu;
+mod util;
 
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 
-use make::{lint, MakeArg};
+use make::MakeArg;
 use qemu::QemuArg;
 
 #[derive(Parser)]

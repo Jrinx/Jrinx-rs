@@ -1,7 +1,5 @@
 use std::{fmt::Display, str::FromStr};
 
-use clap::Args;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Arch {
     RISCV32,
@@ -27,10 +25,4 @@ impl Display for Arch {
             Arch::RISCV64 => write!(f, "riscv64"),
         }
     }
-}
-
-#[derive(Debug, Args, Clone, Copy)]
-pub struct ArchArg {
-    #[clap(long, short = 'a', env = "ARCH")]
-    pub arch: Arch,
 }

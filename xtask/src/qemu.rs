@@ -1,10 +1,11 @@
-use std::process::{Command, ExitStatus};
+use std::{env, process::ExitStatus};
 
 use clap::Args;
 
 use crate::{
     arch::ArchArg,
     make::{self, MakeArg},
+    util::{qemu::Qemu, CmdOptional},
 };
 
 #[derive(Debug, Args, Clone)]
@@ -50,26 +51,24 @@ pub fn run(arg: &QemuArg) -> Option<ExitStatus> {
     let MakeArg { arch, .. } = make_arg;
     let ArchArg { arch, .. } = arch;
 
-    let cmd = &mut Command::new(format!("qemu-system-{}", arch));
-    cmd.arg("-nographic")
-        .arg("-no-reboot")
-        .args([
-            "-kernel",
-            format!(
-                "target/{}/{}/jrinx.bin",
-                arch,
-                std::env::var_os("BUILD_MODE").unwrap().to_str().unwrap(),
-            )
-            .as_str(),
-        ])
-        .args(["-M", machine.as_str()])
-        .args(["-smp", smp.to_string().as_str()])
-        .args(["-m", memory.as_str()]);
-    if let Some(bootargs) = bootargs {
-        cmd.args(["-append", bootargs.as_str()]);
-    }
-    if gdb {
-        cmd.args(["-s", "-S"]);
-    }
-    cmd.status().ok()
+    Qemu::new(&arch.to_string())
+        .kernel(
+            env::current_dir()
+                .unwrap()
+                .join("target")
+                .join(arch.to_string())
+                .join(env::var_os("BUILD_MODE").unwrap().to_str().unwrap())
+                .join("jrinx.bin"),
+        )
+        .machine(&machine)
+        .memory(&memory)
+        .smp(smp as _)
+        .no_graphic()
+        .no_reboot()
+        .optional(bootargs.is_some(), |qemu| {
+            qemu.bootargs(bootargs.unwrap().as_str())
+        })
+        .optional(gdb, |qemu| qemu.gdb_server())
+        .status()
+        .ok()
 }

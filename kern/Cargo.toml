@@ -5,6 +5,7 @@ edition = "2021"
 build = "build.rs"
 
 [features]
+default = ["colorful"]
 no_test = []
 colorful = ["jrinx-logging/colorful"]
 
