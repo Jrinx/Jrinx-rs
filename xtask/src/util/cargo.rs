@@ -1,6 +1,7 @@
 use std::{
     ffi::OsStr,
     ops::{Deref, DerefMut},
+    path::Path,
     process::Command,
 };
 
@@ -19,6 +20,11 @@ impl Cargo {
 
     pub fn package<S: AsRef<OsStr>>(&mut self, package: S) -> &mut Self {
         self.args(["--package", package.as_ref().to_str().unwrap()]);
+        self
+    }
+
+    pub fn work_dir<S: AsRef<Path>>(&mut self, dir: S) -> &mut Self {
+        self.current_dir(dir);
         self
     }
 

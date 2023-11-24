@@ -4,6 +4,7 @@
 pub enum InternalError {
     RepeatInitialization,
     DevProbeError,
+    ElfParseError,
     NotEnoughMem,
     InvalidCpuId,
     InvalidVirtAddr,

@@ -29,6 +29,15 @@ impl Display for Arch {
     }
 }
 
+impl Arch {
+    pub fn triple(&self) -> &str {
+        match self {
+            Arch::RISCV32 => "riscv32imac-unknown-none-elf",
+            Arch::RISCV64 => "riscv64gc-unknown-none-elf",
+        }
+    }
+}
+
 #[derive(Debug, Args, Clone, Copy)]
 pub struct ArchArg {
     #[clap(long, short = 'a', env = "ARCH")]

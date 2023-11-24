@@ -11,6 +11,7 @@ colorful = ["jrinx-logging/colorful"]
 
 [dependencies]
 cfg-if = "1.0.0"
+elf = { version = "0.7.3", default-features = false }
 fdt = "0.1.5"
 getargs = { version = "0.5.0", default-features = false }
 jrinx-addr = { version = "0.1.0", path = "modules/addr" }
@@ -20,6 +21,7 @@ jrinx-error = { version = "0.1.0", path = "modules/error" }
 jrinx-hal = { version = "0.1.0", path = "modules/hal" }
 jrinx-heap = { version = "0.1.0", path = "modules/heap" }
 jrinx-layout = { version = "0.1.0", path = "modules/layout" }
+jrinx-loader = { version = "0.1.0", path = "modules/loader" }
 jrinx-logging = { version = "0.1.0", path = "modules/logging" }
 jrinx-multitask = { version = "0.1.0", path = "modules/multitask" }
 jrinx-paging = { version = "0.1.0", path = "modules/paging" }
@@ -28,6 +30,7 @@ jrinx-phys-frame = { version = "0.1.0", path = "modules/phys-frame" }
 jrinx-testdef = { version = "0.1.0", path = "modules/testdef" }
 jrinx-timed-event = { version = "0.1.0", path = "modules/timed-event" }
 jrinx-trap = { version = "0.1.0", path = "modules/trap" }
+jrinx-uprog = { version = "0.1.0", path = "modules/uprog" }
 jrinx-util = { version = "0.1.0", path = "modules/util" }
 jrinx-vmm = { version = "0.1.0", path = "modules/vmm" }
 log = { version = "0.4.20", default-features = false }

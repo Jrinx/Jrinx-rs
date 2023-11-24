@@ -22,6 +22,19 @@ pub struct MakeArg {
     #[clap(long, env = "LOGLEVEL")]
     pub log_level: Option<String>,
 
+    #[clap(
+        long,
+        short = 'u',
+        env = "UPROG_PATH",
+        default_value_t = std::env::current_dir()
+            .unwrap()
+            .join("uprog.jrz")
+            .to_str()
+            .unwrap()
+            .to_string()
+    )]
+    pub uprog: String,
+
     #[clap(long, short = 'f')]
     pub feat: Vec<String>,
 

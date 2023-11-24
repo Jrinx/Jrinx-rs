@@ -22,6 +22,7 @@ pub fn setup(arg: &MakeArg) {
 
     export_env! {
         "ARCH" ?= arch.to_string(),
+        "UPROG_PATH" ?= std::env::current_dir().unwrap().join("uprog.jrz").to_str().unwrap(),
         "BUILD_MODE" ?= if debug { "debug" } else { "release" },
         "BUILD_TIME" ?= chrono::offset::Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
         "RAND_SEED" ?= rand::thread_rng().gen_range(0..0x8000).to_string(),

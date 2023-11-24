@@ -1,0 +1,10 @@
+[package]
+name = "jrinx-loader"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+elf = { version = "0.7.4", default-features = false }
+jrinx-addr = { version = "0.1.0", path = "../addr" }
+jrinx-config = { version = "0.1.0", path = "../config" }
+jrinx-error = { version = "0.1.0", path = "../error" }
