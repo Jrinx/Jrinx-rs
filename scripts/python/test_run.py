@@ -211,6 +211,14 @@ def main():
         ))
 
     if not args.no_build:
+        subprocess.check_call(('cargo', 'uprog'))
+        subprocess.check_call((
+            'cargo',
+            'ar',
+            '-s',
+            pathlib.Path(
+                'uprog') / os.environ['ARCH'] / os.environ['BUILD_MODE']
+        ))
         subprocess.check_call(('cargo', 'make'))
 
     runner = run_testset_rich if args.rich else run_testset
