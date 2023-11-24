@@ -18,6 +18,8 @@ Jrinx-rs 是 [Jrinx](https://github.com/Coekjan/Jrinx) 的 Rust 语言版本。
 然后克隆本仓库，并进入仓库目录，运行：
 
 ```console
+$ cargo uprog -a riscv64  # build user programs (artifacts can be found in `uprog/riscv64/release`)
+$ cargo ar -s uprog/riscv64/release  # archive user programs (archive can be found at `uprog.jrz`)
 $ cargo qemu -a riscv64
 ```
 
