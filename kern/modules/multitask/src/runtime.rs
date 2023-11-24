@@ -89,39 +89,41 @@ impl Runtime {
     pub fn start() -> ! {
         debug!("runtime started running all inspectors");
 
-        hal!().interrupt().enable();
-
         let runtime_switch_ctx = Self::with_current(|rt| rt.switch_context_addr()).unwrap();
 
         loop {
-            while let Some(inspector_id) = Self::with_current(|rt| rt.pop_inspector()).unwrap() {
-                trace!("switch into inspector {:?}", inspector_id);
-
-                Self::with_current(|rt| rt.set_current_inspector(Some(inspector_id))).unwrap();
-
-                Inspector::run(runtime_switch_ctx);
-
-                Self::with_current(|rt| {
-                    rt.clr_inspector_switch_pending();
-                    rt.set_current_inspector(None);
-                })
-                .unwrap();
-
-                trace!("switch from inspector {:?}", inspector_id);
-
-                if Self::with_current(|rt| {
-                    rt.with_inspector(inspector_id, |is| is.status() == InspectorStatus::Finished)
-                        .unwrap()
-                })
-                .unwrap()
+            hal!().interrupt().with_saved_on(|| {
+                while let Some(inspector_id) = Self::with_current(|rt| rt.pop_inspector()).unwrap()
                 {
-                    Self::with_current(|rt| rt.unregister_inspector(inspector_id).unwrap())
-                        .unwrap();
-                } else {
-                    Self::with_current(|rt| rt.push_inspector(inspector_id).unwrap()).unwrap();
-                }
-            }
+                    trace!("switch into inspector {:?}", inspector_id);
 
+                    Self::with_current(|rt| rt.set_current_inspector(Some(inspector_id))).unwrap();
+
+                    Inspector::run(runtime_switch_ctx);
+
+                    Self::with_current(|rt| {
+                        rt.clr_inspector_switch_pending();
+                        rt.set_current_inspector(None);
+                    })
+                    .unwrap();
+
+                    trace!("switch from inspector {:?}", inspector_id);
+
+                    if Self::with_current(|rt| {
+                        rt.with_inspector(inspector_id, |is| {
+                            is.status() == InspectorStatus::Finished
+                        })
+                        .unwrap()
+                    })
+                    .unwrap()
+                    {
+                        Self::with_current(|rt| rt.unregister_inspector(inspector_id).unwrap())
+                            .unwrap();
+                    } else {
+                        Self::with_current(|rt| rt.push_inspector(inspector_id).unwrap()).unwrap();
+                    }
+                }
+            });
             debug!("runtime finished running all inspectors");
 
             Self::halt_if_all_finished_or_ipi();
@@ -206,22 +208,21 @@ impl Runtime {
         {
             hal!().halt(HaltReason::NormalExit);
         } else {
-            let ipi_target = guards
+            if let Some(cpu_id) = guards
                 .iter()
                 .filter_map(|guard| {
                     (guard.status == RuntimeStatus::Endpoint).then_some(guard.cpu_id)
                 })
-                .min();
+                .min()
+            {
+                hal!().interrupt().send_ipi(&[cpu_id]);
+            }
 
             guards
                 .into_iter()
                 .find(|guard| guard.cpu_id == hal!().cpu().id())
                 .unwrap()
                 .status = RuntimeStatus::Endpoint;
-
-            if let Some(cpu_id) = ipi_target {
-                hal!().interrupt().send_ipi(&[cpu_id]);
-            }
         }
     }
 }
