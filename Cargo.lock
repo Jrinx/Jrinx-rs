@@ -703,6 +703,7 @@ dependencies = [
  "jrinx-util",
  "jrinx-vmm",
  "log",
+ "mtxgroup",
  "riscv",
  "spin",
 ]
@@ -868,6 +869,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e7810e0be55b428ada41041c41f32c9f1a42817901b4ccf45fa3d4b6561e74c7"
 dependencies = [
  "adler",
+]
+
+[[package]]
+name = "mtxgroup"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5e80cc121225ed3b00ae73561b22c2cb06f61db8a2fb7add04a5b82e23225bae"
+dependencies = [
+ "spin",
 ]
 
 [[package]]

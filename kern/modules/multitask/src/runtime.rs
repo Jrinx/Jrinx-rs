@@ -8,7 +8,7 @@ use jrinx_addr::VirtAddr;
 use jrinx_error::{InternalError, Result};
 use jrinx_hal::{Cpu, Hal, HaltReason, Interrupt};
 use jrinx_percpu::percpu;
-use jrinx_util::mtxgroup::MutexGroup;
+use mtxgroup::MutexGroup;
 use spin::{Mutex, Once};
 
 use crate::{
