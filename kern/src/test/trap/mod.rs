@@ -99,7 +99,7 @@ pub(super) mod syscall {
 }
 
 fn load_elf(elf: ElfBytes<'_, AnyEndian>) {
-    ElfLoader::new(elf)
+    ElfLoader::new(&elf)
         .load(|elf, phdr, vaddr, offst, len| {
             let mut perm = PagePerm::V | PagePerm::U;
             if phdr.p_flags & PF_R != 0 {
