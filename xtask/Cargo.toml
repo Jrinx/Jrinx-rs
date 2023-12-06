@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-cargo-binutils = "0.3.6"
 cargo_metadata = { version = "0.18.1", features = ["builder"] }
 chrono = "0.4.30"
 clap = { version = "4.4.2", features = ["derive", "env", "suggestions"] }
