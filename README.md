@@ -15,6 +15,12 @@ Jrinx-rs 是 [Jrinx](https://github.com/Coekjan/Jrinx) 的 Rust 语言版本。
   - 尽可能使用 [.python-version](.python-version) 中的版本
 - Rust：https://www.rust-lang.org/tools/install
 
+此外，你还需通过 cargo 安装 [cargo-binutils](https://github.com/rust-embedded/cargo-binutils)：
+
+```console
+$ cargo install cargo-binutils
+```
+
 然后克隆本仓库，并进入仓库目录，运行：
 
 ```console
