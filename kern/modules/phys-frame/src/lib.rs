@@ -1,5 +1,6 @@
 #![no_std]
 #![feature(allocator_api)]
+#![feature(trait_alias)]
 
 extern crate alloc;
 
@@ -13,7 +14,7 @@ use core::{
     ptr::NonNull,
 };
 
-pub trait PhysFrameAllocator: Allocator + Send + Sync + 'static {}
+pub trait PhysFrameAllocator = Allocator + Send + Sync + 'static;
 
 pub struct PhysFrame {
     addr: PhysAddr,
@@ -63,8 +64,6 @@ impl Drop for PhysFrame {
         }
     }
 }
-
-impl PhysFrameAllocator for Global {}
 
 impl PhysFrame {
     pub fn alloc() -> Result<Arc<Self>> {
