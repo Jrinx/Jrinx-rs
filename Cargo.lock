@@ -509,15 +509,6 @@ name = "jrinx-layout"
 version = "0.1.0"
 
 [[package]]
-name = "jrinx-linear-alloc"
-version = "0.1.0"
-dependencies = [
- "jrinx-addr",
- "jrinx-error",
- "spin",
-]
-
-[[package]]
 name = "jrinx-loader"
 version = "0.1.0"
 dependencies = [
@@ -548,11 +539,11 @@ dependencies = [
  "jrinx-error",
  "jrinx-hal",
  "jrinx-layout",
- "jrinx-linear-alloc",
  "jrinx-paging",
  "jrinx-percpu",
  "jrinx-phys-frame",
  "jrinx-serial-id-macro",
+ "jrinx-stack-alloc",
  "jrinx-util",
  "jrinx-vmm",
  "log",
@@ -609,6 +600,16 @@ version = "0.1.0"
 dependencies = [
  "quote",
  "syn 2.0.39",
+]
+
+[[package]]
+name = "jrinx-stack-alloc"
+version = "0.1.0"
+dependencies = [
+ "jrinx-addr",
+ "jrinx-config",
+ "jrinx-error",
+ "spin",
 ]
 
 [[package]]

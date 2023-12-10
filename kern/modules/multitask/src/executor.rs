@@ -7,12 +7,13 @@ use core::{
 use alloc::{boxed::Box, collections::BTreeMap, sync::Arc, task::Wake};
 use jrinx_addr::VirtAddr;
 use jrinx_error::{InternalError, Result};
-use jrinx_linear_alloc::LinearAllocator;
 use jrinx_paging::{GenericPagePerm, GenericPageTable, PagePerm};
 use jrinx_phys_frame::PhysFrame;
 use jrinx_serial_id_macro::SerialId;
+use jrinx_stack_alloc::StackAllocator;
 use jrinx_util::fastpq::{FastPriority, FastPriorityQueueWithLock};
 use jrinx_vmm::KERN_PAGE_TABLE;
+use spin::Lazy;
 
 use crate::{
     arch::{self, SwitchContext},
@@ -23,35 +24,26 @@ use crate::{
 
 type TaskQueue = FastPriorityQueueWithLock<TaskPriority, TaskId>;
 
-static EXECUTOR_STACK_ALLOCATOR: LinearAllocator = LinearAllocator::new(
-    (
-        VirtAddr::new(jrinx_config::EXECUTOR_STACK_REGION.addr),
-        jrinx_config::EXECUTOR_STACK_REGION.len,
-    ),
-    jrinx_config::EXECUTOR_STACK_SIZE,
-    jrinx_config::PAGE_SIZE,
-    |addr, size| {
-        let mut page_table = KERN_PAGE_TABLE.write();
-        for i in (0..size).step_by(jrinx_config::PAGE_SIZE) {
-            let virt_addr = addr + i;
+static EXECUTOR_STACK_ALLOCATOR: Lazy<StackAllocator> = Lazy::new(|| {
+    StackAllocator::new(
+        (
+            VirtAddr::new(jrinx_config::EXECUTOR_STACK_REGION.addr),
+            jrinx_config::EXECUTOR_STACK_REGION.len,
+        ),
+        jrinx_config::EXECUTOR_STACK_SIZE,
+        |addr| {
+            let mut page_table = KERN_PAGE_TABLE.write();
             let phys_frame = PhysFrame::alloc()?;
-            page_table.map(
-                virt_addr,
-                phys_frame,
-                PagePerm::G | PagePerm::R | PagePerm::W,
-            )?;
-        }
-        Ok(())
-    },
-    |addr, size| {
-        let mut page_table = KERN_PAGE_TABLE.write();
-        for i in (0..size).step_by(jrinx_config::PAGE_SIZE) {
-            let virt_addr = addr + i;
-            page_table.unmap(virt_addr)?;
-        }
-        Ok(())
-    },
-);
+            page_table.map(addr, phys_frame, PagePerm::G | PagePerm::R | PagePerm::W)?;
+            Ok(())
+        },
+        |addr| {
+            let mut page_table = KERN_PAGE_TABLE.write();
+            page_table.unmap(addr)?;
+            Ok(())
+        },
+    )
+});
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, SerialId)]
 pub struct ExecutorId(u64);
@@ -97,8 +89,9 @@ pub struct Executor {
 impl Executor {
     pub fn new(priority: ExecutorPriority, root_task: Task) -> Pin<Box<Self>> {
         let entry = VirtAddr::new(arch::executor_launch as usize);
-        let stack_top =
-            EXECUTOR_STACK_ALLOCATOR.allocate().unwrap() + jrinx_config::EXECUTOR_STACK_SIZE;
+        let stack_top = EXECUTOR_STACK_ALLOCATOR
+            .allocate(jrinx_config::EXECUTOR_STACK_SIZE)
+            .unwrap();
 
         let mut executor = Box::pin(Self {
             id: ExecutorId::new(),
@@ -202,9 +195,7 @@ impl Executor {
 
 impl Drop for Executor {
     fn drop(&mut self) {
-        EXECUTOR_STACK_ALLOCATOR
-            .deallocate(self.stack_top - jrinx_config::EXECUTOR_STACK_SIZE)
-            .unwrap();
+        EXECUTOR_STACK_ALLOCATOR.deallocate(self.stack_top).unwrap();
     }
 }
 

@@ -10,11 +10,11 @@ jrinx-config = { version = "0.1.0", path = "../config" }
 jrinx-error = { version = "0.1.0", path = "../error" }
 jrinx-hal = { version = "0.1.0", path = "../hal" }
 jrinx-layout = { version = "0.1.0", path = "../layout" }
-jrinx-linear-alloc = { version = "0.1.0", path = "../linear-alloc" }
 jrinx-paging = { version = "0.1.0", path = "../paging" }
 jrinx-percpu = { version = "0.1.0", path = "../percpu" }
 jrinx-phys-frame = { version = "0.1.0", path = "../phys-frame" }
 jrinx-serial-id-macro = { version = "0.1.0", path = "../serial-id-macro" }
+jrinx-stack-alloc = { version = "0.1.0", path = "../stack-alloc" }
 jrinx-util = { version = "0.1.0", path = "../util" }
 jrinx-vmm = { version = "0.1.0", path = "../vmm" }
 log = { version = "0.4.20", default-features = false }
