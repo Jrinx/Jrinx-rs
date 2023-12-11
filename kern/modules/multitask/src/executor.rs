@@ -7,6 +7,7 @@ use core::{
 use alloc::{boxed::Box, collections::BTreeMap, sync::Arc, task::Wake};
 use jrinx_addr::VirtAddr;
 use jrinx_error::{InternalError, Result};
+use jrinx_hal::{Hal, Vm};
 use jrinx_paging::{GenericPagePerm, GenericPageTable, PagePerm};
 use jrinx_phys_frame::PhysFrame;
 use jrinx_serial_id_macro::SerialId;
@@ -92,6 +93,8 @@ impl Executor {
         let stack_top = EXECUTOR_STACK_ALLOCATOR
             .allocate(jrinx_config::EXECUTOR_STACK_SIZE)
             .unwrap();
+
+        hal!().vm().sync_all();
 
         let mut executor = Box::pin(Self {
             id: ExecutorId::new(),
@@ -196,6 +199,8 @@ impl Executor {
 impl Drop for Executor {
     fn drop(&mut self) {
         EXECUTOR_STACK_ALLOCATOR.deallocate(self.stack_top).unwrap();
+
+        hal!().vm().sync_all();
     }
 }
 
