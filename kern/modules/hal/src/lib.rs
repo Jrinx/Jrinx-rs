@@ -80,12 +80,6 @@ pub trait Cache: Send + Sync {
     fn sync_all(&self);
 }
 
-pub trait Timer: Send + Sync {
-    fn get(&self) -> Duration;
-
-    fn set_next(&self);
-}
-
 pub trait Interrupt: Send + Sync {
     fn wait(&self);
 
