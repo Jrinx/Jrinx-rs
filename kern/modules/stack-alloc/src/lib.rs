@@ -2,8 +2,8 @@
 #![feature(trait_alias)]
 
 use alloc::{
+    boxed::Box,
     collections::{BTreeMap, VecDeque},
-    sync::Arc,
 };
 use core::sync::atomic::AtomicUsize;
 use spin::Mutex;
@@ -22,8 +22,8 @@ pub struct StackAllocator {
     next: AtomicUsize,
     allocated: Mutex<BTreeMap<VirtAddr, usize>>,
     cached: Mutex<BTreeMap<usize, VecDeque<VirtAddr>>>,
-    map: Arc<Mutex<dyn MapperOrUnmapperFn>>,
-    unmap: Arc<Mutex<dyn MapperOrUnmapperFn>>,
+    map: Box<dyn MapperOrUnmapperFn>,
+    unmap: Box<dyn MapperOrUnmapperFn>,
 }
 
 impl StackAllocator {
@@ -39,8 +39,8 @@ impl StackAllocator {
             next: AtomicUsize::new(region.0.as_usize()),
             allocated: Mutex::new(BTreeMap::new()),
             cached: Mutex::new(BTreeMap::new()),
-            map: Arc::new(Mutex::new(map)),
-            unmap: Arc::new(Mutex::new(unmap)),
+            map: Box::new(map),
+            unmap: Box::new(unmap),
         }
     }
 
@@ -64,7 +64,7 @@ impl StackAllocator {
         self.allocated.lock().insert(stack_top, size);
 
         for i in (0..size).step_by(PAGE_SIZE) {
-            (self.map.lock())(va + self.guard_size + i)?;
+            (self.map)(va + self.guard_size + i)?;
         }
 
         Ok(stack_top)
@@ -80,7 +80,7 @@ impl StackAllocator {
         let va = stack_top - size - self.guard_size;
 
         for i in (0..size).step_by(PAGE_SIZE) {
-            (self.unmap.lock())(va + self.guard_size + i)?;
+            (self.unmap)(va + self.guard_size + i)?;
         }
 
         self.cached.lock().entry(size).or_default().push_front(va);
