@@ -67,6 +67,24 @@ impl Runtime {
         Ok(())
     }
 
+    pub fn with_current_try_lock<F, R>(f: F) -> Result<R>
+    where
+        F: FnOnce(&mut Runtime) -> R,
+    {
+        hal!().interrupt().with_saved_off(|| {
+            RUNTIME.with_ref(|rt| {
+                if let Some(rt) = rt.get() {
+                    match rt.try_lock() {
+                        Some(ref mut rt) => Ok(f(rt)),
+                        None => Err(InternalError::BusyLock),
+                    }
+                } else {
+                    Err(InternalError::InvalidRuntimeStatus)
+                }
+            })
+        })
+    }
+
     pub fn with_current<F, R>(f: F) -> Result<R>
     where
         F: FnOnce(&mut Runtime) -> R,

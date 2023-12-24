@@ -3,6 +3,7 @@
 #[derive(Debug)]
 pub enum InternalError {
     RepeatInitialization,
+    BusyLock,
     DevProbeError,
     ElfParseError,
     NotEnoughMem,

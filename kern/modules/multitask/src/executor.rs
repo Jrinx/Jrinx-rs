@@ -139,17 +139,18 @@ impl Executor {
         Ok(self)
     }
 
+    pub fn with_current_try_lock<F, R>(f: F) -> Result<R>
+    where
+        F: FnOnce(&mut Pin<Box<Executor>>) -> R,
+    {
+        Inspector::with_current_try_lock(|is| Executor::with_current_inner(is, f))?
+    }
+
     pub fn with_current<F, R>(f: F) -> Result<R>
     where
         F: FnOnce(&mut Pin<Box<Executor>>) -> R,
     {
-        Inspector::with_current(|is| {
-            let f = |ex: &mut _| f(ex);
-            let InspectorStatus::Running(executor_id) = is.status() else {
-                return Err(InternalError::InvalidInspectorStatus);
-            };
-            is.with_executor(executor_id, f)
-        })?
+        Inspector::with_current(|is| Executor::with_current_inner(is, f))?
     }
 
     pub(crate) fn switch_context(&self) -> VirtAddr {
@@ -193,6 +194,17 @@ impl Executor {
 
         Runtime::switch_yield();
         unreachable!();
+    }
+
+    fn with_current_inner<F, R>(is: &mut Inspector, f: F) -> Result<R>
+    where
+        F: FnOnce(&mut Pin<Box<Executor>>) -> R,
+    {
+        let executor_id = match is.status() {
+            InspectorStatus::Running(executor_id) => executor_id,
+            _ => return Err(InternalError::InvalidInspectorStatus),
+        };
+        is.with_executor(executor_id, f)
     }
 }
 

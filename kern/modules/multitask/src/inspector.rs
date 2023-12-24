@@ -96,17 +96,18 @@ impl Inspector {
         self.status = InspectorStatus::Finished;
     }
 
+    pub fn with_current_try_lock<F, R>(f: F) -> Result<R>
+    where
+        F: FnOnce(&mut Inspector) -> R,
+    {
+        Runtime::with_current_try_lock(|rt| Inspector::with_current_inner(rt, f))?
+    }
+
     pub fn with_current<F, R>(f: F) -> Result<R>
     where
         F: FnOnce(&mut Inspector) -> R,
     {
-        Runtime::with_current(|rt| {
-            let f = |is: &mut _| f(is);
-            let RuntimeStatus::Running(inspector_id) = rt.status() else {
-                return Err(InternalError::InvalidRuntimeStatus);
-            };
-            rt.with_inspector(inspector_id, f)
-        })?
+        Runtime::with_current(|rt| Inspector::with_current_inner(rt, f))?
     }
 
     pub(crate) fn with_executor<F, R>(&mut self, id: ExecutorId, f: F) -> Result<R>
@@ -202,5 +203,16 @@ impl Inspector {
                 Inspector::with_current(|is| is.mark_finished()).unwrap();
             }
         }
+    }
+
+    fn with_current_inner<F, R>(rt: &mut Runtime, f: F) -> Result<R>
+    where
+        F: FnOnce(&mut Inspector) -> R,
+    {
+        let f = |is: &mut _| f(is);
+        let RuntimeStatus::Running(inspector_id) = rt.status() else {
+            return Err(InternalError::InvalidRuntimeStatus);
+        };
+        rt.with_inspector(inspector_id, f)
     }
 }

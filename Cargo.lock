@@ -522,6 +522,7 @@ dependencies = [
 name = "jrinx-logging"
 version = "0.1.0"
 dependencies = [
+ "jrinx-error",
  "jrinx-hal",
  "jrinx-multitask",
  "jrinx-util",
