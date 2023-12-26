@@ -27,12 +27,15 @@ pub enum TimedEventStatus {
 }
 
 pub struct TimedEventHandler {
-    timeout: Box<dyn FnOnce()>,
-    cancel: Box<dyn FnOnce()>,
+    timeout: Box<dyn FnOnce() + Send + 'static>,
+    cancel: Box<dyn FnOnce() + Send + 'static>,
 }
 
 impl TimedEventHandler {
-    pub fn new(timeout: impl FnOnce() + 'static, cancel: impl FnOnce() + 'static) -> Self {
+    pub fn new(
+        timeout: impl FnOnce() + Send + 'static,
+        cancel: impl FnOnce() + Send + 'static,
+    ) -> Self {
         Self {
             timeout: Box::new(timeout),
             cancel: Box::new(cancel),
@@ -44,6 +47,10 @@ pub struct TimedEvent {
     id: TimedEventId,
     cpu_id: usize,
     time: Duration,
+    inner: Mutex<TimedEventInner>,
+}
+
+struct TimedEventInner {
     status: TimedEventStatus,
     handler: Option<TimedEventHandler>,
 }
@@ -62,62 +69,69 @@ where
 
 impl TimedEvent {
     pub fn create(time: Duration, handler: TimedEventHandler) -> TimedEventTracker {
-        let tracker = TimedEventTracker(Arc::new(Mutex::new(Self {
+        let tracker = TimedEventTracker(Arc::new(Self {
             id: TimedEventId::new(),
             cpu_id: hal!().cpu().id(),
             time,
-            status: TimedEventStatus::Pending,
-            handler: Some(handler),
-        })));
+            inner: Mutex::new(TimedEventInner {
+                status: TimedEventStatus::Pending,
+                handler: Some(handler),
+            }),
+        }));
         TIMED_EVENT_QUEUE.as_ref().lock().add(tracker.clone());
         tracker
     }
 
-    fn invoke(&mut self, target: TimedEventStatus) -> Result<()> {
-        let handler = self
-            .handler
-            .take()
-            .ok_or(InternalError::InvalidTimedEventStatus)?;
-        let func = match target {
-            TimedEventStatus::Timeout => handler.timeout,
-            TimedEventStatus::Cancelled => handler.cancel,
-            _ => panic!("Invalid timed event status"),
+    fn invoke(&self, target: TimedEventStatus) -> Result<()> {
+        let func = {
+            let mut inner = self.inner.lock();
+            let handler = inner
+                .handler
+                .take()
+                .ok_or(InternalError::InvalidTimedEventStatus)?;
+            let func = match target {
+                TimedEventStatus::Timeout => handler.timeout,
+                TimedEventStatus::Cancelled => handler.cancel,
+                _ => panic!("Invalid timed event status"),
+            };
+            inner.status = target;
+            func
         };
-        self.status = target;
         func();
         Ok(())
     }
 }
 
-unsafe impl Send for TimedEvent {}
-unsafe impl Sync for TimedEvent {}
-
 #[derive(Clone)]
-pub struct TimedEventTracker(Arc<Mutex<TimedEvent>>);
+pub struct TimedEventTracker(Arc<TimedEvent>);
 
 impl TimedEventTracker {
     pub fn timeout(&self) -> Result<()> {
         TIMED_EVENT_QUEUE
             .with_spec_ref(self.cpu_id(), |queue| queue.lock().remove(self.clone()))?;
-        self.0.lock().invoke(TimedEventStatus::Timeout)
+        self.0.invoke(TimedEventStatus::Timeout)
     }
 
     pub fn cancel(&self) -> Result<()> {
         TIMED_EVENT_QUEUE
             .with_spec_ref(self.cpu_id(), |queue| queue.lock().remove(self.clone()))?;
-        self.0.lock().invoke(TimedEventStatus::Cancelled)
+        self.0.invoke(TimedEventStatus::Cancelled)
+    }
+
+    pub fn retired(&self) -> bool {
+        self.0.inner.lock().status != TimedEventStatus::Pending
     }
 
     fn id(&self) -> TimedEventId {
-        self.0.lock().id
+        self.0.id
     }
 
     fn cpu_id(&self) -> usize {
-        self.0.lock().cpu_id
+        self.0.cpu_id
     }
 
     fn time(&self) -> Duration {
-        self.0.lock().time
+        self.0.time
     }
 }
 
