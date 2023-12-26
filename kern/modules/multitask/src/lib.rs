@@ -1,7 +1,9 @@
 #![no_std]
 #![feature(asm_const)]
+#![feature(iter_map_windows)]
 #![feature(map_try_insert)]
 #![feature(offset_of)]
+#![feature(slice_group_by)]
 
 mod arch;
 pub mod executor;

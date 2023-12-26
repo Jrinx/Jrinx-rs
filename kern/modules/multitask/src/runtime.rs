@@ -1,20 +1,22 @@
-use core::{future::Future, pin::Pin};
+use core::{future::Future, pin::Pin, sync::atomic::AtomicUsize, time::Duration};
 
 use alloc::{
     boxed::Box,
     collections::{BTreeMap, VecDeque},
+    vec::Vec,
 };
 use jrinx_addr::VirtAddr;
 use jrinx_error::{InternalError, Result};
 use jrinx_hal::{Cpu, Hal, HaltReason, Interrupt};
 use jrinx_percpu::percpu;
+use jrinx_timed_event::{TimedEvent, TimedEventHandler, TimedEventTracker};
 use mtxgroup::MutexGroup;
 use spin::{Mutex, Once};
 
 use crate::{
     arch::{self, SwitchContext},
     executor::{Executor, ExecutorPriority},
-    inspector::{Inspector, InspectorId, InspectorMode, InspectorStatus},
+    inspector::{Inspector, InspectorId, InspectorStatus},
     Task, TaskPriority,
 };
 
@@ -30,9 +32,25 @@ pub struct Runtime {
     cpu_id: usize,
     inspector_registry: BTreeMap<InspectorId, Inspector>,
     inspector_queue: VecDeque<InspectorId>,
-    inspector_switch_pending: bool,
     status: RuntimeStatus,
+    sched_table: Option<RuntimeSchedTable>,
     switch_context: SwitchContext,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RuntimeSchedTableEntry {
+    pub inspector_id: InspectorId,
+    pub offset: Duration,
+    pub period: Duration,
+    pub duration: Duration,
+}
+
+pub struct RuntimeSchedTable {
+    frame_size: Duration,
+    table: Vec<RuntimeSchedTableEntry>,
+    next: AtomicUsize,
+    datum: Mutex<Duration>,
+    events: Mutex<VecDeque<TimedEventTracker>>,
 }
 
 impl Runtime {
@@ -41,14 +59,28 @@ impl Runtime {
             cpu_id: hal!().cpu().id(),
             inspector_registry: BTreeMap::new(),
             inspector_queue: VecDeque::new(),
-            inspector_switch_pending: false,
             status: RuntimeStatus::Init,
+            sched_table: None,
             switch_context: SwitchContext::new_runtime(),
         });
 
         runtime.register_inspector(root_inspector).unwrap();
 
         Mutex::new(runtime)
+    }
+
+    pub fn enact_sched_table(&mut self, sched_table: RuntimeSchedTable) -> Result<()> {
+        if self.sched_table.is_some() {
+            return Err(InternalError::DuplicateRuntimeSchedTable);
+        }
+        self.sched_table = Some(sched_table);
+        Ok(())
+    }
+
+    pub fn revoke_sched_table(&mut self) -> Result<RuntimeSchedTable> {
+        self.sched_table
+            .take()
+            .ok_or(InternalError::InvalidRuntimeSchedTable)
     }
 
     pub fn register_inspector(&mut self, inspector: Inspector) -> Result<()> {
@@ -100,59 +132,35 @@ impl Runtime {
         })
     }
 
-    pub fn set_inspector_switch_pending(&mut self) {
-        self.inspector_switch_pending = true;
-    }
-
     pub fn start() -> ! {
         debug!("runtime started running all inspectors");
 
-        let runtime_switch_ctx = Self::with_current(|rt| rt.switch_context_addr()).unwrap();
-
         loop {
-            hal!().interrupt().with_saved_on(|| {
-                while let Some(inspector_id) = Self::with_current(|rt| rt.pop_inspector()).unwrap()
-                {
-                    trace!("switch into inspector {:?}", inspector_id);
-
-                    Self::with_current(|rt| rt.set_current_inspector(Some(inspector_id))).unwrap();
-
-                    Inspector::run(runtime_switch_ctx);
-
-                    Self::with_current(|rt| {
-                        rt.clr_inspector_switch_pending();
-                        rt.set_current_inspector(None);
-                    })
-                    .unwrap();
-
-                    trace!("switch from inspector {:?}", inspector_id);
-
-                    if Self::with_current(|rt| {
-                        rt.with_inspector(inspector_id, |is| {
-                            is.status() == InspectorStatus::Finished
-                        })
-                        .unwrap()
-                    })
-                    .unwrap()
-                    {
-                        Self::with_current(|rt| rt.unregister_inspector(inspector_id).unwrap())
-                            .unwrap();
-                    } else {
-                        Self::with_current(|rt| rt.push_inspector(inspector_id).unwrap()).unwrap();
-                    }
+            if Runtime::with_current(|rt| rt.sched_table.is_some()).unwrap() {
+                Runtime::run_with_sched_table();
+                if Runtime::with_current(|rt| rt.sched_table.is_none()).unwrap() {
+                    continue;
                 }
-            });
+            } else {
+                Runtime::run_without_sched_table();
+                if Runtime::with_current(|rt| rt.sched_table.is_some()).unwrap() {
+                    continue;
+                }
+            }
+
             debug!("runtime finished running all inspectors");
 
-            Self::halt_if_all_finished_or_ipi();
+            Runtime::halt_if_all_finished_or_ipi();
 
             debug!("runtime send ipi and wait");
-            hal!().interrupt().wait();
+            hal!().interrupt().with_saved_on(|| {
+                hal!().interrupt().wait();
+            });
         }
     }
 
     pub fn switch_yield() {
-        let runtime_switch_ctx = Self::with_current(|rt| rt.switch_context_addr()).unwrap();
+        let runtime_switch_ctx = Runtime::with_current(|rt| rt.switch_context_addr()).unwrap();
         let executor_switch_ctx = Executor::with_current(|ex| ex.switch_context()).unwrap();
         unsafe {
             arch::switch(
@@ -166,10 +174,6 @@ impl Runtime {
         self.status
     }
 
-    pub(crate) fn get_inspector_switch_pending(&self) -> bool {
-        self.inspector_switch_pending
-    }
-
     pub(crate) fn with_inspector<F, R>(&mut self, id: InspectorId, f: F) -> Result<R>
     where
         F: FnOnce(&mut Inspector) -> R,
@@ -181,9 +185,6 @@ impl Runtime {
         Ok(f(inspector))
     }
 
-    fn clr_inspector_switch_pending(&mut self) {
-        self.inspector_switch_pending = false;
-    }
     fn set_current_inspector(&mut self, id: Option<InspectorId>) {
         if let Some(id) = id {
             match self.status {
@@ -215,6 +216,84 @@ impl Runtime {
         VirtAddr::new(&self.switch_context as *const _ as usize)
     }
 
+    fn sched_table_start(&self) -> Result<()> {
+        self.sched_table
+            .as_ref()
+            .map(|table| table.start())
+            .ok_or(InternalError::InvalidRuntimeSchedTable)
+    }
+
+    fn sched_table_next(&self) -> Option<RuntimeSchedTableEntry> {
+        self.sched_table.as_ref().map(|table| table.sched_next())
+    }
+
+    fn run_with_sched_table() {
+        let runtime_switch_ctx = Runtime::with_current(|rt| rt.switch_context_addr()).unwrap();
+
+        Runtime::with_current(|rt| rt.sched_table_start().unwrap()).unwrap();
+
+        while let Some(entry) = Runtime::with_current(|rt| rt.sched_table_next()).unwrap() {
+            trace!("switch into inspector {:?}", entry.inspector_id);
+
+            Runtime::with_current(|rt| {
+                rt.set_current_inspector(Some(entry.inspector_id));
+            })
+            .unwrap();
+
+            hal!().interrupt().with_saved_on(|| {
+                Inspector::run(runtime_switch_ctx);
+            });
+
+            Runtime::with_current(|rt| {
+                rt.set_current_inspector(None);
+            })
+            .unwrap();
+
+            trace!("switch from inspector {:?}", entry.inspector_id);
+        }
+    }
+
+    fn run_without_sched_table() {
+        let runtime_switch_ctx = Runtime::with_current(|rt| rt.switch_context_addr()).unwrap();
+
+        while let Some(inspector_id) = Runtime::with_current(|rt| {
+            rt.sched_table
+                .is_none()
+                .then(|| rt.pop_inspector())
+                .flatten()
+        })
+        .unwrap()
+        {
+            trace!("switch into inspector {:?}", inspector_id);
+
+            Runtime::with_current(|rt| rt.set_current_inspector(Some(inspector_id))).unwrap();
+
+            hal!().interrupt().with_saved_on(|| {
+                Inspector::run(runtime_switch_ctx);
+            });
+
+            Runtime::with_current(|rt| {
+                rt.set_current_inspector(None);
+            })
+            .unwrap();
+
+            trace!("switch from inspector {:?}", inspector_id);
+
+            if Runtime::with_current(|rt| {
+                rt.with_inspector(inspector_id, |is| {
+                    is.is_empty() && is.status() == InspectorStatus::Idle
+                })
+                .unwrap()
+            })
+            .unwrap()
+            {
+                Runtime::with_current(|rt| rt.unregister_inspector(inspector_id).unwrap()).unwrap();
+            } else {
+                Runtime::with_current(|rt| rt.push_inspector(inspector_id).unwrap()).unwrap();
+            }
+        }
+    }
+
     fn halt_if_all_finished_or_ipi() {
         let runtimes = MutexGroup::new(RUNTIME.iter().filter_map(|rt| rt.get()));
         let guards = runtimes.lock();
@@ -233,7 +312,9 @@ impl Runtime {
                 })
                 .min()
             {
-                hal!().interrupt().send_ipi(&[cpu_id]);
+                if cpu_id != hal!().cpu().id() {
+                    hal!().interrupt().send_ipi(&[cpu_id]);
+                }
             }
 
             guards
@@ -247,6 +328,137 @@ impl Runtime {
 
 unsafe impl Send for Runtime {}
 
+impl RuntimeSchedTable {
+    pub fn new(
+        frame_size: Duration,
+        table: impl Iterator<Item = RuntimeSchedTableEntry>,
+    ) -> Result<Self> {
+        let mut table: Vec<RuntimeSchedTableEntry> = table.collect::<Vec<_>>();
+        table.sort_unstable_by_key(|entry| entry.offset);
+        let sched_table = Self {
+            frame_size,
+            table,
+            next: AtomicUsize::new(0),
+            datum: Mutex::default(),
+            events: Mutex::default(),
+        };
+        if !sched_table.valid() {
+            return Err(InternalError::InvalidRuntimeSchedTable);
+        }
+        Ok(sched_table)
+    }
+
+    pub fn start(&self) {
+        *self.datum.lock() = hal!().cpu().get_time();
+    }
+
+    pub(crate) fn sched_next(&self) -> RuntimeSchedTableEntry {
+        self.events.lock().retain(|event| !event.retired());
+
+        let next = self.table[self
+            .next
+            .fetch_add(1, core::sync::atomic::Ordering::Relaxed)];
+
+        if hal!().cpu().get_time() < self.get_datum() + next.offset {
+            self.events.lock().push_back(TimedEvent::create(
+                self.get_datum() + next.offset,
+                TimedEventHandler::new(|| {}, || {}),
+            ));
+            hal!().interrupt().wait();
+        }
+
+        self.events.lock().push_back(TimedEvent::create(
+            self.get_datum() + next.offset + next.duration,
+            TimedEventHandler::new(
+                || {
+                    Inspector::with_current(|is| is.mark_pending().unwrap()).unwrap();
+                    hal!().interrupt().with_saved_on(|| {
+                        Runtime::switch_yield();
+                    });
+                },
+                || {},
+            ),
+        ));
+
+        if self.next.load(core::sync::atomic::Ordering::Relaxed) >= self.table.len() {
+            self.next.store(0, core::sync::atomic::Ordering::Relaxed);
+            self.set_datum(self.get_datum() + self.frame_size);
+        }
+
+        next
+    }
+
+    fn get_datum(&self) -> Duration {
+        *self.datum.lock()
+    }
+
+    fn set_datum(&self, datum: Duration) {
+        *self.datum.lock() = datum;
+    }
+
+    fn valid(&self) -> bool {
+        for i in 0..self.table.len() {
+            let entry = &self.table[i];
+            if entry.offset >= self.frame_size {
+                return false;
+            }
+            if i + 1 < self.table.len() {
+                let next_entry = &self.table[i + 1];
+                if entry.offset + entry.duration > next_entry.offset {
+                    return false;
+                }
+            }
+        }
+
+        let mut table = self.table.clone();
+        table.sort_unstable_by_key(|entry| (entry.inspector_id, entry.offset));
+
+        for entries in table.group_by(|e1, e2| e1.inspector_id == e2.inspector_id) {
+            if !match entries {
+                [head, tail @ ..] => tail
+                    .iter()
+                    .all(|e| e.period == head.period && e.duration == head.duration),
+                [] => false,
+            } {
+                return false;
+            }
+        }
+
+        for entries in table.group_by(|e1, e2| e1.inspector_id == e2.inspector_id) {
+            if !entries
+                .iter()
+                .chain(entries.iter().take(1))
+                .map_windows(|&[e1, e2]| {
+                    let actual_period = if e2.offset <= e1.offset {
+                        e2.offset + self.frame_size - e1.offset
+                    } else {
+                        e2.offset - e1.offset
+                    };
+                    actual_period == e1.period
+                })
+                .all(|eq| eq)
+            {
+                return false;
+            }
+        }
+
+        true
+    }
+}
+
+impl Drop for RuntimeSchedTable {
+    fn drop(&mut self) {
+        hal!().interrupt().with_saved_off(|| {
+            warn!("drop runtime sched table");
+            for event in self.events.lock().iter() {
+                if let Err(err) = event.cancel() {
+                    warn!("failed to cancel timed event: {:?}", err);
+                }
+            }
+        });
+    }
+}
+
 #[percpu]
 static RUNTIME: Once<Mutex<Pin<Box<Runtime>>>> = Once::new();
 
@@ -254,13 +466,10 @@ pub fn init(future: impl Future<Output = ()> + 'static) {
     RUNTIME
         .as_ref()
         .try_call_once::<_, ()>(|| {
-            Ok(Runtime::new(Inspector::new(
-                InspectorMode::Bootstrap,
-                Executor::new(
-                    ExecutorPriority::default(),
-                    Task::new(future, TaskPriority::default()),
-                ),
-            )))
+            Ok(Runtime::new(Inspector::new(Executor::new(
+                ExecutorPriority::default(),
+                Task::new(future, TaskPriority::default()),
+            ))))
         })
         .unwrap();
 }

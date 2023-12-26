@@ -201,7 +201,9 @@ impl Executor {
         F: FnOnce(&mut Pin<Box<Executor>>) -> R,
     {
         let executor_id = match is.status() {
-            InspectorStatus::Running(executor_id) => executor_id,
+            InspectorStatus::Running(executor_id) | InspectorStatus::Pending(executor_id) => {
+                executor_id
+            }
             _ => return Err(InternalError::InvalidInspectorStatus),
         };
         is.with_executor(executor_id, f)

@@ -545,6 +545,7 @@ dependencies = [
  "jrinx-phys-frame",
  "jrinx-serial-id-macro",
  "jrinx-stack-alloc",
+ "jrinx-timed-event",
  "jrinx-util",
  "jrinx-vmm",
  "log",
