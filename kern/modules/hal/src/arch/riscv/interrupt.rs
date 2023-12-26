@@ -30,9 +30,8 @@ impl Interrupt for InterruptImpl {
     }
 
     fn clr_soft(&self) {
-        let bits = 2;
         unsafe {
-            core::arch::asm!("csrc sip, {}", in(reg) bits);
+            core::arch::asm!("csrci sip, 2");
         }
     }
 
