@@ -19,6 +19,7 @@ pub enum InternalError {
     InvalidRuntimeSchedTable,
     DuplicateRuntimeSchedTable,
     InvalidTimedEventStatus,
+    InvalidName,
 }
 
 pub type Result<T> = core::result::Result<T, InternalError>;

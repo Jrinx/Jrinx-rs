@@ -74,6 +74,22 @@ impl PageTable {
         Self::clone_kernel(root.to_virt().as_array_base());
         Ok(Self { root, frames })
     }
+
+    pub fn new_from(src: &Self) -> Result<Self> {
+        let frame = PhysFrame::alloc()?;
+        let root = frame.addr();
+        let mut frames = BTreeMap::new();
+        frames.insert(root.to_virt(), frame);
+        for (&virt, frame) in src
+            .frames
+            .iter()
+            .filter(|&(&virt_addr, _)| virt_addr != src.root.to_virt())
+        {
+            frames.insert(virt, frame.clone());
+        }
+        Ok(Self { root, frames })
+    }
+
     fn find(&self, addr: VirtAddr) -> Result<&mut PageTableEntry> {
         let indexes = addr.indexes();
         let mut pa = self.root;
