@@ -1,3 +1,6 @@
+use core::time::Duration;
+
+use jrinx_hal::{hal, Cpu, Hal, Interrupt};
 use spin::RwLock;
 
 use crate::{GenericContext, TrapReason};
@@ -15,6 +18,11 @@ pub(crate) fn handle(ctx: &mut impl GenericContext) {
         if let Err(err) = tracker.timeout() {
             warn!("Failed to handle timed event timeout: {:?}", err);
         }
+    }
+
+    if hal!().interrupt().is_timer_pending() {
+        warn!("timer interrupt is pending, but no timed event is scheduled");
+        hal!().cpu().set_timer(Duration::MAX);
     }
 }
 

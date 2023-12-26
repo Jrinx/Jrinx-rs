@@ -115,6 +115,8 @@ pub trait Interrupt: Send + Sync {
         ret
     }
 
+    fn is_timer_pending(&self) -> bool;
+
     fn clr_soft(&self);
 
     fn send_ipi(&self, cpu_ids: &[usize]);

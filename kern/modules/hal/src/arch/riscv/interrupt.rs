@@ -1,4 +1,4 @@
-use riscv::register::sstatus;
+use riscv::register::{sip, sstatus};
 use sbi::HartMask;
 
 use crate::Interrupt;
@@ -27,6 +27,10 @@ impl Interrupt for InterruptImpl {
         unsafe {
             sstatus::clear_sie();
         }
+    }
+
+    fn is_timer_pending(&self) -> bool {
+        sip::read().stimer()
     }
 
     fn clr_soft(&self) {
