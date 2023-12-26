@@ -10,8 +10,7 @@ pub(crate) fn handle(ctx: &mut impl GenericContext) {
         panic!("not a software interrupt");
     };
 
-    let mut counter = SOFT_INT_COUNTER.write();
-    *counter += 1;
+    *SOFT_INT_COUNTER.write() += 1;
 
     hal!().interrupt().clr_soft();
 }

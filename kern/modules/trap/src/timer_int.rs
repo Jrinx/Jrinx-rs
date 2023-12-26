@@ -9,8 +9,7 @@ pub(crate) fn handle(ctx: &mut impl GenericContext) {
         panic!("not a timer interrupt");
     };
 
-    let mut counter = TIMER_INT_COUNTER.write();
-    *counter += 1;
+    *TIMER_INT_COUNTER.write() += 1;
 
     while let Some(tracker) = jrinx_timed_event::with_current(|tq| tq.peek_outdated()) {
         if let Err(err) = tracker.timeout() {
