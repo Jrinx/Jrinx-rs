@@ -17,7 +17,8 @@ fn probe(node: &FdtNode) -> Result<()> {
                 let mut intervals = ExclusiveIntervals::new([bound]);
                 intervals -= Bound::new(
                     PhysAddr::new(PHYS_MEM_BASE).to_virt().as_usize(),
-                    VirtAddr::new(jrinx_layout::_end()) - PhysAddr::new(PHYS_MEM_BASE).to_virt(),
+                    VirtAddr::new(jrinx_layout::_end()).align_page_up()
+                        - PhysAddr::new(PHYS_MEM_BASE).to_virt(),
                 );
                 intervals
                     .into_iter()
