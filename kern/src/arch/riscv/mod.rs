@@ -47,8 +47,8 @@ unsafe extern "C" fn primary_init(fdtaddr: usize) -> ! {
         jrinx_layout::_ebss() - jrinx_layout::_sbss(),
     );
 
-    BootPageTable::init();
-    BootPageTable::start();
+    BootPageTable.init();
+    BootPageTable.start();
     sstatus::set_sum();
     sie::set_sext();
     sie::set_stimer();
@@ -62,7 +62,7 @@ unsafe extern "C" fn primary_init(fdtaddr: usize) -> ! {
 }
 
 unsafe extern "C" fn secondary_init() -> ! {
-    BootPageTable::start();
+    BootPageTable.start();
     sstatus::set_sum();
     sie::set_sext();
     sie::set_stimer();

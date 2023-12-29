@@ -12,9 +12,12 @@ use riscv::{
 use crate::{GenericPagePerm, PagePerm, PageTableEntry};
 
 #[repr(C, align(4096))]
-pub struct BootPageTable([usize; PAGE_SIZE / size_of::<usize>()]);
+struct BootPageTableInner([usize; PAGE_SIZE / size_of::<usize>()]);
 
-pub static mut BOOT_PAGE_TABLE: BootPageTable = BootPageTable([0; PAGE_SIZE / size_of::<usize>()]);
+static mut BOOT_PAGE_TABLE: BootPageTableInner =
+    BootPageTableInner([0; PAGE_SIZE / size_of::<usize>()]);
+
+pub struct BootPageTable;
 
 impl BootPageTable {
     /// # Safety
@@ -29,7 +32,7 @@ impl BootPageTable {
     /// BootPageTable::start();
     /// ```
     #[inline(always)]
-    pub unsafe fn init() {
+    pub unsafe fn init(&self) {
         for &RemapMemRegion {
             virt_addr,
             phys_addr,
@@ -60,7 +63,7 @@ impl BootPageTable {
     /// BootPageTable::start();
     /// ```
     #[inline(always)]
-    pub unsafe fn start() {
+    pub unsafe fn start(&self) {
         let pt_ppn: usize = BOOT_PAGE_TABLE.0.as_ptr() as usize / PAGE_SIZE;
 
         #[cfg(target_arch = "riscv32")]
