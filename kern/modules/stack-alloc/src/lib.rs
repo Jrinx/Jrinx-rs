@@ -33,10 +33,11 @@ impl StackAllocator {
         map: impl MapperOrUnmapperFn + 'static,
         unmap: impl MapperOrUnmapperFn + 'static,
     ) -> Self {
+        let guard_size = guard_size.next_multiple_of(PAGE_SIZE);
         Self {
             region,
-            guard_size: guard_size.next_multiple_of(PAGE_SIZE),
-            next: AtomicUsize::new(region.0.as_usize()),
+            guard_size,
+            next: AtomicUsize::new(region.0.as_usize() - guard_size),
             allocated: Mutex::new(BTreeMap::new()),
             cached: Mutex::new(BTreeMap::new()),
             map: Box::new(map),
