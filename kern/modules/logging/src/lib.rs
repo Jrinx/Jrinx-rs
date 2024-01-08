@@ -10,7 +10,11 @@ use alloc::{
 };
 use jrinx_error::InternalError;
 use jrinx_hal::{hal, Cpu, Earlycon, Hal, Interrupt};
-use jrinx_multitask::{executor::Executor, inspector::Inspector, runtime::Runtime};
+use jrinx_multitask::{
+    executor::Executor,
+    inspector::Inspector,
+    runtime::{Runtime, RuntimeStatus},
+};
 use jrinx_util::color;
 use spin::Mutex;
 
@@ -108,22 +112,19 @@ pub fn set_max_level(level: log::LevelFilter) {
 }
 
 fn analyse_kernel_state() -> String {
-    if let Ok(state) = match Executor::with_current_try_lock(|ex| ex.id()) {
+    if let Ok(state) = match Executor::with_current(|ex| ex.id()) {
         Ok(id) => Ok(format!("executor#{}", id)),
-        Err(InternalError::BusyLock) => Ok("busy-lock".to_string()),
         Err(err) => Err(err),
     } {
         state
-    } else if let Ok(state) = match Inspector::with_current_try_lock(|is| is.id()) {
+    } else if let Ok(state) = match Inspector::with_current(|is| is.id()) {
         Ok(id) => Ok(format!("inspector#{}", id)),
-        Err(InternalError::BusyLock) => Ok("busy-lock".to_string()),
         Err(err) => Err(err),
     } {
         state
-    } else if let Ok(state) = match Runtime::with_current_try_lock(|_| ()) {
-        Ok(()) => Ok("runtime".to_string()),
-        Err(InternalError::BusyLock) => Ok("busy-lock".to_string()),
-        Err(err) => Err(err),
+    } else if let Ok(state) = match Runtime::with_current(|rt| rt.status()) {
+        RuntimeStatus::Unused => Err(InternalError::InvalidRuntimeStatus),
+        _ => Ok("runtime".to_string()),
     } {
         state
     } else {

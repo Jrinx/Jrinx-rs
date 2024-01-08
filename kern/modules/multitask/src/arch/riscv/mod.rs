@@ -1,8 +1,9 @@
 use core::mem::offset_of;
 
+use const_default::ConstDefault;
 use jrinx_addr::VirtAddr;
 
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Default, ConstDefault, Clone, Copy)]
 #[repr(C)]
 pub struct SwitchContext {
     ra: usize,
@@ -36,8 +37,8 @@ impl SwitchContext {
         self.s0 = executor.as_usize();
     }
 
-    pub(crate) fn new_runtime() -> Self {
-        Default::default()
+    pub(crate) const fn new_runtime() -> Self {
+        ConstDefault::DEFAULT
     }
 }
 

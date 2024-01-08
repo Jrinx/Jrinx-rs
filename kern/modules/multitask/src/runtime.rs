@@ -1,7 +1,6 @@
-use core::{future::Future, pin::Pin, sync::atomic::AtomicUsize, time::Duration};
+use core::{cell::SyncUnsafeCell, future::Future, sync::atomic::AtomicUsize, time::Duration};
 
 use alloc::{
-    boxed::Box,
     collections::{BTreeMap, VecDeque},
     vec::Vec,
 };
@@ -11,7 +10,7 @@ use jrinx_hal::{Cpu, Hal, HaltReason, Interrupt};
 use jrinx_percpu::percpu;
 use jrinx_timed_event::{TimedEvent, TimedEventHandler, TimedEventTracker};
 use mtxgroup::MutexGroup;
-use spin::{Mutex, Once};
+use spin::{Mutex, RwLock};
 
 use crate::{
     arch::{self, SwitchContext},
@@ -21,7 +20,8 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum RuntimeStatus {
+pub enum RuntimeStatus {
+    Unused,
     Init,
     Idle,
     Running(InspectorId),
@@ -29,12 +29,15 @@ pub(crate) enum RuntimeStatus {
 }
 
 pub struct Runtime {
-    cpu_id: usize,
-    inspector_registry: BTreeMap<InspectorId, Inspector>,
-    inspector_queue: VecDeque<InspectorId>,
-    status: RuntimeStatus,
+    scheduler: RwLock<RuntimeInspectorScheduler>,
+    status: Mutex<RuntimeStatus>,
+    switch_context: SyncUnsafeCell<SwitchContext>,
+}
+
+struct RuntimeInspectorScheduler {
+    registry: BTreeMap<InspectorId, Inspector>,
+    queue: VecDeque<InspectorId>,
     sched_table: Option<RuntimeSchedTable>,
-    switch_context: SwitchContext,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -54,96 +57,80 @@ pub struct RuntimeSchedTable {
 }
 
 impl Runtime {
-    pub fn new(root_inspector: Inspector) -> Mutex<Pin<Box<Self>>> {
-        let mut runtime = Box::pin(Self {
-            cpu_id: hal!().cpu().id(),
-            inspector_registry: BTreeMap::new(),
-            inspector_queue: VecDeque::new(),
-            status: RuntimeStatus::Init,
-            sched_table: None,
-            switch_context: SwitchContext::new_runtime(),
-        });
-
-        runtime.register_inspector(root_inspector).unwrap();
-
-        Mutex::new(runtime)
+    pub const fn new() -> Self {
+        Self {
+            scheduler: RwLock::new(RuntimeInspectorScheduler {
+                registry: BTreeMap::new(),
+                queue: VecDeque::new(),
+                sched_table: None,
+            }),
+            status: Mutex::new(RuntimeStatus::Unused),
+            switch_context: SyncUnsafeCell::new(SwitchContext::new_runtime()),
+        }
     }
 
-    pub fn enact_sched_table(&mut self, sched_table: RuntimeSchedTable) -> Result<()> {
-        if self.sched_table.is_some() {
+    pub fn init(&self) {
+        *self.status.lock() = RuntimeStatus::Init;
+    }
+
+    pub fn enact_sched_table(&self, sched_table: RuntimeSchedTable) -> Result<()> {
+        let registry = self.scheduler.upgradeable_read();
+        if registry.sched_table.is_some() {
             return Err(InternalError::DuplicateRuntimeSchedTable);
         }
-        self.sched_table = Some(sched_table);
+        registry.upgrade().sched_table = Some(sched_table);
         Ok(())
     }
 
-    pub fn revoke_sched_table(&mut self) -> Result<RuntimeSchedTable> {
-        self.sched_table
+    pub fn revoke_sched_table(&self) -> Result<RuntimeSchedTable> {
+        self.scheduler
+            .write()
+            .sched_table
             .take()
             .ok_or(InternalError::InvalidRuntimeSchedTable)
     }
 
-    pub fn register_inspector(&mut self, inspector: Inspector) -> Result<()> {
+    pub fn register(&self, inspector: Inspector) -> Result<()> {
         let id = inspector.id();
-        self.inspector_registry
+        let mut inspectors = self.scheduler.write();
+        inspectors
+            .registry
             .try_insert(id, inspector)
             .map_err(|_| InternalError::DuplicateInspectorId)?;
-        self.inspector_queue.push_back(id);
+        inspectors.queue.push_back(id);
         Ok(())
     }
 
-    pub fn unregister_inspector(&mut self, id: InspectorId) -> Result<()> {
-        self.inspector_registry
+    pub fn unregister(&self, id: InspectorId) -> Result<()> {
+        self.scheduler
+            .write()
+            .registry
             .remove(&id)
             .ok_or(InternalError::InvalidInspectorId)?;
         Ok(())
     }
 
-    pub fn with_current_try_lock<F, R>(f: F) -> Result<R>
+    pub fn with_current<F, R>(f: F) -> R
     where
-        F: FnOnce(&mut Runtime) -> R,
+        F: FnOnce(&Runtime) -> R,
     {
-        hal!().interrupt().with_saved_off(|| {
-            RUNTIME.with_ref(|rt| {
-                if let Some(rt) = rt.get() {
-                    match rt.try_lock() {
-                        Some(ref mut rt) => Ok(f(rt)),
-                        None => Err(InternalError::BusyLock),
-                    }
-                } else {
-                    Err(InternalError::InvalidRuntimeStatus)
-                }
-            })
-        })
-    }
-
-    pub fn with_current<F, R>(f: F) -> Result<R>
-    where
-        F: FnOnce(&mut Runtime) -> R,
-    {
-        hal!().interrupt().with_saved_off(|| {
-            RUNTIME.with_ref(|rt| {
-                if let Some(rt) = rt.get() {
-                    Ok(f(&mut rt.lock()))
-                } else {
-                    Err(InternalError::InvalidRuntimeStatus)
-                }
-            })
-        })
+        hal!()
+            .interrupt()
+            .with_saved_off(|| RUNTIME.with_ref(|rt| f(rt)))
     }
 
     pub fn start() -> ! {
         debug!("runtime started running all inspectors");
 
         loop {
-            if Runtime::with_current(|rt| rt.sched_table.is_some()).unwrap() {
+            if Runtime::with_current(|rt| rt.scheduler.read().sched_table.is_some()) {
                 Runtime::run_with_sched_table();
-                if Runtime::with_current(|rt| rt.sched_table.is_none()).unwrap() {
+                if Runtime::with_current(|rt| rt.scheduler.read().sched_table.is_none()) {
                     continue;
                 }
             } else {
                 Runtime::run_without_sched_table();
-                if Runtime::with_current(|rt| rt.sched_table.is_some()).unwrap() {
+                if Runtime::with_current(|rt| rt.scheduler.read().sched_table.is_some()) {
                     continue;
                 }
             }
@@ -160,7 +147,7 @@ impl Runtime {
     }
 
     pub fn switch_yield() {
-        let runtime_switch_ctx = Runtime::with_current(|rt| rt.switch_context_addr()).unwrap();
+        let runtime_switch_ctx = Runtime::with_current(|rt| rt.switch_context_addr());
         let executor_switch_ctx = Executor::with_current(|ex| ex.switch_context()).unwrap();
         unsafe {
             arch::switch(
@@ -170,75 +157,85 @@ impl Runtime {
         }
     }
 
-    pub(crate) fn status(&self) -> RuntimeStatus {
-        self.status
+    pub fn status(&self) -> RuntimeStatus {
+        *self.status.lock()
     }
 
-    pub(crate) fn with_inspector<F, R>(&mut self, id: InspectorId, f: F) -> Result<R>
+    pub(crate) fn with_inspector<F, R>(&self, id: InspectorId, f: F) -> Result<R>
     where
-        F: FnOnce(&mut Inspector) -> R,
+        F: FnOnce(&Inspector) -> R,
     {
-        let inspector = self
-            .inspector_registry
-            .get_mut(&id)
-            .ok_or(InternalError::InvalidInspectorId)?;
-        Ok(f(inspector))
+        Ok(f(self
+            .scheduler
+            .read()
+            .registry
+            .get(&id)
+            .ok_or(InternalError::InvalidInspectorId)?))
     }
 
-    fn set_current_inspector(&mut self, id: Option<InspectorId>) {
+    fn set_current_inspector(&self, id: Option<InspectorId>) {
+        let mut status = self.status.lock();
+
         if let Some(id) = id {
-            match self.status {
+            match *status {
                 RuntimeStatus::Running(ref mut inspector_id) => {
                     *inspector_id = id;
                 }
                 _ => {
-                    self.status = RuntimeStatus::Running(id);
+                    *status = RuntimeStatus::Running(id);
                 }
             }
         } else {
-            self.status = RuntimeStatus::Idle;
+            *status = RuntimeStatus::Idle;
         }
     }
 
-    fn pop_inspector(&mut self) -> Option<InspectorId> {
-        self.inspector_queue.pop_front()
+    fn pop_front(&self) -> Option<InspectorId> {
+        self.scheduler.write().queue.pop_front()
     }
 
-    fn push_inspector(&mut self, id: InspectorId) -> Result<()> {
-        if !self.inspector_registry.contains_key(&id) {
+    fn push_back(&self, id: InspectorId) -> Result<()> {
+        let mut scheduler = self.scheduler.write();
+
+        if !scheduler.registry.contains_key(&id) {
             return Err(InternalError::InvalidInspectorId);
         }
-        self.inspector_queue.push_back(id);
+        scheduler.queue.push_back(id);
         Ok(())
     }
 
     fn switch_context_addr(&self) -> VirtAddr {
-        VirtAddr::new(&self.switch_context as *const _ as usize)
+        VirtAddr::new(self.switch_context.get() as *const _ as usize)
     }
 
     fn sched_table_start(&self) -> Result<()> {
-        self.sched_table
+        self.scheduler
+            .read()
+            .sched_table
             .as_ref()
             .map(|table| table.start())
             .ok_or(InternalError::InvalidRuntimeSchedTable)
     }
 
     fn sched_table_next(&self) -> Option<RuntimeSchedTableEntry> {
-        self.sched_table.as_ref().map(|table| table.sched_next())
+        self.scheduler
+            .read()
+            .sched_table
+            .as_ref()
+            .map(|table| table.sched_next())
     }
 
     fn run_with_sched_table() {
-        let runtime_switch_ctx = Runtime::with_current(|rt| rt.switch_context_addr()).unwrap();
+        let runtime_switch_ctx = Runtime::with_current(|rt| rt.switch_context_addr());
 
-        Runtime::with_current(|rt| rt.sched_table_start().unwrap()).unwrap();
+        Runtime::with_current(|rt| rt.sched_table_start().unwrap());
 
-        while let Some(entry) = Runtime::with_current(|rt| rt.sched_table_next()).unwrap() {
+        while let Some(entry) = Runtime::with_current(|rt| rt.sched_table_next()) {
             trace!("switch into inspector {:?}", entry.inspector_id);
 
             Runtime::with_current(|rt| {
                 rt.set_current_inspector(Some(entry.inspector_id));
-            })
-            .unwrap();
+            });
 
             hal!().interrupt().with_saved_on(|| {
                 Inspector::run(runtime_switch_ctx);
@@ -246,27 +243,25 @@ impl Runtime {
 
             Runtime::with_current(|rt| {
                 rt.set_current_inspector(None);
-            })
-            .unwrap();
+            });
 
             trace!("switch from inspector {:?}", entry.inspector_id);
         }
     }
 
     fn run_without_sched_table() {
-        let runtime_switch_ctx = Runtime::with_current(|rt| rt.switch_context_addr()).unwrap();
+        let runtime_switch_ctx = Runtime::with_current(|rt| rt.switch_context_addr());
 
         while let Some(inspector_id) = Runtime::with_current(|rt| {
-            rt.sched_table
-                .is_none()
-                .then(|| rt.pop_inspector())
-                .flatten()
-        })
-        .unwrap()
-        {
+            if rt.scheduler.read().sched_table.is_none() {
+                rt.pop_front()
+            } else {
+                None
+            }
+        }) {
             trace!("switch into inspector {:?}", inspector_id);
 
-            Runtime::with_current(|rt| rt.set_current_inspector(Some(inspector_id))).unwrap();
+            Runtime::with_current(|rt| rt.set_current_inspector(Some(inspector_id)));
 
             hal!().interrupt().with_saved_on(|| {
                 Inspector::run(runtime_switch_ctx);
@@ -274,8 +269,7 @@ impl Runtime {
 
             Runtime::with_current(|rt| {
                 rt.set_current_inspector(None);
-            })
-            .unwrap();
+            });
 
             trace!("switch from inspector {:?}", inspector_id);
 
@@ -284,31 +278,31 @@ impl Runtime {
                     is.is_empty() && is.status() == InspectorStatus::Idle
                 })
                 .unwrap()
-            })
-            .unwrap()
-            {
-                Runtime::with_current(|rt| rt.unregister_inspector(inspector_id).unwrap()).unwrap();
+            }) {
+                Runtime::with_current(|rt| rt.unregister(inspector_id).unwrap());
             } else {
-                Runtime::with_current(|rt| rt.push_inspector(inspector_id).unwrap()).unwrap();
+                Runtime::with_current(|rt| rt.push_back(inspector_id).unwrap());
             }
         }
     }
 
     fn halt_if_all_finished_or_ipi() {
-        let runtimes = MutexGroup::new(RUNTIME.iter().filter_map(|rt| rt.get()));
-        let guards = runtimes.lock();
+        let status = MutexGroup::new(RUNTIME.iter().map(|rt| &rt.status));
+        let guards = status.lock();
 
         if guards.iter().count() == 1
             || guards
                 .iter()
-                .all(|guard| guard.status == RuntimeStatus::Endpoint)
+                .filter(|&guard| **guard != RuntimeStatus::Unused)
+                .all(|guard| **guard == RuntimeStatus::Endpoint)
         {
             hal!().halt(HaltReason::NormalExit);
         } else {
             if let Some(cpu_id) = guards
                 .iter()
-                .filter_map(|guard| {
-                    (guard.status == RuntimeStatus::Endpoint).then_some(guard.cpu_id)
+                .zip(0..)
+                .filter_map(|(guard, cpu_id)| {
+                    (**guard == RuntimeStatus::Endpoint).then_some(cpu_id)
                 })
                 .min()
             {
@@ -317,16 +311,14 @@ impl Runtime {
                 }
             }
 
-            guards
+            *guards
                 .into_iter()
-                .find(|guard| guard.cpu_id == hal!().cpu().id())
-                .unwrap()
-                .status = RuntimeStatus::Endpoint;
+                .zip(0..)
+                .find_map(|(guard, cpu_id)| (cpu_id == hal!().cpu().id()).then_some(guard))
+                .unwrap() = RuntimeStatus::Endpoint;
         }
     }
 }
-
-unsafe impl Send for Runtime {}
 
 impl RuntimeSchedTable {
     pub fn new(
@@ -460,16 +452,14 @@ impl Drop for RuntimeSchedTable {
 }
 
 #[percpu]
-static RUNTIME: Once<Mutex<Pin<Box<Runtime>>>> = Once::new();
+static RUNTIME: Runtime = Runtime::new();
 
-pub fn init(future: impl Future<Output = ()> + 'static) {
+pub fn init(future: impl Future<Output = ()> + Send + Sync + 'static) {
     RUNTIME
         .as_ref()
-        .try_call_once::<_, ()>(|| {
-            Ok(Runtime::new(Inspector::new(Executor::new(
-                ExecutorPriority::default(),
-                Task::new(future, TaskPriority::default()),
-            ))))
-        })
+        .register(Inspector::new(Executor::new(
+            ExecutorPriority::default(),
+            Task::new(future, TaskPriority::default()),
+        )))
         .unwrap();
 }

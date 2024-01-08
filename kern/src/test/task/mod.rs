@@ -90,7 +90,7 @@ pub(super) mod inspector {
                     .unwrap();
             }
 
-            Inspector::with_current(|is| is.register_executor(executor).unwrap()).unwrap();
+            Inspector::with_current(|is| is.register(executor).unwrap()).unwrap();
         }
 
         Runtime::switch_yield();

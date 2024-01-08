@@ -21,7 +21,7 @@ pub(super) mod round_robin {
         const EXECUTOR_MAX: u8 = 4;
 
         for i in 1..=INSPECTOR_MAX {
-            let mut inspector = Inspector::new(Executor::new(
+            let inspector = Inspector::new(Executor::new(
                 ExecutorPriority::default(),
                 Task::new(async {}, TaskPriority::default()),
             ));
@@ -31,7 +31,7 @@ pub(super) mod round_robin {
                 let executor_order = j;
 
                 inspector
-                    .register_executor(Executor::new(
+                    .register(Executor::new(
                         ExecutorPriority::new(j),
                         Task::new(
                             async move {
@@ -49,7 +49,7 @@ pub(super) mod round_robin {
                     .unwrap();
             }
 
-            Runtime::with_current(|rt| rt.register_inspector(inspector).unwrap()).unwrap();
+            Runtime::with_current(|rt| rt.register(inspector).unwrap());
         }
 
         Inspector::with_current(|is| is.mark_pending().unwrap()).unwrap();
@@ -137,8 +137,7 @@ pub(super) mod sched_table {
                                 > Duration::from_secs(2 * FRAME_SIZE as u64)
                                     + Duration::from_micros(500)
                             {
-                                let _ =
-                                    Runtime::with_current(|rt| rt.revoke_sched_table()).unwrap();
+                                let _ = Runtime::with_current(|rt| rt.revoke_sched_table());
                                 break;
                             }
                         }
@@ -149,7 +148,7 @@ pub(super) mod sched_table {
 
             inspector_list.push(inspector.id());
 
-            Runtime::with_current(|rt| rt.register_inspector(inspector).unwrap()).unwrap();
+            Runtime::with_current(|rt| rt.register(inspector).unwrap());
         }
 
         let sched_table = RuntimeSchedTable::new(
@@ -187,7 +186,7 @@ pub(super) mod sched_table {
         set_time_datum(hal!().cpu().get_time());
         trace!("time datum: {:?}", get_time_datum());
 
-        Runtime::with_current(|rt| rt.enact_sched_table(sched_table).unwrap()).unwrap();
+        Runtime::with_current(|rt| rt.enact_sched_table(sched_table).unwrap());
         Inspector::with_current(|is| is.mark_pending().unwrap()).unwrap();
         Runtime::switch_yield();
     }
