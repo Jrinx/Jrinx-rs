@@ -48,6 +48,11 @@ fn primary_init(boot_info: BootInfo) -> ! {
 
     let fdt = &boot_info.fdt();
 
+    arch::cpus::init(fdt);
+
+    jrinx_percpu::init(hal!().cpu().nproc());
+    jrinx_percpu::set_local_pointer(hal!().cpu().id());
+
     jrinx_driver::probe_all(fdt);
 
     if let Some(bootargs) = fdt.chosen().bootargs() {
@@ -55,9 +60,6 @@ fn primary_init(boot_info: BootInfo) -> ! {
     }
 
     arch::secondary_boot(fdt);
-
-    jrinx_percpu::init(hal!().cpu().nproc());
-    jrinx_percpu::set_local_pointer(hal!().cpu().id());
 
     let arch = core::option_env!("ARCH").unwrap_or("unknown");
     let build_time = core::option_env!("BUILD_TIME").unwrap_or("unknown");

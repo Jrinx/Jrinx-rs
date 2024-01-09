@@ -6,25 +6,26 @@ use jrinx_addr::VirtAddr;
 use jrinx_hal::{Cpu, Hal};
 use sbi::base::{probe_extension, ExtensionAvailability};
 
-pub(in crate::arch) fn init(fdt: &Fdt<'_>) {
+fn is_cpu(node: &FdtNode) -> bool {
+    node.name == "cpu" || node.name.starts_with("cpu@")
+}
+
+fn is_valid_cpu(node: &FdtNode) -> bool {
+    is_cpu(node)
+        && !node
+            .property("status")
+            .is_some_and(|prop| prop.as_str().is_some_and(|status| status != "okay"))
+}
+
+pub fn init(fdt: &Fdt<'_>) {
     let node = fdt.find_all_nodes("/cpus").next().unwrap();
 
-    let timebase_freq = node
-        .property("timebase-frequency")
-        .unwrap()
-        .as_usize()
-        .unwrap();
-
-    hal!().cpu().set_timebase_freq(timebase_freq as u64);
-
-    let is_cpu = |node: &FdtNode| node.name == "cpu" || node.name.starts_with("cpu@");
-
-    let is_valid_cpu = |node: &FdtNode| {
-        is_cpu(node)
-            && !node
-                .property("status")
-                .is_some_and(|prop| prop.as_str().is_some_and(|status| status != "okay"))
-    };
+    hal!().cpu().set_timebase_freq(
+        node.property("timebase-frequency")
+            .unwrap()
+            .as_usize()
+            .unwrap() as u64,
+    );
 
     hal!()
         .cpu()
@@ -33,6 +34,10 @@ pub(in crate::arch) fn init(fdt: &Fdt<'_>) {
     hal!()
         .cpu()
         .set_nproc_valid(node.children().filter(is_valid_cpu).count());
+}
+
+pub(in crate::arch) fn start(fdt: &Fdt<'_>) {
+    let node = fdt.find_all_nodes("/cpus").next().unwrap();
 
     if let ExtensionAvailability::Available(_) = probe_extension(sbi::hsm::EXTENSION_ID) {
         for cpu in node.children().filter(is_valid_cpu) {

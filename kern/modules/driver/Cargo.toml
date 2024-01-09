@@ -12,3 +12,4 @@ jrinx-error = { version = "0.1.0", path = "../error" }
 jrinx-heap = { version = "0.1.0", path = "../heap" }
 jrinx-layout = { version = "0.1.0", path = "../layout" }
 jrinx-util = { version = "0.1.0", path = "../util" }
+log = { version = "0.4.20", default-features = false }

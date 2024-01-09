@@ -1,4 +1,4 @@
-mod cpus;
+pub mod cpus;
 
 use fdt::Fdt;
 use jrinx_addr::PhysAddr;
@@ -72,5 +72,5 @@ unsafe extern "C" fn secondary_init() -> ! {
 }
 
 pub fn secondary_boot(fdt: &Fdt) {
-    cpus::init(fdt);
+    cpus::start(fdt);
 }
