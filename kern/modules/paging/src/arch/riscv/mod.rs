@@ -55,6 +55,10 @@ impl PageTableEntry {
         pte
     }
 
+    pub(in crate::arch) unsafe fn from_raw(bits: usize) -> Self {
+        Self { bits }
+    }
+
     pub fn is_valid(&self) -> bool {
         self.bits & PagePerm::V.bits() != 0
     }

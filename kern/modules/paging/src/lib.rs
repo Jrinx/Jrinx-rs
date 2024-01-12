@@ -1,4 +1,5 @@
 #![no_std]
+#![feature(allocator_api)]
 #![feature(asm_const)]
 #![feature(naked_functions)]
 
