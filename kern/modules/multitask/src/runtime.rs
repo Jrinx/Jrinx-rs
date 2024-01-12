@@ -74,11 +74,17 @@ impl Runtime {
     }
 
     pub fn enact_sched_table(&self, sched_table: RuntimeSchedTable) -> Result<()> {
-        let registry = self.scheduler.upgradeable_read();
-        if registry.sched_table.is_some() {
+        let mut scheduler = self.scheduler.write();
+        if scheduler.sched_table.is_some() {
             return Err(InternalError::DuplicateRuntimeSchedTable);
         }
-        registry.upgrade().sched_table = Some(sched_table);
+        scheduler.queue.retain(|&id| {
+            sched_table
+                .table
+                .iter()
+                .all(|entry| entry.inspector_id != id)
+        });
+        scheduler.sched_table = Some(sched_table);
         Ok(())
     }
 
