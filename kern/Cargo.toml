@@ -27,6 +27,7 @@ jrinx-multitask = { version = "0.1.0", path = "modules/multitask" }
 jrinx-paging = { version = "0.1.0", path = "modules/paging" }
 jrinx-percpu = { version = "0.1.0", path = "modules/percpu" }
 jrinx-phys-frame = { version = "0.1.0", path = "modules/phys-frame" }
+jrinx-stack-alloc = { version = "0.1.0", path = "modules/stack-alloc" }
 jrinx-testdef = { version = "0.1.0", path = "modules/testdef" }
 jrinx-timed-event = { version = "0.1.0", path = "modules/timed-event" }
 jrinx-trap = { version = "0.1.0", path = "modules/trap" }

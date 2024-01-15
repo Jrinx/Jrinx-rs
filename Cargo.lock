@@ -455,6 +455,7 @@ dependencies = [
  "jrinx-paging",
  "jrinx-percpu",
  "jrinx-phys-frame",
+ "jrinx-stack-alloc",
  "jrinx-testdef",
  "jrinx-timed-event",
  "jrinx-trap",
