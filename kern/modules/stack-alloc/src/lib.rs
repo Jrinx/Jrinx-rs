@@ -37,7 +37,7 @@ impl StackAllocator {
         Self {
             region,
             guard_size,
-            next: AtomicUsize::new(region.0.as_usize() - guard_size),
+            next: AtomicUsize::new(region.0.as_usize() + guard_size),
             allocated: Mutex::new(BTreeMap::new()),
             cached: Mutex::new(BTreeMap::new()),
             map: Box::new(map),
