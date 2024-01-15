@@ -88,3 +88,23 @@ impl StackAllocator {
         Ok(())
     }
 }
+
+impl Drop for StackAllocator {
+    fn drop(&mut self) {
+        for (&stack_top, &size) in self.allocated.lock().iter() {
+            let va = stack_top - size - self.guard_size;
+
+            for i in (0..size).step_by(PAGE_SIZE) {
+                (self.unmap)(va + self.guard_size + i).unwrap();
+            }
+        }
+
+        for (&size, cached) in self.cached.lock().iter() {
+            for &va in cached.iter() {
+                for i in (0..size).step_by(PAGE_SIZE) {
+                    (self.unmap)(va + self.guard_size + i).unwrap();
+                }
+            }
+        }
+    }
+}
