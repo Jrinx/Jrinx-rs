@@ -106,6 +106,67 @@ core::arch::global_asm! {
         LD_REG ra, {RA_OFFSET}, a1
 
         ret
+
+    .global switch_context_with_int_saved_on
+    switch_context_with_int_saved_on:
+        addi sp, sp, -16
+        ST_REG ra, 8, sp
+
+        csrr t0, sstatus
+        andi t0, t0, 2
+        ST_REG t0, 0, sp
+
+        call switch_context_with_int_saved_on_inner
+
+        LD_REG t0, 0, sp
+        bnez t0, 1f
+        csrci sstatus, 2
+    1:
+        LD_REG ra, 8, sp
+        addi sp, sp, +16
+        ret
+
+    .global switch_context_with_int_saved_on_inner
+    switch_context_with_int_saved_on_inner:
+        ST_REG ra, {RA_OFFSET}, a0
+        ST_REG sp, {SP_OFFSET}, a0
+        ST_REG s0, {S0_OFFSET}, a0
+        ST_REG s1, {S1_OFFSET}, a0
+        ST_REG s2, {S2_OFFSET}, a0
+        ST_REG s3, {S3_OFFSET}, a0
+        ST_REG s4, {S4_OFFSET}, a0
+        ST_REG s5, {S5_OFFSET}, a0
+        ST_REG s6, {S6_OFFSET}, a0
+        ST_REG s7, {S7_OFFSET}, a0
+        ST_REG s8, {S8_OFFSET}, a0
+        ST_REG s9, {S9_OFFSET}, a0
+        ST_REG s10, {S10_OFFSET}, a0
+        ST_REG s11, {S11_OFFSET}, a0
+        csrr s0, satp
+        ST_REG s0, {SATP_OFFSET}, a0
+
+        LD_REG s0, {SATP_OFFSET}, a1
+        csrw satp, s0
+        sfence.vma x0, x0
+        LD_REG s11, {S11_OFFSET}, a1
+        LD_REG s10, {S10_OFFSET}, a1
+        LD_REG s9, {S9_OFFSET}, a1
+        LD_REG s8, {S8_OFFSET}, a1
+        LD_REG s7, {S7_OFFSET}, a1
+        LD_REG s6, {S6_OFFSET}, a1
+        LD_REG s5, {S5_OFFSET}, a1
+        LD_REG s4, {S4_OFFSET}, a1
+        LD_REG s3, {S3_OFFSET}, a1
+        LD_REG s2, {S2_OFFSET}, a1
+        LD_REG s1, {S1_OFFSET}, a1
+        LD_REG s0, {S0_OFFSET}, a1
+        LD_REG sp, {SP_OFFSET}, a1
+        LD_REG ra, {RA_OFFSET}, a1
+
+        csrsi sstatus, 2
+
+        ret
+
     ",
     RA_OFFSET = const offset_of!(SwitchContext, ra),
     SP_OFFSET = const offset_of!(SwitchContext, sp),
@@ -139,4 +200,7 @@ extern "C" {
 
     #[link_name = "switch_context"]
     pub fn switch(old_ctx: usize, new_ctx: usize);
+
+    #[link_name = "switch_context_with_int_saved_on"]
+    pub fn switch_with_int_saved_on(old_ctx: usize, new_ctx: usize);
 }

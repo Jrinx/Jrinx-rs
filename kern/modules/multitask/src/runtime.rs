@@ -243,9 +243,7 @@ impl Runtime {
                 rt.set_current_inspector(Some(entry.inspector_id));
             });
 
-            hal!().interrupt().with_saved_on(|| {
-                Inspector::run(runtime_switch_ctx);
-            });
+            Inspector::run(runtime_switch_ctx);
 
             Runtime::with_current(|rt| {
                 rt.set_current_inspector(None);
@@ -269,9 +267,7 @@ impl Runtime {
 
             Runtime::with_current(|rt| rt.set_current_inspector(Some(inspector_id)));
 
-            hal!().interrupt().with_saved_on(|| {
-                Inspector::run(runtime_switch_ctx);
-            });
+            Inspector::run(runtime_switch_ctx);
 
             Runtime::with_current(|rt| {
                 rt.set_current_inspector(None);

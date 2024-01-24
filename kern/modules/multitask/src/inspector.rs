@@ -180,7 +180,7 @@ impl Inspector {
             let executor_switch_ctx = Executor::with_current(|ex| ex.switch_context()).unwrap();
 
             unsafe {
-                arch::switch(
+                arch::switch_with_int_saved_on(
                     runtime_switch_ctx.as_usize(),
                     executor_switch_ctx.as_usize(),
                 );
