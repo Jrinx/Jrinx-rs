@@ -183,6 +183,6 @@ extern "C" fn handle_kern_trap(ctx: &mut Context) {
         TrapReason::Breakpoint { addr: _ } => breakpoint::handle(ctx),
         TrapReason::SoftwareInterrupt => soft_int::handle(ctx),
         TrapReason::TimerInterrupt => timer_int::handle(ctx),
-        _ => unimplemented!(),
+        _ => unimplemented!("{:#x?}", ctx),
     }
 }
