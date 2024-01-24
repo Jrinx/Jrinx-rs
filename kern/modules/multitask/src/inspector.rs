@@ -42,20 +42,22 @@ struct Scheduler {
     queue: ExecutorQueue,
 }
 
+impl Default for Inspector {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Inspector {
-    pub fn new(root_executor: Pin<Box<Executor>>) -> Self {
-        let inspector = Self {
+    pub fn new() -> Self {
+        Self {
             id: InspectorId::new(),
             status: Mutex::new(InspectorStatus::Idle),
             scheduler: RwLock::new(Scheduler {
                 registry: BTreeMap::new(),
                 queue: ExecutorQueue::new(),
             }),
-        };
-
-        inspector.register(root_executor).unwrap();
-
-        inspector
+        }
     }
 
     pub fn id(&self) -> InspectorId {

@@ -461,11 +461,12 @@ impl Drop for RuntimeSchedTable {
 static RUNTIME: Runtime = Runtime::new();
 
 pub fn init(future: impl Future<Output = ()> + Send + Sync + 'static) {
-    RUNTIME
-        .as_ref()
-        .register(Inspector::new(Executor::new(
+    let inspector = Inspector::new();
+    inspector
+        .register(Executor::new(
             ExecutorPriority::default(),
             Task::new(future, TaskPriority::default()),
-        )))
+        ))
         .unwrap();
+    RUNTIME.as_ref().register(inspector).unwrap();
 }

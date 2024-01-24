@@ -21,10 +21,13 @@ pub(super) mod round_robin {
         const EXECUTOR_MAX: u8 = 4;
 
         for i in 1..=INSPECTOR_MAX {
-            let inspector = Inspector::new(Executor::new(
-                ExecutorPriority::default(),
-                Task::new(async {}, TaskPriority::default()),
-            ));
+            let inspector = Inspector::new();
+            inspector
+                .register(Executor::new(
+                    ExecutorPriority::default(),
+                    Task::new(async {}, TaskPriority::default()),
+                ))
+                .unwrap();
 
             for j in 1..=EXECUTOR_MAX {
                 let inspector_order = i;
@@ -121,30 +124,33 @@ pub(super) mod sched_table {
         for i in 1..=INSPECTOR_MAX {
             let inspector_order = i;
 
-            let inspector = Inspector::new(Executor::new(
-                ExecutorPriority::default(),
-                Task::new(
-                    async move {
-                        trace!("spawned task: inspector = {:?}", inspector_order);
-                        loop {
-                            hal!().interrupt().with_saved_off(|| {
-                                record();
-                            });
+            let inspector = Inspector::new();
+            inspector
+                .register(Executor::new(
+                    ExecutorPriority::default(),
+                    Task::new(
+                        async move {
+                            trace!("spawned task: inspector = {:?}", inspector_order);
+                            loop {
+                                hal!().interrupt().with_saved_off(|| {
+                                    record();
+                                });
 
-                            core::hint::spin_loop();
+                                core::hint::spin_loop();
 
-                            if hal!().cpu().get_time() - get_time_datum()
-                                > Duration::from_secs(2 * FRAME_SIZE as u64)
-                                    + Duration::from_micros(500)
-                            {
-                                let _ = Runtime::with_current(|rt| rt.revoke_sched_table());
-                                break;
+                                if hal!().cpu().get_time() - get_time_datum()
+                                    > Duration::from_secs(2 * FRAME_SIZE as u64)
+                                        + Duration::from_micros(500)
+                                {
+                                    let _ = Runtime::with_current(|rt| rt.revoke_sched_table());
+                                    break;
+                                }
                             }
-                        }
-                    },
-                    TaskPriority::default(),
-                ),
-            ));
+                        },
+                        TaskPriority::default(),
+                    ),
+                ))
+                .unwrap();
 
             inspector_list.push(inspector.id());
 
