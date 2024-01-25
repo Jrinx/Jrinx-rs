@@ -2,5 +2,5 @@
 resolver = "2"
 members = [
     "programs/idle",
-    "programs/test/*"
+    "programs/test/kern/*",
 ]

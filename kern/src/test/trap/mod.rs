@@ -32,8 +32,8 @@ pub(super) mod page_fault {
 
     #[testdef]
     fn test() {
-        let nullptr_reader = jrinx_uprog::find("test/nullptr-reader").unwrap();
-        let nullptr_writer = jrinx_uprog::find("test/nullptr-writer").unwrap();
+        let nullptr_reader = jrinx_uprog::find("test/kern/nullptr-reader").unwrap();
+        let nullptr_writer = jrinx_uprog::find("test/kern/nullptr-writer").unwrap();
 
         let nullptr_reader_entry = nullptr_reader.ehdr.e_entry as usize;
         let nullptr_writer_entry = nullptr_writer.ehdr.e_entry as usize;
@@ -83,7 +83,7 @@ pub(super) mod syscall {
 
     #[testdef]
     fn test() {
-        let system_caller = jrinx_uprog::find("test/system-caller").unwrap();
+        let system_caller = jrinx_uprog::find("test/kern/system-caller").unwrap();
         let system_caller_entry = system_caller.ehdr.e_entry as usize;
 
         super::load_elf(system_caller);
