@@ -361,22 +361,26 @@ impl RuntimeSchedTable {
             hal!().interrupt().wait();
         }
 
-        self.events.lock().push_back(TimedEvent::create(
-            self.get_datum() + next.offset + next.duration,
-            TimedEventHandler::new(
-                || {
-                    Inspector::with_current(|is| is.mark_pending().unwrap()).unwrap();
-                    hal!().interrupt().with_saved_on(|| {
-                        Runtime::switch_yield();
-                    });
-                },
-                || {},
-            ),
-        ));
+        if next.duration != Duration::MAX {
+            self.events.lock().push_back(TimedEvent::create(
+                self.get_datum() + next.offset + next.duration,
+                TimedEventHandler::new(
+                    || {
+                        Inspector::with_current(|is| is.mark_pending().unwrap()).unwrap();
+                        hal!().interrupt().with_saved_on(|| {
+                            Runtime::switch_yield();
+                        });
+                    },
+                    || {},
+                ),
+            ));
+        }
 
         if self.next.load(core::sync::atomic::Ordering::Relaxed) >= self.table.len() {
             self.next.store(0, core::sync::atomic::Ordering::Relaxed);
-            self.set_datum(self.get_datum() + self.frame_size);
+            if self.frame_size != Duration::MAX {
+                self.set_datum(self.get_datum() + self.frame_size);
+            }
         }
 
         next
