@@ -1,4 +1,5 @@
 use core::{
+    any::Any,
     fmt::Display,
     pin::Pin,
     task::{Context, Poll, Waker},
@@ -85,10 +86,19 @@ pub struct Executor {
     task_registry: BTreeMap<TaskId, Task>,
     task_queue: Arc<TaskQueue>,
     task_waker: BTreeMap<TaskId, Waker>,
+    ext: Arc<dyn Any + Send + Sync>,
 }
 
 impl Executor {
     pub fn new(priority: ExecutorPriority, root_task: Task) -> Pin<Box<Self>> {
+        Self::new_with_ext(priority, root_task, ())
+    }
+
+    pub fn new_with_ext(
+        priority: ExecutorPriority,
+        root_task: Task,
+        ext: impl Any + Send + Sync,
+    ) -> Pin<Box<Self>> {
         let entry = VirtAddr::new(arch::executor_launch as usize);
         let stack_top = EXECUTOR_STACK_ALLOCATOR
             .allocate(jrinx_config::EXECUTOR_STACK_SIZE)
@@ -105,6 +115,7 @@ impl Executor {
             task_registry: BTreeMap::new(),
             task_queue: Arc::new(TaskQueue::new()),
             task_waker: BTreeMap::new(),
+            ext: Arc::new(ext),
         });
 
         let executor_addr = &*executor as *const _ as usize;
@@ -128,6 +139,10 @@ impl Executor {
 
     pub fn status(&self) -> ExecutorStatus {
         self.status
+    }
+
+    pub fn ext(&self) -> Arc<dyn Any + Send + Sync> {
+        self.ext.clone()
     }
 
     pub fn spawn(&mut self, task: Task) -> Result<&mut Self> {

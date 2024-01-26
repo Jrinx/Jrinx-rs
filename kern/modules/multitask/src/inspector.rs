@@ -1,6 +1,6 @@
-use core::{fmt::Display, pin::Pin};
+use alloc::{boxed::Box, collections::BTreeMap, sync::Arc};
+use core::{any::Any, fmt::Display, pin::Pin};
 
-use alloc::{boxed::Box, collections::BTreeMap};
 use jrinx_addr::VirtAddr;
 use jrinx_error::{InternalError, Result};
 use jrinx_serial_id_macro::SerialId;
@@ -35,6 +35,7 @@ pub struct Inspector {
     id: InspectorId,
     status: Mutex<InspectorStatus>,
     scheduler: RwLock<Scheduler>,
+    ext: Arc<dyn Any + Send + Sync>,
 }
 
 struct Scheduler {
@@ -50,6 +51,10 @@ impl Default for Inspector {
 
 impl Inspector {
     pub fn new() -> Self {
+        Self::new_with_ext(())
+    }
+
+    pub fn new_with_ext(ext: impl Any + Send + Sync) -> Self {
         Self {
             id: InspectorId::new(),
             status: Mutex::new(InspectorStatus::Idle),
@@ -57,6 +62,7 @@ impl Inspector {
                 registry: BTreeMap::new(),
                 queue: ExecutorQueue::new(),
             }),
+            ext: Arc::new(ext),
         }
     }
 
@@ -66,6 +72,10 @@ impl Inspector {
 
     pub fn status(&self) -> InspectorStatus {
         *self.status.lock()
+    }
+
+    pub fn ext(&self) -> Arc<dyn Any + Send + Sync> {
+        self.ext.clone()
     }
 
     pub fn is_empty(&self) -> bool {
