@@ -39,8 +39,16 @@ pub trait GenericPageTableEntry<P: GenericPagePerm>:
     fn clr(&mut self);
 }
 
-pub(crate) trait CloneKernel {
-    fn clone_kernel(dst: &mut [usize]);
+pub(crate) trait CloneKernel<'a>
+where
+    Self: 'a + Into<&'a [usize]>,
+{
+    const HALF: usize = jrinx_config::PAGE_SIZE / core::mem::size_of::<usize>() / 2;
+
+    fn clone_kernel_into(self, dst: &mut [usize]) {
+        let src: &'a [usize] = self.into();
+        dst[Self::HALF..].copy_from_slice(&src[Self::HALF..]);
+    }
 }
 
 pub trait GenericPageTable<P, E>

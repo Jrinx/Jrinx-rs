@@ -5,7 +5,7 @@ use alloc::string::String;
 use bitflags::bitflags;
 use jrinx_addr::PhysAddr;
 
-use crate::{common, CloneKernel, GenericPagePerm, GenericPageTableEntry};
+use crate::{GenericPagePerm, GenericPageTableEntry};
 
 bitflags! {
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -92,11 +92,5 @@ impl From<PageTableEntry> for (PhysAddr, PagePerm) {
 impl From<PageTableEntry> for usize {
     fn from(value: PageTableEntry) -> Self {
         value.bits
-    }
-}
-
-impl CloneKernel for common::PageTable {
-    fn clone_kernel(dst: &mut [usize]) {
-        boot::BootPageTable::clone_into(dst)
     }
 }

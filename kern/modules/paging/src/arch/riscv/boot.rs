@@ -13,7 +13,7 @@ use riscv::{
     register::satp::{self, Mode},
 };
 
-use crate::{GenericPagePerm, PagePerm, PageTableEntry};
+use crate::{CloneKernel, GenericPagePerm, PagePerm, PageTableEntry};
 
 #[repr(C, align(4096))]
 struct BootPageTableInner([usize; PAGE_SIZE / size_of::<usize>()]);
@@ -129,9 +129,12 @@ impl BootPageTable {
             root = next.to_virt().as_array_base();
         }
     }
+}
 
-    pub fn clone_into(dst: &mut [usize]) {
-        const HALF: usize = PAGE_SIZE / size_of::<usize>() / 2;
-        dst[HALF..].copy_from_slice(&unsafe { BOOT_PAGE_TABLE.0 }[HALF..]);
+impl<'a> CloneKernel<'a> for &'a BootPageTable {}
+
+impl<'a> From<&'a BootPageTable> for &'a [usize] {
+    fn from(_: &'a BootPageTable) -> Self {
+        unsafe { &mut BOOT_PAGE_TABLE.0[..] }
     }
 }
