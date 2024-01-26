@@ -98,7 +98,15 @@ pub fn run(arg: &UprogArg) -> Option<ExitStatus> {
         .exec()
         .unwrap();
 
-    for prog in uprog_meta.workspace_packages() {
+    for prog in uprog_meta.workspace_packages().iter().filter(|pkg| {
+        pkg.manifest_path
+            .parent()
+            .unwrap()
+            .canonicalize()
+            .unwrap()
+            .strip_prefix(Path::new(path).join("programs").canonicalize().unwrap())
+            .is_ok()
+    }) {
         let bin_file = Path::new(path)
             .join("target")
             .join(arch.triple())
