@@ -179,6 +179,13 @@ impl Runtime {
         }
     }
 
+    pub fn with_registry<F, R>(&self, f: F) -> R
+    where
+        F: FnOnce(&BTreeMap<InspectorId, Inspector>) -> R,
+    {
+        f(&self.scheduler.read().registry)
+    }
+
     pub fn status(&self) -> RuntimeStatus {
         *self.status.lock()
     }
