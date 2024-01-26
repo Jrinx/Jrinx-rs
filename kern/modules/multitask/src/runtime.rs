@@ -125,6 +125,21 @@ impl Runtime {
             .with_saved_off(|| RUNTIME.with_ref(|rt| f(rt)))
     }
 
+    pub fn with_spec_cpu<F, R>(cpu_id: usize, f: F) -> Result<R>
+    where
+        F: FnOnce(&Runtime) -> R,
+    {
+        hal!().interrupt().with_saved_off(|| {
+            RUNTIME.with_spec_ref(cpu_id, |rt| {
+                if *rt.status.lock() == RuntimeStatus::Unused {
+                    Err(InternalError::InvalidRuntimeStatus)
+                } else {
+                    Ok(f(rt))
+                }
+            })
+        })
+    }
+
     pub fn start() -> ! {
         debug!("runtime started running all inspectors");
 
