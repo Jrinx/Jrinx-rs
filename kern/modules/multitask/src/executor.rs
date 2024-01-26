@@ -60,6 +60,9 @@ impl Display for ExecutorId {
 pub struct ExecutorPriority(FastPriority);
 
 impl ExecutorPriority {
+    pub const NUM: usize = FastPriority::NUM;
+    pub const MAX: u8 = (Self::NUM - 1) as u8;
+
     pub const fn new(priority: u8) -> Self {
         Self(FastPriority::new(priority))
     }
