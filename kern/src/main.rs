@@ -119,10 +119,24 @@ async fn primary_task() {
     bootargs::execute().await;
 
     boot_set_finished();
+
+    while let BootState::Finished(count) = *BOOT_STATE.lock() {
+        if count == hal!().cpu().nproc_valid() {
+            break;
+        }
+        core::hint::spin_loop();
+    }
 }
 
 async fn secondary_task() {
     info!("secondary task started");
+
+    while let BootState::Ready(count) = *BOOT_STATE.lock() {
+        if count == hal!().cpu().nproc_valid() {
+            break;
+        }
+        core::hint::spin_loop();
+    }
 
     boot_set_finished();
 
