@@ -1,0 +1,10 @@
+[package]
+name = "process-creator"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+jrlib-a653 = { version = "0.1.0", path = "../../../../library/a653" }
+jrlib-logging = { version = "0.1.0", path = "../../../../library/logging" }
+jrlib-sys = { version = "0.1.0", path = "../../../../library/sys" }
+log = { version = "0.4.20", default-features = false }
