@@ -113,7 +113,6 @@ impl Inspector {
         F: FnOnce(&Inspector) -> R,
     {
         Runtime::with_current(|rt| {
-            let f = f;
             let f = |is: &_| f(is);
             let RuntimeStatus::Running(inspector_id) = rt.status() else {
                 return Err(InternalError::InvalidRuntimeStatus);
