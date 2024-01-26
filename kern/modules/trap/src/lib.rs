@@ -31,6 +31,10 @@ pub trait GenericContext: Debug + Clone + Copy {
 
     fn syscall_num(&self) -> usize;
 
+    fn syscall_args(&self) -> [usize; 7];
+
+    fn syscall_ret(&mut self, ret: usize);
+
     fn user_setup(&mut self, entry_point: usize, stack_top: usize);
 
     fn enable_int(&mut self);

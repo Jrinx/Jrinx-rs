@@ -159,6 +159,22 @@ impl GenericContext for Context {
         self.regs.a7
     }
 
+    fn syscall_args(&self) -> [usize; 7] {
+        [
+            self.regs.a0,
+            self.regs.a1,
+            self.regs.a2,
+            self.regs.a3,
+            self.regs.a4,
+            self.regs.a5,
+            self.regs.a6,
+        ]
+    }
+
+    fn syscall_ret(&mut self, ret: usize) {
+        self.regs.a0 = ret;
+    }
+
     fn run(&mut self) {
         extern "C" {
             fn run_user(ctx: &mut Context);
