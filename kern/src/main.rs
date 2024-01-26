@@ -28,6 +28,7 @@ mod test;
 enum BootState {
     Bootstrap,
     Ready(usize),
+    Finished(usize),
 }
 
 static BOOT_STATE: Mutex<BootState> = Mutex::new(BootState::Bootstrap);
@@ -38,6 +39,15 @@ fn boot_set_ready() {
         *count += 1;
     } else {
         *boot_state = BootState::Ready(1);
+    }
+}
+
+fn boot_set_finished() {
+    let mut boot_state = BOOT_STATE.lock();
+    if let BootState::Finished(ref mut count) = *boot_state {
+        *count += 1;
+    } else {
+        *boot_state = BootState::Finished(1);
     }
 }
 
@@ -107,8 +117,19 @@ async fn primary_task() {
     }
 
     bootargs::execute().await;
+
+    boot_set_finished();
 }
 
 async fn secondary_task() {
     info!("secondary task started");
+
+    boot_set_finished();
+
+    while let BootState::Finished(count) = *BOOT_STATE.lock() {
+        if count == hal!().cpu().nproc_valid() {
+            break;
+        }
+        core::hint::spin_loop();
+    }
 }
