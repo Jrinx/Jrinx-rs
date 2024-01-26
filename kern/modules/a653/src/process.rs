@@ -242,6 +242,10 @@ impl<'a> ProcessRunner<'a> {
     }
 
     async fn user_run(self, process: Arc<Process>, entry: usize) {
+        Partition::find_by_id(process.partition_id())
+            .unwrap()
+            .pt_sync();
+
         hal!().vm().enable(
             Partition::find_by_id(process.partition_id())
                 .unwrap()
@@ -254,13 +258,16 @@ impl<'a> ProcessRunner<'a> {
         ctx.user_setup(entry, process.stack_top().as_usize());
 
         loop {
-            let partition = Partition::find_by_id(process.partition_id()).unwrap();
-            partition.pt_sync();
+            Partition::find_by_id(process.partition_id())
+                .unwrap()
+                .pt_sync();
 
             ctx.run();
             trace!("process trap: {:?}", ctx.trap_reason());
 
-            partition.pt_sync();
+            Partition::find_by_id(process.partition_id())
+                .unwrap()
+                .pt_sync();
 
             self.user_handle_trap(&mut ctx).await;
         }
