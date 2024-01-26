@@ -149,6 +149,7 @@ impl Runtime {
             hal!().interrupt().with_saved_on(|| {
                 hal!().interrupt().wait();
             });
+            debug!("runtime received ipi");
         }
     }
 
@@ -232,6 +233,8 @@ impl Runtime {
     }
 
     fn run_with_sched_table() {
+        trace!("start sched table");
+
         let runtime_switch_ctx = Runtime::with_current(|rt| rt.switch_context_addr());
 
         Runtime::with_current(|rt| rt.sched_table_start().unwrap());
@@ -254,6 +257,8 @@ impl Runtime {
     }
 
     fn run_without_sched_table() {
+        trace!("start without sched table");
+
         let runtime_switch_ctx = Runtime::with_current(|rt| rt.switch_context_addr());
 
         while let Some(inspector_id) = Runtime::with_current(|rt| {
