@@ -20,6 +20,7 @@ pub enum InternalError {
     InvalidTimedEventStatus,
     InvalidApexName,
     InvalidApexPriority,
+    InvalidSyscallNumber,
 }
 
 pub type Result<T> = core::result::Result<T, InternalError>;

@@ -697,6 +697,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "jrinx-syscall"
+version = "0.1.0"
+dependencies = [
+ "jrinx-a653",
+ "jrinx-abi",
+ "jrinx-error",
+ "jrinx-hal",
+ "jrinx-multitask",
+ "jrinx-trap",
+ "log",
+]
+
+[[package]]
 name = "jrinx-testdef"
 version = "0.1.0"
 dependencies = [
