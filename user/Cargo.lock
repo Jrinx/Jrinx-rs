@@ -23,6 +23,15 @@ name = "jrinx-abi"
 version = "0.1.0"
 
 [[package]]
+name = "jrlib-a653"
+version = "0.1.0"
+dependencies = [
+ "a653rs",
+ "jrinx-abi",
+ "jrlib-sys",
+]
+
+[[package]]
 name = "jrlib-logging"
 version = "0.1.0"
 dependencies = [
