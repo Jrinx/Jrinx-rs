@@ -502,6 +502,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "jrinx-abi"
+version = "0.1.0"
+
+[[package]]
 name = "jrinx-addr"
 version = "0.1.0"
 dependencies = [
