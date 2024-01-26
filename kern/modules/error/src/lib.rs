@@ -18,6 +18,8 @@ pub enum InternalError {
     InvalidRuntimeSchedTable,
     DuplicateRuntimeSchedTable,
     InvalidTimedEventStatus,
+    InvalidApexName,
+    InvalidApexPriority,
 }
 
 pub type Result<T> = core::result::Result<T, InternalError>;
