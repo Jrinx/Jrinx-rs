@@ -3,8 +3,26 @@
 version = 3
 
 [[package]]
+name = "a653rs"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "506b92c9c231f2f851b72180e3fecb59310cd5c5a78e3205c915c82b207668b6"
+
+[[package]]
 name = "idle"
 version = "0.1.0"
+
+[[package]]
+name = "jrinx-abi"
+version = "0.1.0"
+
+[[package]]
+name = "jrlib-sys"
+version = "0.1.0"
+dependencies = [
+ "a653rs",
+ "jrinx-abi",
+]
 
 [[package]]
 name = "nullptr-reader"
