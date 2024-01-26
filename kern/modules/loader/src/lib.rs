@@ -18,7 +18,7 @@ impl<'elf, 'a> ElfLoader<'elf, 'a> {
 
     pub fn load<F>(&self, mut loader: F) -> Result<()>
     where
-        F: FnMut(&ElfBytes<'a, AnyEndian>, &ProgramHeader, VirtAddr, usize, usize) -> Result<()>,
+        F: FnMut(&ElfBytes<'_, AnyEndian>, &ProgramHeader, VirtAddr, usize, usize) -> Result<()>,
     {
         for seg_header in self
             .elf
@@ -35,41 +35,42 @@ impl<'elf, 'a> ElfLoader<'elf, 'a> {
 
     fn load_segment<F>(&self, mut loader: F, seg_header: &ProgramHeader) -> Result<()>
     where
-        F: FnMut(&ElfBytes<'a, AnyEndian>, &ProgramHeader, VirtAddr, usize, usize) -> Result<()>,
+        F: FnMut(&ElfBytes<'_, AnyEndian>, &ProgramHeader, VirtAddr, usize, usize) -> Result<()>,
     {
-        let seg_vaddr = VirtAddr::new(seg_header.p_vaddr as usize);
-        let offset = seg_vaddr - seg_vaddr.align_page_down();
-        let offset_len =
-            (offset != 0).then_some(cmp::min(seg_header.p_filesz as usize, PAGE_SIZE - offset));
+        let vaddr = VirtAddr::new(seg_header.p_vaddr as usize);
+        let fsize = seg_header.p_filesz as usize;
+        let msize = seg_header.p_memsz as usize;
 
-        let region_to_load = offset_len.unwrap_or(0)..seg_header.p_filesz as usize;
-        let region_to_zero = seg_header.p_filesz as usize..seg_header.p_memsz as usize;
+        let head_part_len = vaddr - vaddr.align_page_down();
 
-        if let Some(len) = offset_len {
-            loader(self.elf, seg_header, seg_vaddr, offset, len)?;
-        }
-
-        for vaddr in region_to_load
-            .step_by(PAGE_SIZE)
-            .map(|offset| seg_vaddr + offset)
-        {
+        if head_part_len != 0 {
             loader(
                 self.elf,
                 seg_header,
                 vaddr,
                 0,
-                cmp::min(
-                    PAGE_SIZE,
-                    seg_header.p_filesz as usize - (vaddr - seg_vaddr),
-                ),
+                cmp::min(fsize, PAGE_SIZE - head_part_len),
             )?;
         }
 
-        for vaddr in region_to_zero
+        for i in (if head_part_len != 0 {
+            cmp::min(fsize, PAGE_SIZE - head_part_len)
+        } else {
+            0
+        }..fsize)
             .step_by(PAGE_SIZE)
-            .map(|offset| seg_vaddr + offset)
         {
-            loader(self.elf, seg_header, vaddr, 0, 0)?;
+            loader(
+                self.elf,
+                seg_header,
+                vaddr + i,
+                i,
+                cmp::min(fsize - i, PAGE_SIZE),
+            )?;
+        }
+
+        for i in (fsize..msize).step_by(PAGE_SIZE) {
+            loader(self.elf, seg_header, vaddr + i, i, 0)?;
         }
 
         Ok(())

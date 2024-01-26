@@ -128,8 +128,8 @@ fn load_elf(elf: ElfBytes<'_, AnyEndian>) {
             if len != 0 {
                 unsafe {
                     core::ptr::copy_nonoverlapping(
-                        elf.segment_data(phdr).unwrap().as_ptr(),
-                        (paddr.to_virt().as_usize() + offst) as *mut u8,
+                        elf.segment_data(phdr).unwrap().as_ptr().add(offst),
+                        (paddr.to_virt().as_usize() + (vaddr - vaddr.align_page_down())) as *mut u8,
                         len,
                     );
                 }
