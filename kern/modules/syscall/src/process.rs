@@ -85,12 +85,9 @@ impl ProcessSyscallHandler {
         let process = Process::find_by_id(partition.identifier(), id.into())
             .ok_or(ErrorReturnCode::InvalidParam)?;
         let executor = process
-            .gen_executor(
-                ProcessRunner {
-                    syscall: crate::pinned_handle,
-                }
-                .run(process.clone()),
-            )
+            .gen_executor(ProcessRunner {
+                syscall: crate::handle,
+            })
             .unwrap();
 
         let cpu_id = process.core_affinity().unwrap_or(hal!().cpu().id());

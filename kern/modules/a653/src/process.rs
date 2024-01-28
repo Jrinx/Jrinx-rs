@@ -196,17 +196,21 @@ impl Process {
         }
     }
 
-    pub fn gen_executor(
+    pub fn gen_executor<H, F>(
         self: &Arc<Self>,
-        run: impl Future<Output = ()> + Send + Sync + 'static,
-    ) -> Result<Pin<Box<Executor>>> {
+        proc_runner: ProcessRunner<H, F>,
+    ) -> Result<Pin<Box<Executor>>>
+    where
+        H: Fn(usize, [usize; 7]) -> F + Send + Sync + 'static,
+        F: Future<Output = Result<usize>> + Send + 'static,
+    {
         Ok(Executor::new_with_ext(
             ExecutorPriority::new(
                 self.base_priority()
                     .try_into()
                     .map_err(|_| InternalError::InvalidApexPriority)?,
             ),
-            Task::new(run, TaskPriority::default()),
+            Task::new(proc_runner.run(self.clone()), TaskPriority::default()),
             self.clone(),
         ))
     }
@@ -221,14 +225,19 @@ impl Drop for Process {
     }
 }
 
-pub type ProcessRunnerHandler<'a> =
-    fn(usize, [usize; 7]) -> Pin<Box<dyn Future<Output = Result<usize>> + Send + Sync + 'a>>;
-
-pub struct ProcessRunner<'a> {
-    pub syscall: ProcessRunnerHandler<'a>,
+pub struct ProcessRunner<H, F>
+where
+    H: Fn(usize, [usize; 7]) -> F,
+    F: Future<Output = Result<usize>>,
+{
+    pub syscall: H,
 }
 
-impl<'a> ProcessRunner<'a> {
+impl<H, F> ProcessRunner<H, F>
+where
+    H: Fn(usize, [usize; 7]) -> F,
+    F: Future<Output = Result<usize>>,
+{
     pub async fn run(self, process: Arc<Process>) {
         debug!(
             "run process: {:?}",

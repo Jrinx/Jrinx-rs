@@ -292,12 +292,9 @@ async fn scheduler(
             if init {
                 let process = Process::new_init(partition.identifier()).unwrap();
                 let executor = process
-                    .gen_executor(
-                        ProcessRunner {
-                            syscall: jrinx_syscall::pinned_handle,
-                        }
-                        .run(process.clone()),
-                    )
+                    .gen_executor(ProcessRunner {
+                        syscall: jrinx_syscall::handle,
+                    })
                     .unwrap();
                 inspector.register(executor).unwrap();
             }

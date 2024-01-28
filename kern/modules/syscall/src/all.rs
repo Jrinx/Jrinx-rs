@@ -1,5 +1,4 @@
-use alloc::{borrow::ToOwned, boxed::Box, format, string::String};
-use core::{future::Future, pin::Pin};
+use alloc::{borrow::ToOwned, format, string::String};
 
 use jrinx_a653::{
     bindings::*, helper::convert_name_to_str, partition::Partition, process::Process,
@@ -66,13 +65,6 @@ pub async fn handle(sysno: usize, args: [usize; 7]) -> Result<usize> {
         Ok(()) => 0,
         Err(e) => e as usize,
     })
-}
-
-pub fn pinned_handle(
-    sysno: usize,
-    args: [usize; 7],
-) -> Pin<Box<dyn Future<Output = Result<usize>> + Send + Sync>> {
-    Box::pin(handle(sysno, args))
 }
 
 fn uptr_try_cast<'a, T>(ptr: usize) -> Result<&'a mut T> {

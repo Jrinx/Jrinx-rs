@@ -9,4 +9,4 @@ extern crate alloc;
 #[macro_use]
 extern crate jrinx_hal;
 
-pub use all::{handle, pinned_handle};
+pub use all::handle;
