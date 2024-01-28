@@ -7,11 +7,11 @@ use jrinx_multitask::runtime::Runtime;
 pub(crate) struct PartitionSyscallHandler;
 
 impl PartitionSyscallHandler {
-    pub(crate) async fn get_status(&self) -> Result<ApexPartitionStatus, ErrorReturnCode> {
+    pub(crate) fn get_status(&self) -> Result<ApexPartitionStatus, ErrorReturnCode> {
         Ok(Partition::current().unwrap().status())
     }
 
-    pub(crate) async fn set_mode(&self, mode: usize) -> Result<(), ErrorReturnCode> {
+    pub(crate) fn set_mode(&self, mode: usize) -> Result<(), ErrorReturnCode> {
         let partition = Partition::current().unwrap();
         let current_mode = partition.operating_mode();
 

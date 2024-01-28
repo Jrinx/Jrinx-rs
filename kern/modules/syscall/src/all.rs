@@ -17,39 +17,29 @@ pub async fn handle(sysno: usize, args: [usize; 7]) -> Result<usize> {
             let result: &mut ApexPartitionStatus = uptr_try_cast(args[0])?;
             PartitionSyscallHandler
                 .get_status()
-                .await
                 .map(|status| *result = status)
         }
-        SYS_SET_PARTITION_MODE => PartitionSyscallHandler.set_mode(args[0]).await,
+        SYS_SET_PARTITION_MODE => PartitionSyscallHandler.set_mode(args[0]),
         SYS_GET_PROCESS_ID => {
             let name: &ProcessName = uptr_try_cast(args[0])?;
             let result: &mut ProcessId = uptr_try_cast(args[1])?;
-            ProcessSyscallHandler
-                .get_id(name)
-                .await
-                .map(|id| *result = id)
+            ProcessSyscallHandler.get_id(name).map(|id| *result = id)
         }
         SYS_GET_PROCESS_STATUS => {
             let id: ProcessId = args[0] as _;
             let result: &mut ApexProcessStatus = uptr_try_cast(args[1])?;
             ProcessSyscallHandler
                 .get_status(id)
-                .await
                 .map(|status| *result = status)
         }
         SYS_CREATE_PROCESS => {
             let attr: &ApexProcessAttribute = uptr_try_cast(args[0])?;
             let result: &mut ProcessId = uptr_try_cast(args[1])?;
-            ProcessSyscallHandler
-                .create(attr)
-                .await
-                .map(|id| *result = id)
+            ProcessSyscallHandler.create(attr).map(|id| *result = id)
         }
-        SYS_START => ProcessSyscallHandler.start(args[0] as _).await,
+        SYS_START => ProcessSyscallHandler.start(args[0] as _),
         SYS_INITIALIZE_PROCESS_CORE_AFFINITY => {
-            ProcessSyscallHandler
-                .initialize_process_core_affinity(args[0] as _, args[1] as _)
-                .await
+            ProcessSyscallHandler.initialize_process_core_affinity(args[0] as _, args[1] as _)
         }
         SYS_DEBUG_LOG => {
             let len: usize = args[1];

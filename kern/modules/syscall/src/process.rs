@@ -16,7 +16,7 @@ use jrinx_multitask::runtime::{Runtime, RuntimeStatus};
 pub(crate) struct ProcessSyscallHandler;
 
 impl ProcessSyscallHandler {
-    pub(crate) async fn get_id(&self, name: &ProcessName) -> Result<ProcessId, ErrorReturnCode> {
+    pub(crate) fn get_id(&self, name: &ProcessName) -> Result<ProcessId, ErrorReturnCode> {
         let partition = Partition::current().unwrap();
         let process = Process::find_by_name(partition.identifier(), name)
             .ok_or(ErrorReturnCode::InvalidConfig)?;
@@ -24,10 +24,7 @@ impl ProcessSyscallHandler {
         Ok(process.identifier().into())
     }
 
-    pub(crate) async fn get_status(
-        &self,
-        id: ProcessId,
-    ) -> Result<ApexProcessStatus, ErrorReturnCode> {
+    pub(crate) fn get_status(&self, id: ProcessId) -> Result<ApexProcessStatus, ErrorReturnCode> {
         let partition = Partition::current().unwrap();
         let process = Process::find_by_id(partition.identifier(), id.into())
             .ok_or(ErrorReturnCode::InvalidParam)?;
@@ -35,10 +32,7 @@ impl ProcessSyscallHandler {
         Ok(process.status())
     }
 
-    pub(crate) async fn create(
-        &self,
-        attr: &ApexProcessAttribute,
-    ) -> Result<ProcessId, ErrorReturnCode> {
+    pub(crate) fn create(&self, attr: &ApexProcessAttribute) -> Result<ProcessId, ErrorReturnCode> {
         let partition = Partition::current().unwrap();
         if Process::find_by_name(partition.identifier(), &attr.name).is_some() {
             return Err(ErrorReturnCode::NoAction);
@@ -86,7 +80,7 @@ impl ProcessSyscallHandler {
         Ok(process.identifier().into())
     }
 
-    pub(crate) async fn start(&self, id: ProcessId) -> Result<(), ErrorReturnCode> {
+    pub(crate) fn start(&self, id: ProcessId) -> Result<(), ErrorReturnCode> {
         let partition = Partition::current().unwrap();
         let process = Process::find_by_id(partition.identifier(), id.into())
             .ok_or(ErrorReturnCode::InvalidParam)?;
@@ -121,7 +115,7 @@ impl ProcessSyscallHandler {
         Ok(())
     }
 
-    pub(crate) async fn initialize_process_core_affinity(
+    pub(crate) fn initialize_process_core_affinity(
         &self,
         process_id: ProcessId,
         core_id: ProcessorCoreId,
