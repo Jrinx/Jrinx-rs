@@ -58,14 +58,11 @@ impl From<u8> for TaskPriority {
 pub struct Task {
     id: TaskId,
     priority: TaskPriority,
-    future: Pin<Box<dyn Future<Output = ()> + Send + Sync>>,
+    future: Pin<Box<dyn Future<Output = ()> + Send>>,
 }
 
 impl Task {
-    pub fn new(
-        future: impl Future<Output = ()> + Send + Sync + 'static,
-        priority: TaskPriority,
-    ) -> Self {
+    pub fn new(future: impl Future<Output = ()> + Send + 'static, priority: TaskPriority) -> Self {
         Self {
             id: TaskId::new(),
             priority,
@@ -78,7 +75,7 @@ impl Task {
     }
 }
 
-pub fn do_spawn(future: impl Future<Output = ()> + Send + Sync + 'static, priority: TaskPriority) {
+pub fn do_spawn(future: impl Future<Output = ()> + Send + 'static, priority: TaskPriority) {
     Executor::with_current(|ex| {
         ex.spawn(Task::new(future, priority)).unwrap();
     })

@@ -216,6 +216,11 @@ impl Executor {
     }
 }
 
+/// # Safety
+///
+/// This is safe because [`Task`] in [`Executor`] is not shared between threads.
+unsafe impl Sync for Executor {}
+
 impl Drop for Executor {
     fn drop(&mut self) {
         EXECUTOR_STACK_ALLOCATOR.deallocate(self.stack_top).unwrap();
