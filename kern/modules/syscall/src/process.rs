@@ -2,61 +2,64 @@ use core::ops::Deref;
 
 use alloc::sync::Arc;
 use jrinx_a653::{
-    bindings::{
-        ApexProcessAttribute, ApexProcessStatus, ErrorReturnCode, OperatingMode, ProcessId,
-        ProcessName, ProcessorCoreId, INFINITE_TIME_VALUE,
-    },
     partition::Partition,
     process::{Process, ProcessConfig, ProcessRunner},
     A653Entry,
 };
+use jrinx_apex::*;
 use jrinx_hal::{Cpu, Hal, Interrupt};
 use jrinx_multitask::runtime::{Runtime, RuntimeStatus};
 
 pub(crate) struct ProcessSyscallHandler;
 
 impl ProcessSyscallHandler {
-    pub(crate) fn get_id(&self, name: &ProcessName) -> Result<ProcessId, ErrorReturnCode> {
+    pub(crate) fn get_id(&self, name: &ApexProcessName) -> Result<ApexProcessId, ApexReturnCode> {
         let partition = Partition::current().unwrap();
         let process = Process::find_by_name(partition.identifier(), name)
-            .ok_or(ErrorReturnCode::InvalidConfig)?;
+            .ok_or(ApexReturnCode::InvalidConfig)?;
 
         Ok(process.identifier().into())
     }
 
-    pub(crate) fn get_status(&self, id: ProcessId) -> Result<ApexProcessStatus, ErrorReturnCode> {
+    pub(crate) fn get_status(
+        &self,
+        id: ApexProcessId,
+    ) -> Result<ApexProcessStatus, ApexReturnCode> {
         let partition = Partition::current().unwrap();
         let process = Process::find_by_id(partition.identifier(), id.into())
-            .ok_or(ErrorReturnCode::InvalidParam)?;
+            .ok_or(ApexReturnCode::InvalidParam)?;
 
         Ok(process.status())
     }
 
-    pub(crate) fn create(&self, attr: &ApexProcessAttribute) -> Result<ProcessId, ErrorReturnCode> {
+    pub(crate) fn create(
+        &self,
+        attr: &ApexProcessAttribute,
+    ) -> Result<ApexProcessId, ApexReturnCode> {
         let partition = Partition::current().unwrap();
         if Process::find_by_name(partition.identifier(), &attr.name).is_some() {
-            return Err(ErrorReturnCode::NoAction);
+            return Err(ApexReturnCode::NoAction);
         }
         if attr.stack_size as usize > partition.memory_free() {
-            return Err(ErrorReturnCode::InvalidParam);
+            return Err(ApexReturnCode::InvalidParam);
         }
         if attr.base_priority > Process::MAX_PRIORITY {
-            return Err(ErrorReturnCode::InvalidParam);
+            return Err(ApexReturnCode::InvalidParam);
         }
-        if attr.period != INFINITE_TIME_VALUE && attr.period < 0 {
-            return Err(ErrorReturnCode::InvalidParam);
+        if attr.period != APEX_TIME_INFINITY && attr.period < 0 {
+            return Err(ApexReturnCode::InvalidParam);
         }
-        if attr.period != INFINITE_TIME_VALUE && attr.period % partition.period() != 0 {
-            return Err(ErrorReturnCode::InvalidConfig);
+        if attr.period != APEX_TIME_INFINITY && attr.period % partition.period() != 0 {
+            return Err(ApexReturnCode::InvalidConfig);
         }
-        if attr.time_capacity != INFINITE_TIME_VALUE && attr.time_capacity < 0 {
-            return Err(ErrorReturnCode::InvalidParam);
+        if attr.time_capacity != APEX_TIME_INFINITY && attr.time_capacity < 0 {
+            return Err(ApexReturnCode::InvalidParam);
         }
-        if attr.period != INFINITE_TIME_VALUE && attr.time_capacity > attr.period {
-            return Err(ErrorReturnCode::InvalidParam);
+        if attr.period != APEX_TIME_INFINITY && attr.time_capacity > attr.period {
+            return Err(ApexReturnCode::InvalidParam);
         }
-        if partition.operating_mode() == OperatingMode::Normal {
-            return Err(ErrorReturnCode::InvalidMode);
+        if partition.operating_mode() == ApexOperatingMode::Normal {
+            return Err(ApexReturnCode::InvalidMode);
         }
 
         let process = Process::new(
@@ -66,7 +69,7 @@ impl ProcessSyscallHandler {
                 entry: if partition.kernel() {
                     A653Entry::Kern(attr.entry_point)
                 } else {
-                    A653Entry::User(attr.entry_point as _)
+                    A653Entry::User(attr.entry_point.into())
                 },
                 priority: attr.base_priority,
                 deadline: attr.deadline,
@@ -75,15 +78,15 @@ impl ProcessSyscallHandler {
                 time_capacity: attr.time_capacity,
             },
         )
-        .map_err(|_| ErrorReturnCode::InvalidConfig)?;
+        .map_err(|_| ApexReturnCode::InvalidConfig)?;
 
         Ok(process.identifier().into())
     }
 
-    pub(crate) fn start(&self, id: ProcessId) -> Result<(), ErrorReturnCode> {
+    pub(crate) fn start(&self, id: ApexProcessId) -> Result<(), ApexReturnCode> {
         let partition = Partition::current().unwrap();
         let process = Process::find_by_id(partition.identifier(), id.into())
-            .ok_or(ErrorReturnCode::InvalidParam)?;
+            .ok_or(ApexReturnCode::InvalidParam)?;
         let executor = process
             .gen_executor(ProcessRunner {
                 syscall: crate::handle,
@@ -114,19 +117,19 @@ impl ProcessSyscallHandler {
 
     pub(crate) fn initialize_process_core_affinity(
         &self,
-        process_id: ProcessId,
-        core_id: ProcessorCoreId,
-    ) -> Result<(), ErrorReturnCode> {
+        process_id: ApexProcessId,
+        core_id: ApexProcessorCoreId,
+    ) -> Result<(), ApexReturnCode> {
         let partition = Partition::current().unwrap();
         let process = Process::find_by_id(partition.identifier(), process_id.into())
-            .ok_or(ErrorReturnCode::InvalidParam)?;
+            .ok_or(ApexReturnCode::InvalidParam)?;
 
         if !partition.assigned_cores().contains(&core_id) {
-            return Err(ErrorReturnCode::InvalidConfig);
+            return Err(ApexReturnCode::InvalidConfig);
         }
 
-        if partition.operating_mode() == OperatingMode::Normal {
-            return Err(ErrorReturnCode::InvalidMode);
+        if partition.operating_mode() == ApexOperatingMode::Normal {
+            return Err(ApexReturnCode::InvalidMode);
         }
 
         process.set_core_affinity(Some(core_id as _));

@@ -1,38 +1,36 @@
-use jrinx_a653::{
-    bindings::{ApexPartitionStatus, ErrorReturnCode, OperatingMode, MIN_LOCK_LEVEL},
-    partition::Partition,
-};
+use jrinx_a653::partition::Partition;
+use jrinx_apex::*;
 use jrinx_multitask::runtime::Runtime;
 
 pub(crate) struct PartitionSyscallHandler;
 
 impl PartitionSyscallHandler {
-    pub(crate) fn get_status(&self) -> Result<ApexPartitionStatus, ErrorReturnCode> {
+    pub(crate) fn get_status(&self) -> Result<ApexPartitionStatus, ApexReturnCode> {
         Ok(Partition::current().unwrap().status())
     }
 
-    pub(crate) fn set_mode(&self, mode: usize) -> Result<(), ErrorReturnCode> {
+    pub(crate) fn set_mode(&self, mode: usize) -> Result<(), ApexReturnCode> {
         let partition = Partition::current().unwrap();
         let current_mode = partition.operating_mode();
 
-        let mode: OperatingMode = (mode as u32)
+        let mode: ApexOperatingMode = (mode as u32)
             .try_into()
-            .map_err(|_| ErrorReturnCode::InvalidParam)?;
-        if mode == OperatingMode::Normal && current_mode == OperatingMode::Normal {
-            return Err(ErrorReturnCode::NoAction);
+            .map_err(|_| ApexReturnCode::InvalidParam)?;
+        if mode == ApexOperatingMode::Normal && current_mode == ApexOperatingMode::Normal {
+            return Err(ApexReturnCode::NoAction);
         }
-        if mode == OperatingMode::WarmStart && current_mode == OperatingMode::ColdStart {
-            return Err(ErrorReturnCode::InvalidMode);
+        if mode == ApexOperatingMode::WarmStart && current_mode == ApexOperatingMode::ColdStart {
+            return Err(ApexReturnCode::InvalidMode);
         }
 
         partition.set_operating_mode(mode);
 
         match mode {
-            OperatingMode::Idle => todo!("shutdown the partition"),
-            OperatingMode::WarmStart | OperatingMode::ColdStart => {
+            ApexOperatingMode::Idle => todo!("shutdown the partition"),
+            ApexOperatingMode::WarmStart | ApexOperatingMode::ColdStart => {
                 todo!("inhibit process scheduling and switch back to initialization mode")
             }
-            OperatingMode::Normal => {
+            ApexOperatingMode::Normal => {
                 // TODO:
                 // [ ] set to READY all previously started (not delayed) aperiodic processes
                 //     (unless the process was suspended);
@@ -52,7 +50,7 @@ impl PartitionSyscallHandler {
                 //     end if;
                 // [x] activate the process scheduling;
 
-                partition.set_lock_level(MIN_LOCK_LEVEL);
+                partition.set_lock_level(APEX_LOCK_LEVEL_MIN);
                 partition.pt_sync();
                 Runtime::switch_yield();
             }

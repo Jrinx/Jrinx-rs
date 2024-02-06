@@ -1,106 +1,98 @@
-use a653rs::bindings::*;
-use jrlib_sys::*;
+use jrinx_abi::sysfn::*;
+use jrinx_apex::*;
 
 pub struct Process;
 
-impl ApexProcessP1 for Process {
-    fn get_process_id(process_name: ProcessName) -> Result<ProcessId, ErrorReturnCode> {
-        let mut id = ProcessId::default();
-        ErrorReturnCode::from(sys_get_process_id(&process_name, &mut id)).map(|_| id)
+impl ApexProcessService for Process {
+    fn get_process_id(
+        &self,
+        process_name: &ApexProcessName,
+    ) -> Result<ApexProcessId, ApexReturnCode> {
+        let mut id = ApexProcessId::default();
+        sys_get_process_id(process_name, &mut id).as_result(id)
     }
 
-    fn get_process_status(process_id: ProcessId) -> Result<ApexProcessStatus, ErrorReturnCode> {
-        let mut status = ApexProcessStatus {
-            attributes: ApexProcessAttribute {
-                period: ApexSystemTime::default(),
-                time_capacity: ApexSystemTime::default(),
-                entry_point:
-                // Safety: This is a initialization value and will be overwritten by the kernel.
-                unsafe {
-                    #[allow(invalid_value)]
-                    core::mem::transmute(0usize)
-                },
-                stack_size: StackSize::default(),
-                base_priority: Priority::default(),
-                deadline: Deadline::Soft,
-                name: ProcessName::default(),
-            },
-            current_priority: Priority::default(),
-            deadline_time: ApexSystemTime::default(),
-            process_state: ProcessState::Dormant,
-        };
-        ErrorReturnCode::from(sys_get_process_status(process_id, &mut status)).map(|_| status)
+    fn get_process_status(
+        &self,
+        process_id: ApexProcessId,
+    ) -> Result<ApexProcessStatus, ApexReturnCode> {
+        let mut status = ApexProcessStatus::default();
+        sys_get_process_status(process_id, &mut status).as_result(status)
     }
 
-    fn set_priority(_process_id: ProcessId, _priority: Priority) -> Result<(), ErrorReturnCode> {
+    fn create_process(
+        &self,
+        attributes: &ApexProcessAttribute,
+    ) -> Result<ApexProcessId, ApexReturnCode> {
+        let mut id = ApexProcessId::default();
+        sys_create_process(attributes, &mut id).as_result(id)
+    }
+
+    fn set_priority(
+        &self,
+        _process_id: ApexProcessId,
+        _priority: ApexPriority,
+    ) -> Result<(), ApexReturnCode> {
         todo!()
     }
 
-    fn suspend_self(_time_out: ApexSystemTime) -> Result<(), ErrorReturnCode> {
+    fn suspend_self(&self, _time_out: ApexSystemTime) -> Result<(), ApexReturnCode> {
         todo!()
     }
 
-    fn suspend(_process_id: ProcessId) -> Result<(), ErrorReturnCode> {
+    fn suspend(&self, _process_id: ApexProcessId) -> Result<(), ApexReturnCode> {
         todo!()
     }
 
-    fn resume(_process_id: ProcessId) -> Result<(), ErrorReturnCode> {
+    fn resume(&self, _process_id: ApexProcessId) -> Result<(), ApexReturnCode> {
         todo!()
     }
 
-    fn stop_self() {
+    fn stop_self(&self) -> ! {
         todo!()
     }
 
-    fn stop(_process_id: ProcessId) -> Result<(), ErrorReturnCode> {
+    fn stop(&self, _process_id: ApexProcessId) -> Result<(), ApexReturnCode> {
         todo!()
+    }
+
+    fn start(&self, process_id: ApexProcessId) -> Result<(), ApexReturnCode> {
+        sys_start(process_id).into()
     }
 
     fn delayed_start(
-        _process_id: ProcessId,
+        &self,
+        _process_id: ApexProcessId,
         _delay_time: ApexSystemTime,
-    ) -> Result<(), ErrorReturnCode> {
+    ) -> Result<(), ApexReturnCode> {
         todo!()
     }
 
-    fn lock_preemption() -> Result<LockLevel, ErrorReturnCode> {
+    fn lock_preemption(&self) -> Result<ApexLockLevel, ApexReturnCode> {
         todo!()
     }
 
-    fn unlock_preemption() -> Result<LockLevel, ErrorReturnCode> {
+    fn unlock_preemption(&self) -> Result<ApexLockLevel, ApexReturnCode> {
         todo!()
     }
 
-    fn get_my_id() -> Result<ProcessId, ErrorReturnCode> {
+    fn get_my_id(&self) -> Result<ApexProcessId, ApexReturnCode> {
         todo!()
     }
 
     fn initialize_process_core_affinity(
-        process_id: ProcessId,
-        processor_core_id: ProcessorCoreId,
-    ) -> Result<(), ErrorReturnCode> {
-        ErrorReturnCode::from(sys_initialize_process_core_affinity(
-            process_id,
-            processor_core_id,
-        ))
+        &self,
+        process_id: ApexProcessId,
+        processor_core_id: ApexProcessorCoreId,
+    ) -> Result<(), ApexReturnCode> {
+        sys_initialize_process_core_affinity(process_id, processor_core_id).into()
     }
 
-    fn get_my_processor_core_id() -> ProcessorCoreId {
+    fn get_my_processor_core_id(&self) -> Result<ApexProcessorCoreId, ApexReturnCode> {
         todo!()
     }
 
-    fn get_my_index() -> Result<ProcessIndex, ErrorReturnCode> {
+    fn get_my_index(&self) -> Result<ApexProcessIndex, ApexReturnCode> {
         todo!()
-    }
-}
-
-impl ApexProcessP4 for Process {
-    fn create_process(attributes: &ApexProcessAttribute) -> Result<ProcessId, ErrorReturnCode> {
-        let mut id = ProcessId::default();
-        ErrorReturnCode::from(sys_create_process(attributes, &mut id)).map(|_| id)
-    }
-
-    fn start(process_id: ProcessId) -> Result<(), ErrorReturnCode> {
-        ErrorReturnCode::from(sys_start(process_id))
     }
 }

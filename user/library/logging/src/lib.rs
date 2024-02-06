@@ -3,7 +3,7 @@
 use core::fmt::Write;
 use spin::Mutex;
 
-use jrlib_sys::sys_debug_log;
+use jrinx_abi::sysfn;
 
 struct Logger;
 
@@ -11,12 +11,8 @@ impl Write for Logger {
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
         let bytes = s.as_bytes();
         let len = bytes.len();
-        let ret = sys_debug_log(bytes.as_ptr(), len);
-        if ret != 0 {
-            Err(core::fmt::Error)
-        } else {
-            Ok(())
-        }
+        sysfn::sys_debug_log(bytes.as_ptr(), len);
+        Ok(())
     }
 }
 

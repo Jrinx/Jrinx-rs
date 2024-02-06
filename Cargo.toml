@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "abi",
+    "apex",
     "kern",
     "kern/modules/*",
     "xtask",

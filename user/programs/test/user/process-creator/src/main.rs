@@ -7,11 +7,12 @@ extern crate log;
 
 use core::panic::PanicInfo;
 
-use jrlib_a653::{bindings::*, helper::convert_str_to_name, prelude::*};
-use jrlib_sys::sys_debug_halt;
+use jrinx_abi::sysfn;
+use jrlib_a653::prelude::*;
 
-extern "C" fn entry() {
+extern "C" fn entry() -> ! {
     info!("Hello World!");
+    #[allow(clippy::empty_loop)]
     loop {}
 }
 
@@ -19,35 +20,37 @@ extern "C" fn entry() {
 pub extern "C" fn _start() -> ! {
     jrlib_logging::init();
 
-    let proc_1 = Process::create_process(&ApexProcessAttribute {
-        period: INFINITE_TIME_VALUE,
-        time_capacity: INFINITE_TIME_VALUE,
-        entry_point: entry,
-        stack_size: 4 * 4096,
-        base_priority: Priority::default(),
-        deadline: Deadline::Soft,
-        name: convert_str_to_name("proc_1").unwrap(),
-    })
-    .unwrap();
+    let proc_1 = Process
+        .create_process(&ApexProcessAttribute {
+            period: APEX_TIME_INFINITY,
+            time_capacity: APEX_TIME_INFINITY,
+            entry_point: ApexSystemAddress::of(entry),
+            stack_size: 4 * 4096,
+            base_priority: ApexPriority::default(),
+            deadline: ApexDeadline::Soft,
+            name: "proc_1".try_into().unwrap(),
+        })
+        .unwrap();
 
-    let proc_2 = Process::create_process(&ApexProcessAttribute {
-        period: INFINITE_TIME_VALUE,
-        time_capacity: INFINITE_TIME_VALUE,
-        entry_point: entry,
-        stack_size: 4 * 4096,
-        base_priority: Priority::default(),
-        deadline: Deadline::Soft,
-        name: convert_str_to_name("proc_2").unwrap(),
-    })
-    .unwrap();
+    let proc_2 = Process
+        .create_process(&ApexProcessAttribute {
+            period: APEX_TIME_INFINITY,
+            time_capacity: APEX_TIME_INFINITY,
+            entry_point: ApexSystemAddress::of(entry),
+            stack_size: 4 * 4096,
+            base_priority: ApexPriority::default(),
+            deadline: ApexDeadline::Soft,
+            name: "proc_2".try_into().unwrap(),
+        })
+        .unwrap();
 
-    Process::initialize_process_core_affinity(proc_1, 1).unwrap();
-    Process::initialize_process_core_affinity(proc_2, 2).unwrap();
+    Process.initialize_process_core_affinity(proc_1, 1).unwrap();
+    Process.initialize_process_core_affinity(proc_2, 2).unwrap();
 
-    Process::start(proc_1).unwrap();
-    Process::start(proc_2).unwrap();
+    Process.start(proc_1).unwrap();
+    Process.start(proc_2).unwrap();
 
-    let code = Partition::set_partition_mode(OperatingMode::Normal);
+    let code = Partition.set_partition_mode(ApexOperatingMode::Normal);
     panic!("SET_PARTITION_MODE: {:?}", code);
 }
 
@@ -64,5 +67,5 @@ fn panic(info: &PanicInfo) -> ! {
         error!("panicked: {}", info.message().unwrap());
     }
 
-    sys_debug_halt();
+    sysfn::sys_debug_halt();
 }

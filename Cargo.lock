@@ -3,16 +3,6 @@
 version = 3
 
 [[package]]
-name = "a653rs"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "506b92c9c231f2f851b72180e3fecb59310cd5c5a78e3205c915c82b207668b6"
-dependencies = [
- "serde",
- "strum",
-]
-
-[[package]]
 name = "android-tzdata"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -454,6 +444,7 @@ dependencies = [
  "getargs",
  "jrinx-a653",
  "jrinx-addr",
+ "jrinx-apex",
  "jrinx-config",
  "jrinx-driver",
  "jrinx-error",
@@ -485,9 +476,9 @@ dependencies = [
 name = "jrinx-a653"
 version = "0.1.0"
 dependencies = [
- "a653rs",
  "elf",
  "jrinx-addr",
+ "jrinx-apex",
  "jrinx-config",
  "jrinx-error",
  "jrinx-hal",
@@ -506,6 +497,10 @@ dependencies = [
 [[package]]
 name = "jrinx-abi"
 version = "0.1.0"
+dependencies = [
+ "cfg-if",
+ "jrinx-apex",
+]
 
 [[package]]
 name = "jrinx-addr"
@@ -522,6 +517,10 @@ dependencies = [
  "quote",
  "syn 2.0.48",
 ]
+
+[[package]]
+name = "jrinx-apex"
+version = "0.1.0"
 
 [[package]]
 name = "jrinx-config"
@@ -704,6 +703,7 @@ version = "0.1.0"
 dependencies = [
  "jrinx-a653",
  "jrinx-abi",
+ "jrinx-apex",
  "jrinx-error",
  "jrinx-hal",
  "jrinx-multitask",
@@ -930,12 +930,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rustversion"
-version = "1.0.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ffc183a10b4478d04cbbbfc96d0873219d962dd5accaff2ffbd4ceb7df837f4"
-
-[[package]]
 name = "ryu"
 version = "1.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1007,28 +1001,6 @@ name = "strsim"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
-
-[[package]]
-name = "strum"
-version = "0.25.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "290d54ea6f91c969195bdbcd7442c8c2a2ba87da8bf60a7ee86a235d4bc1e125"
-dependencies = [
- "strum_macros",
-]
-
-[[package]]
-name = "strum_macros"
-version = "0.25.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23dc1fa9ac9c169a78ba62f0b841814b7abae11bdd047b9c58f893439e309ea0"
-dependencies = [
- "heck",
- "proc-macro2",
- "quote",
- "rustversion",
- "syn 2.0.48",
-]
 
 [[package]]
 name = "syn"

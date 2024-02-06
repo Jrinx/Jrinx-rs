@@ -1,12 +1,9 @@
 use alloc::{boxed::Box, format, sync::Arc};
 use core::{future::Future, ops::Deref, pin::Pin};
+use jrinx_apex::*;
 use jrinx_paging::GenericPageTable;
 use jrinx_trap::{arch::Context, GenericContext};
 
-use a653rs::bindings::{
-    ApexProcessAttribute, ApexProcessStatus, ApexSystemTime, Deadline, Priority, ProcessIndex,
-    ProcessName, ProcessState, StackSize, INFINITE_TIME_VALUE,
-};
 use jrinx_addr::VirtAddr;
 use jrinx_config::PAGE_SIZE;
 use jrinx_error::{InternalError, Result};
@@ -19,56 +16,55 @@ use jrinx_serial_id_macro::SerialId;
 use spin::RwLock;
 
 use crate::{
-    helper::{self, convert_name_to_str},
     partition::{Partition, PartitionId},
     A653Entry,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, SerialId)]
-pub struct ProcessId(a653rs::bindings::ProcessId);
+pub struct ProcessId(ApexProcessId);
 
 pub struct Process {
     identifier: ProcessId,
-    name: ProcessName,
-    index: Option<ProcessIndex>,
+    name: ApexProcessName,
+    index: Option<ApexProcessIndex>,
     partition_id: PartitionId,
     stack_top: VirtAddr,
-    base_priority: Priority,
-    deadline: Deadline,
+    base_priority: ApexPriority,
+    deadline: ApexDeadline,
     entry: A653Entry,
     period: ApexSystemTime,
-    stack_size: StackSize,
+    stack_size: ApexStackSize,
     time_capacity: ApexSystemTime,
-    curr_priority: RwLock<Priority>,
+    curr_priority: RwLock<ApexPriority>,
     deadline_time: RwLock<ApexSystemTime>,
-    process_state: RwLock<ProcessState>,
+    process_state: RwLock<ApexProcessState>,
     core_affinity: RwLock<Option<usize>>,
 }
 
 pub struct ProcessConfig {
-    pub name: ProcessName,
-    pub priority: Priority,
-    pub deadline: Deadline,
+    pub name: ApexProcessName,
+    pub priority: ApexPriority,
+    pub deadline: ApexDeadline,
     pub entry: A653Entry,
     pub period: ApexSystemTime,
-    pub stack_size: StackSize,
+    pub stack_size: ApexStackSize,
     pub time_capacity: ApexSystemTime,
 }
 
-impl From<ProcessId> for a653rs::prelude::ProcessId {
+impl From<ProcessId> for ApexProcessId {
     fn from(id: ProcessId) -> Self {
         id.0
     }
 }
 
-impl From<a653rs::bindings::ProcessId> for ProcessId {
-    fn from(value: a653rs::bindings::ProcessId) -> Self {
+impl From<ApexProcessId> for ProcessId {
+    fn from(value: ApexProcessId) -> Self {
         Self(value)
     }
 }
 
 impl Process {
-    pub const MAX_PRIORITY: Priority = ExecutorPriority::MAX as _;
+    pub const MAX_PRIORITY: ApexPriority = ExecutorPriority::MAX as _;
 
     pub fn new(partition_id: PartitionId, config: &ProcessConfig) -> Result<Arc<Self>> {
         let partition = Partition::find_by_id(partition_id).unwrap();
@@ -88,8 +84,8 @@ impl Process {
             stack_size: config.stack_size,
             time_capacity: config.time_capacity,
             curr_priority: RwLock::new(config.priority),
-            deadline_time: RwLock::new(INFINITE_TIME_VALUE),
-            process_state: RwLock::new(ProcessState::Dormant),
+            deadline_time: RwLock::new(APEX_TIME_INFINITY),
+            process_state: RwLock::new(ApexProcessState::Dormant),
             core_affinity: RwLock::new(None),
         });
 
@@ -104,16 +100,16 @@ impl Process {
         Self::new(
             partition_id,
             &ProcessConfig {
-                name: helper::convert_str_to_name(&format!(
-                    "{}.i",
-                    helper::convert_name_to_str(&partition.name()).unwrap()
-                ))?,
+                name: format!("{:?}.i", partition.name())
+                    .as_str()
+                    .try_into()
+                    .map_err(|_| InternalError::InvalidApexName)?,
                 priority: 0,
-                deadline: Deadline::Soft,
+                deadline: ApexDeadline::Soft,
                 entry: partition.entry(),
-                period: INFINITE_TIME_VALUE,
+                period: APEX_TIME_INFINITY,
                 stack_size: PAGE_SIZE as _,
-                time_capacity: INFINITE_TIME_VALUE,
+                time_capacity: APEX_TIME_INFINITY,
             },
         )
     }
@@ -127,7 +123,7 @@ impl Process {
             .and_then(|partition| partition.find_process_by_id(identifier))
     }
 
-    pub fn find_by_name(partition_id: PartitionId, name: &ProcessName) -> Option<Arc<Self>> {
+    pub fn find_by_name(partition_id: PartitionId, name: &ApexProcessName) -> Option<Arc<Self>> {
         Partition::find_by_id(partition_id)
             .and_then(|partition| partition.find_process_by_name(name))
     }
@@ -136,11 +132,11 @@ impl Process {
         self.identifier
     }
 
-    pub fn name(&self) -> ProcessName {
+    pub fn name(&self) -> ApexProcessName {
         self.name
     }
 
-    pub fn index(&self) -> Option<ProcessIndex> {
+    pub fn index(&self) -> Option<ApexProcessIndex> {
         self.index
     }
 
@@ -152,7 +148,7 @@ impl Process {
         self.stack_top
     }
 
-    pub fn stack_size(&self) -> StackSize {
+    pub fn stack_size(&self) -> ApexStackSize {
         self.stack_size
     }
 
@@ -160,7 +156,7 @@ impl Process {
         self.entry
     }
 
-    pub fn base_priority(&self) -> Priority {
+    pub fn base_priority(&self) -> ApexPriority {
         self.base_priority
     }
 
@@ -239,10 +235,7 @@ where
     F: Future<Output = Result<usize>>,
 {
     pub async fn run(self, process: Arc<Process>) {
-        debug!(
-            "run process: {:?}",
-            convert_name_to_str(&process.name()).unwrap()
-        );
+        debug!("run process: {:?}", process.name());
 
         match process.entry() {
             A653Entry::Kern(_) => todo!(),

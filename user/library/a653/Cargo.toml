@@ -4,6 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-a653rs = { version = "0.4.1", features = ["bindings"], default-features = false }
-jrinx-abi = { version = "0.1.0", path = "../../../abi" }
-jrlib-sys = { version = "0.1.0", path = "../sys" }
+jrinx-abi = { version = "0.1.0", path = "../../../abi", features = ["sysfn"]}
+jrinx-apex = { version = "0.1.0", path = "../../../apex" }

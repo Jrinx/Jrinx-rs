@@ -1,9 +1,9 @@
-use alloc::{borrow::ToOwned, format, string::String};
+use alloc::borrow::ToOwned;
+use alloc::{format, string::String};
 
-use jrinx_a653::{
-    bindings::*, helper::convert_name_to_str, partition::Partition, process::Process,
-};
+use jrinx_a653::{partition::Partition, process::Process};
 use jrinx_abi::sysno::*;
+use jrinx_apex::*;
 use jrinx_error::{InternalError, Result};
 use jrinx_hal::{Hal, HaltReason};
 
@@ -11,7 +11,7 @@ use crate::partition::PartitionSyscallHandler;
 use crate::process::ProcessSyscallHandler;
 
 pub async fn handle(sysno: usize, args: [usize; 7]) -> Result<usize> {
-    let ret: core::result::Result<(), ErrorReturnCode> = match sysno {
+    let ret: core::result::Result<(), ApexReturnCode> = match sysno {
         SYS_GET_PARTITION_STATUS => {
             let result: &mut ApexPartitionStatus = uptr_try_cast(args[0])?;
             PartitionSyscallHandler
@@ -20,12 +20,12 @@ pub async fn handle(sysno: usize, args: [usize; 7]) -> Result<usize> {
         }
         SYS_SET_PARTITION_MODE => PartitionSyscallHandler.set_mode(args[0]),
         SYS_GET_PROCESS_ID => {
-            let name: &ProcessName = uptr_try_cast(args[0])?;
-            let result: &mut ProcessId = uptr_try_cast(args[1])?;
+            let name: &ApexProcessName = uptr_try_cast(args[0])?;
+            let result: &mut ApexProcessId = uptr_try_cast(args[1])?;
             ProcessSyscallHandler.get_id(name).map(|id| *result = id)
         }
         SYS_GET_PROCESS_STATUS => {
-            let id: ProcessId = args[0] as _;
+            let id: ApexProcessId = args[0] as _;
             let result: &mut ApexProcessStatus = uptr_try_cast(args[1])?;
             ProcessSyscallHandler
                 .get_status(id)
@@ -33,7 +33,7 @@ pub async fn handle(sysno: usize, args: [usize; 7]) -> Result<usize> {
         }
         SYS_CREATE_PROCESS => {
             let attr: &ApexProcessAttribute = uptr_try_cast(args[0])?;
-            let result: &mut ProcessId = uptr_try_cast(args[1])?;
+            let result: &mut ApexProcessId = uptr_try_cast(args[1])?;
             ProcessSyscallHandler.create(attr).map(|id| *result = id)
         }
         SYS_START => ProcessSyscallHandler.start(args[0] as _),
@@ -43,12 +43,10 @@ pub async fn handle(sysno: usize, args: [usize; 7]) -> Result<usize> {
         SYS_DEBUG_LOG => {
             let len: usize = args[1];
             let msg: &[u8] = uptr_try_cast_array(args[0], len)?;
-            let partition_name =
-                Partition::current().map(|p| convert_name_to_str(&p.name()).unwrap().to_owned());
-            let process_name =
-                Process::current().map(|p| convert_name_to_str(&p.name()).unwrap().to_owned());
+            let partition_name = Partition::current().map(|p| format!("{:?}", p.name()));
+            let process_name = Process::current().map(|p| format!("{:?}", p.name()));
             let prefix = format!(
-                "{}|{}",
+                "{}//{}",
                 partition_name.unwrap_or("<unknown>".to_owned()),
                 process_name.unwrap_or("<unknown>".to_owned())
             );

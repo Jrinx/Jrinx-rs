@@ -1,13 +1,12 @@
 use alloc::{borrow::ToOwned, collections::BTreeMap, format, string::String, sync::Arc, vec::Vec};
-use core::{num::ParseIntError, time::Duration};
+use core::num::ParseIntError;
 
 use getargs::{Opt, Options};
 use jrinx_a653::{
-    bindings::{ApexSystemTime, INFINITE_TIME_VALUE},
-    helper::{convert_name_to_str, convert_str_to_name, convert_time_to_duration},
     partition::{Partition, PartitionConfig, PartitionId, PartitionTypeConfig},
     process::{Process, ProcessRunner},
 };
+use jrinx_apex::*;
 use jrinx_hal::{Cpu, Hal};
 use jrinx_multitask::{
     inspector::Inspector,
@@ -176,7 +175,7 @@ async fn partition(args: &str) -> Option<Arc<Partition>> {
         }
         Some(
             Partition::new(&PartitionConfig {
-                name: convert_str_to_name(name).unwrap(),
+                name: name.try_into().unwrap(),
                 memory,
                 period,
                 duration,
@@ -226,7 +225,7 @@ async fn scheduler(
         if !partitions.is_empty() {
             info!("Available (created) partitions:");
             partitions.iter().for_each(|partition| {
-                info!("   - {}", convert_name_to_str(&partition.name()).unwrap());
+                info!("   - {}", partition.name());
             });
         }
         None
@@ -252,10 +251,10 @@ async fn scheduler(
             let offset: ApexSystemTime =
                 parse_time_from_proper_unit(parse_key_value(config.iter(), "offset").unwrap())
                     .unwrap();
-            if major_frame_size != INFINITE_TIME_VALUE
-                && (offset == INFINITE_TIME_VALUE || offset >= major_frame_size)
+            if major_frame_size != APEX_TIME_INFINITY
+                && (offset == APEX_TIME_INFINITY || offset >= major_frame_size)
             {
-                panic!("invalid offset: {:#?}", Duration::from_nanos(offset as _));
+                panic!("invalid offset: {:#?}", offset);
             }
             let duration: ApexSystemTime =
                 parse_time_from_proper_unit(parse_key_value(config.iter(), "duration").unwrap())
@@ -265,8 +264,7 @@ async fn scheduler(
                 .parse()
                 .unwrap();
 
-            let partition =
-                Partition::find_by_name(&convert_str_to_name(partition_name).unwrap()).unwrap();
+            let partition = Partition::find_by_name(&partition_name.try_into().unwrap()).unwrap();
 
             partition.assign_core(cpu_id as _);
 
@@ -276,15 +274,11 @@ async fn scheduler(
                     .get(&partition.identifier())
                     .unwrap_or(&partition.duration())
                 {
-                    left if *left == INFINITE_TIME_VALUE => INFINITE_TIME_VALUE,
+                    left if *left == APEX_TIME_INFINITY => APEX_TIME_INFINITY,
                     left if *left < duration => {
-                        panic!(
-                            "invalid duration: {:#?} (left: {:#?})",
-                            Duration::from_nanos(duration as _),
-                            Duration::from_nanos(*left as _)
-                        )
+                        panic!("invalid duration: {:#?} (left: {:#?})", duration, left)
                     }
-                    left => *left - duration,
+                    left => ApexSystemTime::from(left - duration),
                 },
             );
 
@@ -300,32 +294,27 @@ async fn scheduler(
             }
             table.push(RuntimeSchedTableEntry {
                 inspector_id: inspector.id(),
-                offset: convert_time_to_duration(offset),
-                period: convert_time_to_duration(partition.period()),
-                duration: convert_time_to_duration(duration),
+                offset: time_as_duration(offset),
+                period: time_as_duration(partition.period()),
+                duration: time_as_duration(duration),
             });
             inspectors.push(inspector);
         }
 
-        for (id, left) in duration_left.iter() {
-            if *left != 0 && *left != INFINITE_TIME_VALUE {
+        for (id, &left) in duration_left.iter() {
+            if left != 0 && left != APEX_TIME_INFINITY {
                 let partition = Partition::find_by_id(*id).unwrap();
                 let name = partition.name();
                 panic!(
-                    "duration left for partition '{}' is not zero: {:#?}",
-                    convert_name_to_str(&name).unwrap(),
-                    Duration::from_nanos(*left as _)
+                    "duration left for partition '{:?}' is not zero: {:#?}",
+                    name, left
                 );
             }
         }
 
         Some((
             cpu_id,
-            RuntimeSchedTable::new(
-                convert_time_to_duration(major_frame_size),
-                table.into_iter(),
-            )
-            .unwrap(),
+            RuntimeSchedTable::new(time_as_duration(major_frame_size), table.into_iter()).unwrap(),
             inspectors,
         ))
     }
@@ -387,8 +376,8 @@ fn parse_time_from_proper_unit(s: &str) -> Result<ApexSystemTime, &str> {
             .map_err(|_| "invalid time value")?
             * unit
         {
-            time if time < 0 => INFINITE_TIME_VALUE,
-            time => time,
+            time if time < 0 => APEX_TIME_INFINITY,
+            time => ApexSystemTime::from(time),
         },
     )
 }

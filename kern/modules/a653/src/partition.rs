@@ -6,16 +6,13 @@ use alloc::{
 };
 use core::{alloc::Allocator, ops::Deref, sync::atomic::AtomicUsize};
 
-use a653rs::bindings::{
-    ApexName, ApexPartitionStatus, ApexSystemTime, LockLevel, NumCores, OperatingMode, ProcessName,
-    ProcessorCoreId, StartCondition, MIN_LOCK_LEVEL,
-};
 use elf::{
     abi::{PF_R, PF_W, PF_X},
     endian::AnyEndian,
     ElfBytes,
 };
 use jrinx_addr::VirtAddr;
+use jrinx_apex::*;
 use jrinx_error::{InternalError, Result};
 use jrinx_hal::{hal, Cache, Hal, Vm};
 use jrinx_loader::ElfLoader;
@@ -33,7 +30,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, SerialId)]
-pub struct PartitionId(a653rs::bindings::PartitionId);
+pub struct PartitionId(ApexPartitionId);
 
 pub struct Partition {
     kernel: bool,
@@ -47,11 +44,11 @@ pub struct Partition {
     entry: A653Entry,
     period: ApexSystemTime,
     duration: ApexSystemTime,
-    lock_level: RwLock<LockLevel>,
-    operating_mode: RwLock<OperatingMode>,
-    start_condition: StartCondition,
-    num_assigned_cores: NumCores,
-    assigned_cores: RwLock<Vec<ProcessorCoreId>>,
+    lock_level: RwLock<ApexLockLevel>,
+    operating_mode: RwLock<ApexOperatingMode>,
+    start_condition: ApexStartCondition,
+    num_assigned_cores: ApexNumCores,
+    assigned_cores: RwLock<Vec<ApexProcessorCoreId>>,
 }
 
 struct PartitionMemory {
@@ -74,7 +71,7 @@ pub struct PartitionConfig<'a> {
     pub memory: usize,
     pub period: ApexSystemTime,
     pub duration: ApexSystemTime,
-    pub num_cores: NumCores,
+    pub num_cores: ApexNumCores,
     pub partition_type: PartitionTypeConfig<'a>,
 }
 
@@ -124,9 +121,9 @@ impl Partition {
             next_index: AtomicUsize::new(0),
             period: config.period,
             duration: config.duration,
-            lock_level: RwLock::new(MIN_LOCK_LEVEL),
-            operating_mode: RwLock::new(OperatingMode::Idle),
-            start_condition: StartCondition::NormalStart,
+            lock_level: RwLock::new(APEX_LOCK_LEVEL_MIN),
+            operating_mode: RwLock::new(ApexOperatingMode::Idle),
+            start_condition: ApexStartCondition::NormalStart,
             num_assigned_cores: config.num_cores,
             assigned_cores: RwLock::new(Vec::new()),
             entry: match &config.partition_type {
@@ -193,27 +190,27 @@ impl Partition {
         self.duration
     }
 
-    pub fn operating_mode(&self) -> OperatingMode {
+    pub fn operating_mode(&self) -> ApexOperatingMode {
         *self.operating_mode.read()
     }
 
-    pub fn set_operating_mode(&self, mode: OperatingMode) {
+    pub fn set_operating_mode(&self, mode: ApexOperatingMode) {
         *self.operating_mode.write() = mode;
     }
 
-    pub fn lock_level(&self) -> LockLevel {
+    pub fn lock_level(&self) -> ApexLockLevel {
         *self.lock_level.read()
     }
 
-    pub fn set_lock_level(&self, level: LockLevel) {
+    pub fn set_lock_level(&self, level: ApexLockLevel) {
         *self.lock_level.write() = level;
     }
 
-    pub fn assigned_cores(&self) -> Vec<ProcessorCoreId> {
+    pub fn assigned_cores(&self) -> Vec<ApexProcessorCoreId> {
         self.assigned_cores.read().clone()
     }
 
-    pub fn assign_core(&self, core_id: ProcessorCoreId) {
+    pub fn assign_core(&self, core_id: ApexProcessorCoreId) {
         self.assigned_cores.write().push(core_id);
     }
 
@@ -280,7 +277,7 @@ impl Partition {
             .cloned()
     }
 
-    pub(crate) fn find_process_by_name(&self, name: &ProcessName) -> Option<Arc<Process>> {
+    pub(crate) fn find_process_by_name(&self, name: &ApexProcessName) -> Option<Arc<Process>> {
         self.process_registry
             .read()
             .names

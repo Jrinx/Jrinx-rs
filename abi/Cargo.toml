@@ -3,4 +3,9 @@ name = "jrinx-abi"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+sysfn = []
+
 [dependencies]
+cfg-if = "1.0.0"
+jrinx-apex = { version = "0.1.0", path = "../apex" }

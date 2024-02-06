@@ -3,16 +3,16 @@
 version = 3
 
 [[package]]
-name = "a653rs"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "506b92c9c231f2f851b72180e3fecb59310cd5c5a78e3205c915c82b207668b6"
-
-[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
+
+[[package]]
+name = "cfg-if"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "idle"
@@ -21,31 +21,30 @@ version = "0.1.0"
 [[package]]
 name = "jrinx-abi"
 version = "0.1.0"
+dependencies = [
+ "cfg-if",
+ "jrinx-apex",
+]
+
+[[package]]
+name = "jrinx-apex"
+version = "0.1.0"
 
 [[package]]
 name = "jrlib-a653"
 version = "0.1.0"
 dependencies = [
- "a653rs",
  "jrinx-abi",
- "jrlib-sys",
+ "jrinx-apex",
 ]
 
 [[package]]
 name = "jrlib-logging"
 version = "0.1.0"
 dependencies = [
- "jrlib-sys",
+ "jrinx-abi",
  "log",
  "spin",
-]
-
-[[package]]
-name = "jrlib-sys"
-version = "0.1.0"
-dependencies = [
- "a653rs",
- "jrinx-abi",
 ]
 
 [[package]]
@@ -76,9 +75,9 @@ version = "0.1.0"
 name = "process-creator"
 version = "0.1.0"
 dependencies = [
+ "jrinx-abi",
  "jrlib-a653",
  "jrlib-logging",
- "jrlib-sys",
  "log",
 ]
 

@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-jrlib-sys = { version = "0.1.0", path = "../sys" }
+jrinx-abi = { version = "0.1.0", path = "../../../abi", features = ["sysfn"]}
 log = { version = "0.4.20", default-features = false }
 spin = "0.9.8"

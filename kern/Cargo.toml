@@ -16,6 +16,7 @@ fdt = "0.1.5"
 getargs = { version = "0.5.0", default-features = false }
 jrinx-a653 = { version = "0.1.0", path = "modules/a653" }
 jrinx-addr = { version = "0.1.0", path = "modules/addr" }
+jrinx-apex = { version = "0.1.0", path = "../apex" }
 jrinx-config = { version = "0.1.0", path = "modules/config" }
 jrinx-driver = { version = "0.1.0", path = "modules/driver" }
 jrinx-error = { version = "0.1.0", path = "modules/error" }
