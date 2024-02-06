@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-jrinx-hal = { version = "0.1.0", path = "../hal" }
-jrinx-paging = { version = "0.1.0", path = "../paging" }
+jrinx-hal = { path = "../hal" }
+jrinx-paging = { path = "../paging" }
 spin = "0.9.8"

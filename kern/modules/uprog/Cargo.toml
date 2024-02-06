@@ -6,4 +6,4 @@ edition = "2021"
 [dependencies]
 cpio_reader = "0.1.1"
 elf = { version = "0.7.3", default-features = false }
-jrinx-error = { version = "0.1.0", path = "../error" }
+jrinx-error = { path = "../error" }

@@ -5,18 +5,18 @@ edition = "2021"
 
 [dependencies]
 elf = { version = "0.7.4", default-features = false }
-jrinx-addr = { version = "0.1.0", path = "../addr" }
-jrinx-apex = { version = "0.1.0", path = "../../../apex" }
-jrinx-config = { version = "0.1.0", path = "../config" }
-jrinx-error = { version = "0.1.0", path = "../error" }
-jrinx-hal = { version = "0.1.0", path = "../hal" }
-jrinx-loader = { version = "0.1.0", path = "../loader" }
-jrinx-multitask = { version = "0.1.0", path = "../multitask" }
-jrinx-paging = { version = "0.1.0", path = "../paging" }
-jrinx-phys-frame = { version = "0.1.0", path = "../phys-frame" }
-jrinx-serial-id-macro = { version = "0.1.0", path = "../serial-id-macro" }
-jrinx-stack-alloc = { version = "0.1.0", path = "../stack-alloc" }
-jrinx-trap = { version = "0.1.0", path = "../trap" }
-jrinx-vmm = { version = "0.1.0", path = "../vmm" }
+jrinx-addr = { path = "../addr" }
+jrinx-apex = { path = "../../../apex" }
+jrinx-config = { path = "../config" }
+jrinx-error = { path = "../error" }
+jrinx-hal = { path = "../hal" }
+jrinx-loader = { path = "../loader" }
+jrinx-multitask = { path = "../multitask" }
+jrinx-paging = { path = "../paging" }
+jrinx-phys-frame = { path = "../phys-frame" }
+jrinx-serial-id-macro = { path = "../serial-id-macro" }
+jrinx-stack-alloc = { path = "../stack-alloc" }
+jrinx-trap = { path = "../trap" }
+jrinx-vmm = { path = "../vmm" }
 log = { version = "0.4.20", default-features = false }
 spin = "0.9.8"

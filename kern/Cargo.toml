@@ -14,29 +14,29 @@ cfg-if = "1.0.0"
 elf = { version = "0.7.3", default-features = false }
 fdt = "0.1.5"
 getargs = { version = "0.5.0", default-features = false }
-jrinx-a653 = { version = "0.1.0", path = "modules/a653" }
-jrinx-addr = { version = "0.1.0", path = "modules/addr" }
-jrinx-apex = { version = "0.1.0", path = "../apex" }
-jrinx-config = { version = "0.1.0", path = "modules/config" }
-jrinx-driver = { version = "0.1.0", path = "modules/driver" }
-jrinx-error = { version = "0.1.0", path = "modules/error" }
-jrinx-hal = { version = "0.1.0", path = "modules/hal" }
-jrinx-heap = { version = "0.1.0", path = "modules/heap" }
-jrinx-layout = { version = "0.1.0", path = "modules/layout" }
-jrinx-loader = { version = "0.1.0", path = "modules/loader" }
-jrinx-logging = { version = "0.1.0", path = "modules/logging" }
-jrinx-multitask = { version = "0.1.0", path = "modules/multitask" }
-jrinx-paging = { version = "0.1.0", path = "modules/paging" }
-jrinx-percpu = { version = "0.1.0", path = "modules/percpu" }
-jrinx-phys-frame = { version = "0.1.0", path = "modules/phys-frame" }
-jrinx-stack-alloc = { version = "0.1.0", path = "modules/stack-alloc" }
-jrinx-syscall = { version = "0.1.0", path = "modules/syscall" }
-jrinx-testdef = { version = "0.1.0", path = "modules/testdef" }
-jrinx-timed-event = { version = "0.1.0", path = "modules/timed-event" }
-jrinx-trap = { version = "0.1.0", path = "modules/trap" }
-jrinx-uprog = { version = "0.1.0", path = "modules/uprog" }
-jrinx-util = { version = "0.1.0", path = "modules/util" }
-jrinx-vmm = { version = "0.1.0", path = "modules/vmm" }
+jrinx-a653 = { path = "modules/a653" }
+jrinx-addr = { path = "modules/addr" }
+jrinx-apex = { path = "../apex" }
+jrinx-config = { path = "modules/config" }
+jrinx-driver = { path = "modules/driver" }
+jrinx-error = { path = "modules/error" }
+jrinx-hal = { path = "modules/hal" }
+jrinx-heap = { path = "modules/heap" }
+jrinx-layout = { path = "modules/layout" }
+jrinx-loader = { path = "modules/loader" }
+jrinx-logging = { path = "modules/logging" }
+jrinx-multitask = { path = "modules/multitask" }
+jrinx-paging = { path = "modules/paging" }
+jrinx-percpu = { path = "modules/percpu" }
+jrinx-phys-frame = { path = "modules/phys-frame" }
+jrinx-stack-alloc = { path = "modules/stack-alloc" }
+jrinx-syscall = { path = "modules/syscall" }
+jrinx-testdef = { path = "modules/testdef" }
+jrinx-timed-event = { path = "modules/timed-event" }
+jrinx-trap = { path = "modules/trap" }
+jrinx-uprog = { path = "modules/uprog" }
+jrinx-util = { path = "modules/util" }
+jrinx-vmm = { path = "modules/vmm" }
 log = { version = "0.4.20", default-features = false }
 rand = { version = "0.8.5", default-features = false, features = ["small_rng"] }
 spin = "0.9.8"

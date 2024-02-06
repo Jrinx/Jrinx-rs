@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-jrinx-abi = { version = "0.1.0", path = "../../../../../abi", features = ["sysfn"] }
+jrinx-abi = { version = "*", path = "../../../../../abi", features = ["sysfn"] }
 jrlib-a653 = { version = "0.1.0", path = "../../../../library/a653" }
 jrlib-logging = { version = "0.1.0", path = "../../../../library/logging" }
 log = { version = "0.4.20", default-features = false }

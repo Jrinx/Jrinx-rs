@@ -1,11 +1,15 @@
 [package]
 name = "jrinx-abi"
-version = "0.1.0"
+version = "0.1.2"
 edition = "2021"
+license = "MIT"
+description = "ABI for Jrinx"
+repository = "https://github.com/Jrinx/Jrinx-rs"
+readme = "README.md"
 
 [features]
-sysfn = []
+sysfn = ["dep:jrinx-apex"]
 
 [dependencies]
 cfg-if = "1.0.0"
-jrinx-apex = { version = "0.1.0", path = "../apex" }
+jrinx-apex = { version = "0.1.0", path = "../apex", optional = true }

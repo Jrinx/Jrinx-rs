@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 cfg-if = "1.0.0"
-jrinx-config = { version = "0.1.0", path = "../config" }
-jrinx-layout = { version = "0.1.0", path = "../layout" }
-jrinx-percpu-macro = { version = "0.1.0", path = "../percpu-macro" }
+jrinx-config = { path = "../config" }
+jrinx-layout = { path = "../layout" }
+jrinx-percpu-macro = { path = "../percpu-macro" }
 spin = "0.9.8"

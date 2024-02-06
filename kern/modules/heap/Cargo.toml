@@ -5,5 +5,5 @@ edition = "2021"
 
 [dependencies]
 buddy_system_allocator = { version = "0.9.0", features = ["const_fn"] }
-jrinx-addr = { version = "0.1.0", path = "../addr" }
-jrinx-config = { version = "0.1.0", path = "../config" }
+jrinx-addr = { path = "../addr" }
+jrinx-config = { path = "../config" }

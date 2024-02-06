@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-jrinx-error = { version = "0.1.0", path = "../error" }
-jrinx-hal = { version = "0.1.0", path = "../hal" }
-jrinx-layout = { version = "0.1.0", path = "../layout" }
-jrinx-percpu = { version = "0.1.0", path = "../percpu" }
-jrinx-serial-id-macro = { version = "0.1.0", path = "../serial-id-macro" }
+jrinx-error = { path = "../error" }
+jrinx-hal = { path = "../hal" }
+jrinx-layout = { path = "../layout" }
+jrinx-percpu = { path = "../percpu" }
+jrinx-serial-id-macro = { path = "../serial-id-macro" }
 spin = "0.9.8"

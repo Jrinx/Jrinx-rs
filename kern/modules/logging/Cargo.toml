@@ -7,9 +7,9 @@ edition = "2021"
 colorful = []
 
 [dependencies]
-jrinx-error = { version = "0.1.0", path = "../error" }
-jrinx-hal = { version = "0.1.0", path = "../hal" }
-jrinx-multitask = { version = "0.1.0", path = "../multitask" }
-jrinx-util = { version = "0.1.0", path = "../util" }
+jrinx-error = { path = "../error" }
+jrinx-hal = { path = "../hal" }
+jrinx-multitask = { path = "../multitask" }
+jrinx-util = { path = "../util" }
 log = { version = "0.4.20", default-features = false }
 spin = "0.9.8"

@@ -4,11 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-jrinx-a653 = { version = "0.1.0", path = "../a653" }
-jrinx-abi = { version = "0.1.0", path = "../../../abi" }
-jrinx-apex = { version = "0.1.0", path = "../../../apex" }
-jrinx-error = { version = "0.1.0", path = "../error" }
-jrinx-hal = { version = "0.1.0", path = "../hal" }
-jrinx-multitask = { version = "0.1.0", path = "../multitask" }
-jrinx-trap = { version = "0.1.0", path = "../trap" }
+jrinx-a653 = { path = "../a653" }
+jrinx-abi = { path = "../../../abi" }
+jrinx-apex = { path = "../../../apex" }
+jrinx-error = { path = "../error" }
+jrinx-hal = { path = "../hal" }
+jrinx-multitask = { path = "../multitask" }
+jrinx-trap = { path = "../trap" }
 log = { version = "0.4.20", default-features = false }

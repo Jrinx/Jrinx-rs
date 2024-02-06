@@ -6,9 +6,9 @@ edition = "2021"
 [dependencies]
 bitflags = "2.4.1"
 cfg-if = "1.0.0"
-jrinx-config = { version = "0.1.0", path = "../config" }
-jrinx-error = { version = "0.1.0", path = "../error" }
-jrinx-phys-frame = { version = "0.1.0", path = "../phys-frame" }
+jrinx-config = { path = "../config" }
+jrinx-error = { path = "../error" }
+jrinx-phys-frame = { path = "../phys-frame" }
 
 [target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]
 riscv = "0.10.1"
