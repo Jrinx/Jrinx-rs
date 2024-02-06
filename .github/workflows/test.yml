@@ -119,13 +119,10 @@ jobs:
         run: |
           cargo install cargo-binutils
 
-      - name: Lint Xtask Code
-        run: cargo clippy --release -- -Dwarnings
-
-      - name: Lint Kern Code
+      - name: Lint Code
         env:
           ARCH: ${{ matrix.arch }}
-        run: cargo lint
+        run: ./scripts/lint-all
 
       - name: Cache QEMU
         id: qemu-cache

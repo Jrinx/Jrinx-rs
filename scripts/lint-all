@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -e
+
+echo -e "\e[0;35m>>> Checking Xtask\e[0m"
+cargo clippy --release -- -Dwarnings
+
+archs=
+
+if [[ -v ARCH ]]; then
+    archs=$ARCH
+else
+    archs=$(find kern/tgt -name '*.json' | xargs -i basename --suffix=.json {})
+fi
+
+for arch in $archs; do
+    echo -e "\e[0;35m>>> Checking Kernel on \e[0;36m$arch\e[0m"
+    cargo lint -a $arch
+done
+
+for arch in $archs; do
+    echo -e "\e[0;35m>>> Checking User on \e[0;36m$arch\e[0m"
+    cargo ulint -a $arch
+done
+
+echo -e "\e[0;35m>>> All checks passed\e[0m"
