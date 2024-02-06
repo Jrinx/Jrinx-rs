@@ -4,6 +4,7 @@ mod envs;
 mod lint;
 mod make;
 mod qemu;
+mod ulint;
 mod uprog;
 mod util;
 
@@ -33,6 +34,7 @@ enum Cmd {
     Lint(MakeArg),
     Qemu(QemuArg),
     Uprog(UprogArg),
+    Ulint(UprogArg),
     Ar(ArchiveArg),
 }
 
@@ -42,6 +44,7 @@ fn main() -> ExitCode {
         Cmd::Lint(ref arg) => lint::run(arg),
         Cmd::Qemu(ref arg) => qemu::run(arg),
         Cmd::Uprog(ref arg) => uprog::run(arg),
+        Cmd::Ulint(ref arg) => ulint::run(arg),
         Cmd::Ar(ref arg) => ar::run(arg),
     } {
         if code.success() {

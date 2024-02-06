@@ -75,14 +75,10 @@ pub fn run(arg: &UprogArg) -> Option<ExitStatus> {
         }
     }
 
-    if !Cargo::new("build")
-        .work_dir(path)
-        .target(arch.triple())
-        .optional(!debug, |cargo| cargo.release())
-        .status()
-        .ok()?
-        .success()
-    {
+    let mut cmd = Cargo::new("build");
+    user(&mut cmd, arg);
+
+    if !cmd.status().ok()?.success() {
         return None;
     }
 
@@ -136,4 +132,16 @@ pub fn run(arg: &UprogArg) -> Option<ExitStatus> {
     }
 
     Some(ExitStatus::default())
+}
+
+pub fn user(cmd: &mut Cargo, arg: &UprogArg) {
+    let UprogArg {
+        path, arch, debug, ..
+    } = arg.clone();
+
+    let ArchArg { arch, .. } = arch;
+
+    cmd.work_dir(path)
+        .target(arch.triple())
+        .optional(!debug, |cargo| cargo.release());
 }
