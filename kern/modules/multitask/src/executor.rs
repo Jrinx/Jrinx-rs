@@ -77,6 +77,7 @@ impl From<ExecutorPriority> for FastPriority {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ExecutorStatus {
     Runnable,
+    Blocked,
     Finished,
 }
 
@@ -142,6 +143,10 @@ impl Executor {
 
     pub fn status(&self) -> ExecutorStatus {
         self.status
+    }
+
+    pub fn set_status(&mut self, status: ExecutorStatus) {
+        self.status = status;
     }
 
     pub fn ext(&self) -> Arc<dyn Any + Send + Sync> {

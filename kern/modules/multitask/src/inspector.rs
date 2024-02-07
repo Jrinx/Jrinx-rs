@@ -1,4 +1,4 @@
-use alloc::{boxed::Box, collections::BTreeMap, sync::Arc};
+use alloc::{boxed::Box, collections::BTreeMap, sync::Arc, vec::Vec};
 use core::{any::Any, fmt::Display, pin::Pin};
 
 use jrinx_addr::VirtAddr;
@@ -41,6 +41,7 @@ pub struct Inspector {
 struct Scheduler {
     registry: BTreeMap<ExecutorId, Pin<Box<Executor>>>,
     queue: ExecutorQueue,
+    wait_list: Vec<ExecutorId>,
 }
 
 impl Default for Inspector {
@@ -61,6 +62,7 @@ impl Inspector {
             scheduler: RwLock::new(Scheduler {
                 registry: BTreeMap::new(),
                 queue: ExecutorQueue::new(),
+                wait_list: Vec::new(),
             }),
             ext: Arc::new(ext),
         }
@@ -131,6 +133,25 @@ impl Inspector {
         })
     }
 
+    pub fn wake(&self, id: ExecutorId) -> Result<()> {
+        let mut scheduler = self.scheduler.write();
+
+        if let Some(index) = scheduler.wait_list.iter().position(|&x| x == id) {
+            scheduler.wait_list.swap_remove(index);
+            scheduler.queue.enqueue(
+                scheduler
+                    .registry
+                    .get(&id)
+                    .ok_or(InternalError::InvalidExecutorId)?
+                    .priority(),
+                id,
+            );
+            Ok(())
+        } else {
+            Err(InternalError::InvalidExecutorId)
+        }
+    }
+
     pub(crate) fn with_executor<F, R>(&self, id: ExecutorId, f: F) -> Result<R>
     where
         F: FnOnce(&mut Pin<Box<Executor>>) -> R,
@@ -144,7 +165,21 @@ impl Inspector {
     }
 
     pub(crate) fn dequeue(&self) -> Option<ExecutorId> {
-        self.scheduler.write().queue.dequeue().map(|(_, id)| id)
+        let mut scheduler = self.scheduler.write();
+        while let Some((_, id)) = scheduler.queue.dequeue() {
+            if let Some(executor) = scheduler.registry.get(&id) {
+                match executor.status() {
+                    ExecutorStatus::Runnable => return Some(id),
+                    ExecutorStatus::Blocked => {
+                        scheduler.wait_list.push(id);
+                    }
+                    ExecutorStatus::Finished => panic!("executor {:?} is finished", id),
+                }
+            } else {
+                panic!("executor {:?} is not found", id);
+            }
+        }
+        None
     }
 
     pub(crate) fn enqueue(&self, id: ExecutorId) -> Result<()> {
