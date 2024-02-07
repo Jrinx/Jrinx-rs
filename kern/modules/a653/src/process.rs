@@ -152,12 +152,44 @@ impl Process {
         self.stack_size
     }
 
+    pub fn period(&self) -> ApexSystemTime {
+        self.period
+    }
+
+    pub fn time_capacity(&self) -> ApexSystemTime {
+        self.time_capacity
+    }
+
     pub fn entry(&self) -> A653Entry {
         self.entry
     }
 
     pub fn base_priority(&self) -> ApexPriority {
         self.base_priority
+    }
+
+    pub fn curr_priority(&self) -> ApexPriority {
+        *self.curr_priority.read()
+    }
+
+    pub fn set_curr_priority(&self, priority: ApexPriority) {
+        *self.curr_priority.write() = priority;
+    }
+
+    pub fn deadline_time(&self) -> ApexSystemTime {
+        *self.deadline_time.read()
+    }
+
+    pub fn set_deadline_time(&self, time: ApexSystemTime) {
+        *self.deadline_time.write() = time;
+    }
+
+    pub fn process_state(&self) -> ApexProcessState {
+        *self.process_state.read()
+    }
+
+    pub fn set_process_state(&self, state: ApexProcessState) {
+        *self.process_state.write() = state;
     }
 
     pub fn core_affinity(&self) -> Option<usize> {

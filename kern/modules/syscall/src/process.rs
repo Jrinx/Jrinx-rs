@@ -8,7 +8,10 @@ use jrinx_a653::{
 };
 use jrinx_apex::*;
 use jrinx_hal::{Cpu, Hal, Interrupt};
-use jrinx_multitask::runtime::{Runtime, RuntimeStatus};
+use jrinx_multitask::{
+    executor::ExecutorStatus,
+    runtime::{Runtime, RuntimeStatus},
+};
 
 pub(crate) struct ProcessSyscallHandler;
 
@@ -84,34 +87,74 @@ impl ProcessSyscallHandler {
     }
 
     pub(crate) fn start(&self, id: ApexProcessId) -> Result<(), ApexReturnCode> {
+        fn start_executor(process: Arc<Process>, status: ExecutorStatus) {
+            let mut executor = process
+                .gen_executor(ProcessRunner {
+                    syscall: crate::handle,
+                })
+                .unwrap();
+
+            executor.set_status(status);
+
+            let cpu_id = process.core_affinity().unwrap_or(hal!().cpu().id());
+            Runtime::with_spec_cpu(cpu_id, move |rt| {
+                rt.with_registry(|reg| {
+                    for (_, inspector) in reg.iter() {
+                        let that_partition: Option<Arc<Partition>> =
+                            inspector.ext().deref().downcast_ref().cloned();
+                        if let Some(that_partition) = that_partition {
+                            if that_partition.identifier() == process.partition_id() {
+                                inspector.register(executor).unwrap();
+                                break;
+                            }
+                        }
+                    }
+                })
+            })
+            .unwrap();
+            if Runtime::with_spec_cpu(cpu_id, |rt| rt.status() == RuntimeStatus::Endpoint).unwrap()
+            {
+                hal!().interrupt().send_ipi(&[cpu_id]);
+            }
+        }
+
         let partition = Partition::current().unwrap();
         let process = Process::find_by_id(partition.identifier(), id.into())
             .ok_or(ApexReturnCode::InvalidParam)?;
-        let executor = process
-            .gen_executor(ProcessRunner {
-                syscall: crate::handle,
-            })
-            .unwrap();
-
-        let cpu_id = process.core_affinity().unwrap_or(hal!().cpu().id());
-        Runtime::with_spec_cpu(cpu_id, move |rt| {
-            rt.with_registry(|reg| {
-                for (_, inspector) in reg.iter() {
-                    let that_partition: Option<Arc<Partition>> =
-                        inspector.ext().deref().downcast_ref().cloned();
-                    if let Some(that_partition) = that_partition {
-                        if that_partition.identifier() == partition.identifier() {
-                            inspector.register(executor).unwrap();
-                            break;
-                        }
-                    }
-                }
-            })
-        })
-        .unwrap();
-        if Runtime::with_spec_cpu(cpu_id, |rt| rt.status() == RuntimeStatus::Endpoint).unwrap() {
-            hal!().interrupt().send_ipi(&[cpu_id]);
+        if process.process_state() != ApexProcessState::Dormant {
+            return Err(ApexReturnCode::NoAction);
         }
+        let deadline_time = match process.time_capacity() {
+            APEX_TIME_INFINITY => APEX_TIME_INFINITY,
+            time_capacity => duration_as_time(
+                hal!()
+                    .cpu()
+                    .get_time()
+                    .checked_add(time_as_duration(time_capacity))
+                    .ok_or(ApexReturnCode::InvalidConfig)?,
+            ),
+        };
+
+        if process.period() == APEX_TIME_INFINITY {
+            process.set_curr_priority(process.base_priority());
+            process.set_process_state(ApexProcessState::Waiting);
+
+            let start = move || {
+                process.clone().set_process_state(ApexProcessState::Ready);
+                process.clone().set_deadline_time(deadline_time); // TODO: set timed-event for deadline
+                start_executor(process.clone(), ExecutorStatus::Runnable);
+            };
+
+            if partition.operating_mode() == ApexOperatingMode::Normal {
+                start();
+                Runtime::switch_yield();
+            } else {
+                partition.add_pre_start_hook(start);
+            }
+        } else {
+            todo!("start periodic process");
+        }
+
         Ok(())
     }
 

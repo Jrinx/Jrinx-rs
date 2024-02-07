@@ -1,6 +1,7 @@
 use alloc::{
     alloc::Global,
-    collections::BTreeMap,
+    boxed::Box,
+    collections::{BTreeMap, VecDeque},
     sync::{Arc, Weak},
     vec::Vec,
 };
@@ -38,6 +39,7 @@ pub struct Partition {
     name: ApexName,
     memory: PartitionMemory,
     page_table: RwLock<PageTable>,
+    pre_start_hooks: RwLock<VecDeque<Box<dyn FnOnce() + Send + Sync>>>,
     process_registry: RwLock<PartitionProcessRegistry>,
     stack_allocator: StackAllocator,
     next_index: AtomicUsize,
@@ -116,6 +118,7 @@ impl Partition {
             name: config.name,
             memory: PartitionMemory::new(config.memory),
             page_table: RwLock::new(page_table),
+            pre_start_hooks: RwLock::new(VecDeque::new()),
             process_registry: RwLock::new(PartitionProcessRegistry::new()),
             stack_allocator,
             next_index: AtomicUsize::new(0),
@@ -217,6 +220,17 @@ impl Partition {
     pub fn allocator(&self) -> PartitionMemoryAllocator {
         PartitionMemoryAllocator {
             partition_id: self.identifier,
+        }
+    }
+
+    pub fn add_pre_start_hook(&self, hook: impl FnOnce() + Send + Sync + 'static) {
+        self.pre_start_hooks.write().push_back(Box::new(hook));
+    }
+
+    pub fn run_pre_start_hooks(&self) {
+        let mut hooks = self.pre_start_hooks.write();
+        while let Some(hook) = hooks.pop_front() {
+            hook();
         }
     }
 

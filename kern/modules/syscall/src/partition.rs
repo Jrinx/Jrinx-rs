@@ -32,7 +32,11 @@ impl PartitionSyscallHandler {
             }
             ApexOperatingMode::Normal => {
                 // TODO:
-                // [ ] set to READY all previously started (not delayed) aperiodic processes
+                //     [ ] TODO
+                //     [-] WIP
+                //     [x] DONE
+                //
+                // [-] set to READY all previously started (not delayed) aperiodic processes
                 //     (unless the process was suspended);
                 // [ ] set release point of all previously delay started aperiodic processes
                 //     to the system clock time plus their delay times;
@@ -50,6 +54,7 @@ impl PartitionSyscallHandler {
                 //     end if;
                 // [x] activate the process scheduling;
 
+                partition.run_pre_start_hooks();
                 partition.set_lock_level(APEX_LOCK_LEVEL_MIN);
                 partition.pt_sync();
                 Runtime::switch_yield();
