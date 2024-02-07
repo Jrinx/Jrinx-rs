@@ -1,5 +1,7 @@
 # Jrinx ABI
 
+[![Crates.io version](https://img.shields.io/crates/v/jrinx-abi.svg)](https://crates.io/crates/jrinx-abi)
+
 [Jrinx](https://github.com/Jrinx/Jrinx-rs) 的 ABI 定义。
 
 ## 使用

@@ -1,5 +1,7 @@
 # Jrinx APEX
 
+[![Crates.io version](https://img.shields.io/crates/v/jrinx-apex.svg)](https://crates.io/crates/jrinx-apex)
+
 [Jrinx](https://github.com/Jrinx/Jrinx-rs) 的 APEX 绑定。
 
 ## 使用
