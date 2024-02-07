@@ -4,5 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-jrinx-abi = { version = "*", path = "../../../abi", features = ["sysfn"]}
+jrinx-abi = { path = "../../../abi", features = ["sysfn"] }
 jrinx-apex = { path = "../../../apex" }
