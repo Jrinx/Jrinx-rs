@@ -213,8 +213,17 @@ impl Partition {
         self.assigned_cores.read().clone()
     }
 
-    pub fn assign_core(&self, core_id: ApexProcessorCoreId) {
-        self.assigned_cores.write().push(core_id);
+    pub fn assign_core(&self, core_id: ApexProcessorCoreId) -> Result<()> {
+        let mut assigned_cores = self.assigned_cores.write();
+
+        if !assigned_cores.contains(&core_id)
+            && assigned_cores.len() >= self.num_assigned_cores as _
+        {
+            return Err(InternalError::InvalidApexNumCores);
+        }
+        assigned_cores.push(core_id);
+
+        Ok(())
     }
 
     pub fn allocator(&self) -> PartitionMemoryAllocator {

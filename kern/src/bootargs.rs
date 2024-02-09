@@ -266,7 +266,7 @@ async fn scheduler(
 
             let partition = Partition::find_by_name(&partition_name.try_into().unwrap()).unwrap();
 
-            partition.assign_core(cpu_id as _);
+            partition.assign_core(cpu_id as _).unwrap();
 
             duration_left.insert(
                 partition.identifier(),

@@ -20,6 +20,7 @@ pub enum InternalError {
     InvalidTimedEventStatus,
     InvalidApexName,
     InvalidApexPriority,
+    InvalidApexNumCores,
     InvalidSyscallNumber,
 }
 
