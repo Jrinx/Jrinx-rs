@@ -1,5 +1,4 @@
 #![no_std]
-#![feature(slice_group_by)]
 
 extern crate alloc;
 

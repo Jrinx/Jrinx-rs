@@ -438,7 +438,7 @@ impl RuntimeSchedTable {
         let mut table = self.table.clone();
         table.sort_unstable_by_key(|entry| (entry.inspector_id, entry.offset));
 
-        for entries in table.group_by(|e1, e2| e1.inspector_id == e2.inspector_id) {
+        for entries in table.chunk_by(|e1, e2| e1.inspector_id == e2.inspector_id) {
             if !match entries {
                 [head, tail @ ..] => tail
                     .iter()
@@ -449,7 +449,7 @@ impl RuntimeSchedTable {
             }
         }
 
-        for entries in table.group_by(|e1, e2| e1.inspector_id == e2.inspector_id) {
+        for entries in table.chunk_by(|e1, e2| e1.inspector_id == e2.inspector_id) {
             if !entries
                 .iter()
                 .chain(entries.iter().take(1))

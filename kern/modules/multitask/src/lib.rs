@@ -2,8 +2,6 @@
 #![feature(asm_const)]
 #![feature(iter_map_windows)]
 #![feature(map_try_insert)]
-#![feature(offset_of)]
-#![feature(slice_group_by)]
 #![feature(sync_unsafe_cell)]
 
 mod arch;

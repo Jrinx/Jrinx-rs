@@ -1,6 +1,6 @@
 #![no_std]
 #![feature(asm_const)]
-#![feature(offset_of)]
+#![feature(offset_of_nested)]
 
 #[macro_use]
 extern crate log;

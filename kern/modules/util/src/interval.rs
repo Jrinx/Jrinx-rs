@@ -80,7 +80,7 @@ impl IntoIterator for ExclusiveIntervals {
             sum: 0,
             into_iter: self
                 .inner
-                .group_by(|&b1, &b2| b1.0 == b2.0)
+                .chunk_by(|&b1, &b2| b1.0 == b2.0)
                 .map(|s| (s[0].0, s.iter().map(|t| t.1).sum::<isize>()))
                 .collect::<Vec<_>>()
                 .into_iter(),

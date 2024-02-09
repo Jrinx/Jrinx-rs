@@ -1,6 +1,6 @@
 {
     "llvm-target": "riscv32",
-    "data-layout": "e-m:e-p:32:32-i32:32-n32-S128",
+    "data-layout": "e-m:e-p:32:32-i64:64-n32-S128",
     "target-endian": "little",
     "target-pointer-width": "32",
     "target-c-int-width": "32",
