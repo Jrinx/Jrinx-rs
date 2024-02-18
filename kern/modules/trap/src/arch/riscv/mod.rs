@@ -5,7 +5,7 @@ use jrinx_paging::{GenericPagePerm, PagePerm};
 use riscv::register::{
     scause::{Exception, Interrupt},
     sstatus::{FS, SPP},
-    utvec::TrapMode,
+    stvec::TrapMode,
 };
 
 use crate::{breakpoint, soft_int, timer_int, GenericContext, TrapReason};

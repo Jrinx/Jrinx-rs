@@ -25,8 +25,6 @@ impl Vm for VmImpl {
     }
 
     fn sync_all(&self) {
-        unsafe {
-            riscv::asm::sfence_vma_all();
-        }
+        riscv::asm::sfence_vma_all();
     }
 }

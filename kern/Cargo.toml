@@ -11,7 +11,7 @@ colorful = ["jrinx-logging/colorful"]
 
 [dependencies]
 cfg-if = "1.0.0"
-elf = { version = "0.7.3", default-features = false }
+elf = { version = "0.7.4", default-features = false }
 fdt = "0.1.5"
 getargs = { version = "0.5.0", default-features = false }
 jrinx-a653 = { path = "modules/a653" }
@@ -42,5 +42,5 @@ rand = { version = "0.8.5", default-features = false, features = ["small_rng"] }
 spin = "0.9.8"
 
 [target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]
-riscv = "0.10.1"
+riscv = "0.11.1"
 sbi = "0.2.0"
