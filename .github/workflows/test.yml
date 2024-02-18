@@ -12,17 +12,17 @@ jobs:
     name: Set Up Python Environment
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set Up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
 
       - name: Get Pip Cache Directory
         id: pip-cache-dir
         run: echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: Cache Pip
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
           path: ${{ steps.pip-cache-dir.outputs.dir }}
@@ -45,7 +45,7 @@ jobs:
 
       - name: Cache QEMU
         id: qemu-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: ${{ runner.os }}-qemu-${{ steps.qemu-latest-tag.outputs.tag }}
           path: /opt/qemu/
@@ -72,17 +72,17 @@ jobs:
       matrix:
         arch: [riscv32, riscv64]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set Up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
 
       - name: Get Pip Cache Directory
         id: pip-cache-dir
         run: echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
       - name: Cache Pip
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
           path: ${{ steps.pip-cache-dir.outputs.dir }}
@@ -102,7 +102,7 @@ jobs:
 
       - name: Cache Cargo
         id: cargo-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/bin/
@@ -126,7 +126,7 @@ jobs:
 
       - name: Cache QEMU
         id: qemu-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           key: ${{ runner.os }}-qemu-${{ steps.qemu-latest-tag.outputs.tag }}
           path: /opt/qemu/
