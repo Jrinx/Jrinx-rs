@@ -8,3 +8,6 @@ members = [
     "xtask",
 ]
 default-members = ["xtask"]
+
+[profile.release]
+lto = true
