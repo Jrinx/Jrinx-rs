@@ -25,6 +25,17 @@ pub fn setup(arg: &MakeArg) {
         "UPROG_PATH" ?= std::env::current_dir().unwrap().join("uprog.jrz").to_str().unwrap(),
         "BUILD_MODE" ?= if debug { "debug" } else { "release" },
         "BUILD_TIME" ?= chrono::offset::Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+        "BUILD_HOST" ?= {
+            let uname = uname::uname().unwrap();
+            format!(
+                "{} {} {} {} {}",
+                uname.sysname,
+                uname.nodename,
+                uname.release,
+                uname.version,
+                uname.machine
+            )
+        },
         "RAND_SEED" ?= rand::thread_rng().gen_range(0..0x8000).to_string(),
     }
 }

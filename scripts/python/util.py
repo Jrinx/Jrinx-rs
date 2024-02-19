@@ -97,6 +97,7 @@ def setup_envs() -> None:
         'BOARD': 'virt',
         'BUILD_MODE': 'release',
         'BUILD_TIME': datetime.datetime.now().strftime(r'%Y-%m-%d %H:%M:%S'),
+        'BUILD_HOST': ' '.join(name for name in os.uname()),
         'RAND_SEED': str(random.randint(0, 32767)),
         'SMP': '5',
         'MEMORY': '1G',

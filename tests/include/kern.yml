@@ -5,6 +5,7 @@ expected:
   - type: ordered
     vals:
     - arch = ${ARCH}, built at ${BUILD_TIME} in ${BUILD_MODE} mode
+    - 'build-host: ${BUILD_HOST}'
     - test case ${TEST_NAME} begin
     - test case ${TEST_NAME} end
 

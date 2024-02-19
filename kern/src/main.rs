@@ -74,10 +74,12 @@ fn primary_init(boot_info: BootInfo) -> ! {
     let arch = core::option_env!("ARCH").unwrap_or("unknown");
     let build_time = core::option_env!("BUILD_TIME").unwrap_or("unknown");
     let build_mode = core::option_env!("BUILD_MODE").unwrap_or("unknown");
+    let build_host = core::option_env!("BUILD_HOST").unwrap_or("unknown");
     info!(
         "arch = {}, built at {} in {} mode",
         arch, build_time, build_mode,
     );
+    info!("build-host: {}", build_host);
 
     jrinx_vmm::init();
 
