@@ -7,6 +7,7 @@ edition = "2021"
 cfg-if = "1.0.0"
 jrinx-addr = { path = "../addr" }
 jrinx-hal = { path = "../hal" }
+jrinx-intercpu-event = { path = "../intercpu-event" }
 jrinx-paging = { path = "../paging" }
 jrinx-timed-event = { path = "../timed-event" }
 log = { version = "0.4.21", default-features = false }

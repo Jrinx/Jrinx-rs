@@ -1,0 +1,10 @@
+[package]
+name = "jrinx-intercpu-event"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+jrinx-hal = { path = "../hal" }
+jrinx-layout = { path = "../layout" }
+jrinx-percpu = { path = "../percpu" }
+spin = "0.9.8"

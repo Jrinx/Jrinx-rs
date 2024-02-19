@@ -8,6 +8,7 @@ use jrinx_a653::{
 };
 use jrinx_apex::*;
 use jrinx_hal::{Cpu, Hal, Interrupt};
+use jrinx_intercpu_event::IntercpuEvent;
 use jrinx_multitask::{
     executor::ExecutorStatus,
     runtime::{Runtime, RuntimeStatus},
@@ -121,6 +122,9 @@ impl ProcessSyscallHandler {
         let partition = Partition::current().unwrap();
         let process = Process::find_by_id(partition.identifier(), id.into())
             .ok_or(ApexReturnCode::InvalidParam)?;
+
+        let process_core_affinity = process.core_affinity().unwrap_or(hal!().cpu().id());
+
         if process.process_state() != ApexProcessState::Dormant {
             return Err(ApexReturnCode::NoAction);
         }
@@ -147,7 +151,10 @@ impl ProcessSyscallHandler {
 
             if partition.operating_mode() == ApexOperatingMode::Normal {
                 start();
-                Runtime::switch_yield();
+
+                IntercpuEvent::create(process_core_affinity, || {
+                    Runtime::switch_yield();
+                });
             } else {
                 partition.add_pre_start_hook(start);
             }
