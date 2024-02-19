@@ -15,7 +15,7 @@ riscv = "0.11.1"
 sbi = "0.2.0"
 
 [target.'cfg(target_arch = "riscv32")'.dependencies]
-jrinx-addr = { version = "0.1.0", path = "../addr", features = ["pt_level_2"] }
+jrinx-addr = { path = "../addr", features = ["pt_level_2"] }
 
 [target.'cfg(target_arch = "riscv64")'.dependencies]
-jrinx-addr = { version = "0.1.0", path = "../addr", features = ["pt_level_3"] }
+jrinx-addr = { path = "../addr", features = ["pt_level_3"] }
