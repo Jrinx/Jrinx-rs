@@ -581,6 +581,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "jrinx-intercpu-event"
+version = "0.1.0"
+dependencies = [
+ "jrinx-hal",
+ "jrinx-layout",
+ "jrinx-percpu",
+ "spin",
+]
+
+[[package]]
 name = "jrinx-layout"
 version = "0.1.0"
 
@@ -700,6 +710,7 @@ dependencies = [
  "jrinx-apex",
  "jrinx-error",
  "jrinx-hal",
+ "jrinx-intercpu-event",
  "jrinx-multitask",
  "jrinx-trap",
  "log",
@@ -740,6 +751,7 @@ dependencies = [
  "cfg-if",
  "jrinx-addr",
  "jrinx-hal",
+ "jrinx-intercpu-event",
  "jrinx-paging",
  "jrinx-timed-event",
  "log",

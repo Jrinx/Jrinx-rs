@@ -9,6 +9,7 @@ jrinx-abi = { path = "../../../abi" }
 jrinx-apex = { path = "../../../apex" }
 jrinx-error = { path = "../error" }
 jrinx-hal = { path = "../hal" }
+jrinx-intercpu-event = { path = "../intercpu-event" }
 jrinx-multitask = { path = "../multitask" }
 jrinx-trap = { path = "../trap" }
 log = { version = "0.4.21", default-features = false }

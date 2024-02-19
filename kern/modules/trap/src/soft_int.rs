@@ -12,6 +12,10 @@ pub(crate) fn handle(ctx: &mut impl GenericContext) {
 
     *SOFT_INT_COUNTER.write() += 1;
 
+    while let Some(event) = jrinx_intercpu_event::with_current(|iq| iq.pop()) {
+        event.fire();
+    }
+
     hal!().interrupt().clr_soft();
 }
 
