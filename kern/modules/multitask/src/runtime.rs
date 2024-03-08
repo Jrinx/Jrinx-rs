@@ -56,6 +56,12 @@ pub struct RuntimeSchedTable {
     events: Mutex<VecDeque<TimedEventTracker>>,
 }
 
+impl Default for Runtime {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Runtime {
     pub const fn new() -> Self {
         Self {

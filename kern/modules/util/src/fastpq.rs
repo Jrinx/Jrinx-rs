@@ -20,6 +20,12 @@ pub struct FastPriorityQueue<P: Clone + Copy + Into<FastPriority>, I> {
     queues: [VecDeque<(P, I)>; 64],
 }
 
+impl<P: Clone + Copy + Into<FastPriority>, I> Default for FastPriorityQueue<P, I> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<P: Clone + Copy + Into<FastPriority>, I> FastPriorityQueue<P, I> {
     const INIT_VAL: VecDeque<(P, I)> = VecDeque::new();
 
@@ -55,6 +61,12 @@ impl<P: Clone + Copy + Into<FastPriority>, I> FastPriorityQueue<P, I> {
 
 pub struct FastPriorityQueueWithLock<P: Clone + Copy + Into<FastPriority>, I> {
     inner: Mutex<FastPriorityQueue<P, I>>,
+}
+
+impl<P: Clone + Copy + Into<FastPriority>, I> Default for FastPriorityQueueWithLock<P, I> {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<P: Clone + Copy + Into<FastPriority>, I> FastPriorityQueueWithLock<P, I> {

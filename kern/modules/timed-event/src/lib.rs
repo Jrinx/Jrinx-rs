@@ -140,6 +140,12 @@ pub struct TimedEventQueue {
     queue: BinaryHeap<Reverse<(Duration, TimedEventId)>>,
 }
 
+impl Default for TimedEventQueue {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TimedEventQueue {
     pub const fn new() -> Self {
         Self {
