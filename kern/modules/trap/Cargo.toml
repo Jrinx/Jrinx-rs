@@ -9,7 +9,7 @@ jrinx-addr = { path = "../addr" }
 jrinx-hal = { path = "../hal" }
 jrinx-paging = { path = "../paging" }
 jrinx-timed-event = { path = "../timed-event" }
-log = { version = "0.4.20", default-features = false }
+log = { version = "0.4.21", default-features = false }
 spin = "0.9.8"
 
 [target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]

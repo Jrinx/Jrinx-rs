@@ -37,7 +37,7 @@ jrinx-trap = { path = "modules/trap" }
 jrinx-uprog = { path = "modules/uprog" }
 jrinx-util = { path = "modules/util" }
 jrinx-vmm = { path = "modules/vmm" }
-log = { version = "0.4.20", default-features = false }
+log = { version = "0.4.21", default-features = false }
 rand = { version = "0.8.5", default-features = false, features = ["small_rng"] }
 spin = "0.9.8"
 

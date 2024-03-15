@@ -7,4 +7,4 @@ edition = "2021"
 jrinx-abi = { path = "../../../../../abi", features = ["sysfn"] }
 jrlib-a653 = { path = "../../../../library/a653" }
 jrlib-logging = { path = "../../../../library/logging" }
-log = { version = "0.4.20", default-features = false }
+log = { version = "0.4.21", default-features = false }

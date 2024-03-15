@@ -18,5 +18,5 @@ jrinx-serial-id-macro = { path = "../serial-id-macro" }
 jrinx-stack-alloc = { path = "../stack-alloc" }
 jrinx-trap = { path = "../trap" }
 jrinx-vmm = { path = "../vmm" }
-log = { version = "0.4.20", default-features = false }
+log = { version = "0.4.21", default-features = false }
 spin = "0.9.8"

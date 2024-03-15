@@ -19,7 +19,7 @@ jrinx-stack-alloc = { path = "../stack-alloc" }
 jrinx-timed-event = { path = "../timed-event" }
 jrinx-util = { path = "../util" }
 jrinx-vmm = { path = "../vmm" }
-log = { version = "0.4.20", default-features = false }
+log = { version = "0.4.21", default-features = false }
 mtxgroup = { version = "0.1.1", default-features = false, features = ["spin"] }
 spin = "0.9.8"
 

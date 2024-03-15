@@ -11,5 +11,5 @@ jrinx-error = { path = "../error" }
 jrinx-hal = { path = "../hal" }
 jrinx-multitask = { path = "../multitask" }
 jrinx-util = { path = "../util" }
-log = { version = "0.4.20", default-features = false }
+log = { version = "0.4.21", default-features = false }
 spin = "0.9.8"
