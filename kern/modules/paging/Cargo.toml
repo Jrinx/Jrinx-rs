@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bitflags = "2.4.2"
+bitflags = "2.5.0"
 cfg-if = "1.0.0"
 jrinx-config = { path = "../config" }
 jrinx-error = { path = "../error" }

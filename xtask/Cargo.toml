@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 cargo_metadata = { version = "0.18.1", features = ["builder"] }
 chrono = "0.4.35"
-clap = { version = "4.5.2", features = ["derive", "env", "suggestions"] }
+clap = { version = "4.5.3", features = ["derive", "env", "suggestions"] }
 cpio = "0.2.2"
 rand = "0.8.5"
 uname = "0.1.1"
