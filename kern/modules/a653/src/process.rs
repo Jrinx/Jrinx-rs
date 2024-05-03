@@ -210,7 +210,7 @@ impl Process {
                     // Safety:
                     //   The function returned from `transmute(addr)` will not be called in kernel mode.
                     //   This transmutation is just for type compatibility.
-                    unsafe { core::mem::transmute(addr) },
+                    unsafe { core::mem::transmute::<usize, ApexSystemAddress>(addr) },
                     A653Entry::Kern(func) => func,
                 },
                 name: self.name,
